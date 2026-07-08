@@ -24,6 +24,24 @@
     --sun:#d9a441;
     --bloom:#cf8fa2;
   }
+  :root.dark{
+    --paper:#1c211f;
+    --panel:#262c29;
+    --ink:#e7ece9;
+    --dim:#9aa39d;
+    --faint:#3a423e;
+    --ghost:#2c322f;
+    --leaf:#7cc79a;
+    --water:#8fc4da;
+    --sun:#e8b955;
+    --bloom:#e3a9bd;
+  }
+  @media print{
+    :root.dark{
+      --paper:#f7f8f5;--panel:#fff;--ink:#3a4540;--dim:#8a958e;--faint:#d7dfd9;
+      --ghost:#eceeeb;--leaf:#5f9f7c;--water:#6fa8c0;--sun:#d9a441;--bloom:#cf8fa2;
+    }
+  }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
@@ -38,7 +56,7 @@
   header{display:flex;justify-content:space-between;align-items:center;padding:0 2px}
   header h1{font-size:14px;font-weight:600;letter-spacing:.24em}
   header h1 .rev{color:var(--dim);font-weight:400;letter-spacing:.06em;font-size:11px}
-  #clock{font-size:11px;color:var(--dim);letter-spacing:.08em}
+  header #lastcheck{font-size:11px;color:var(--dim);letter-spacing:.05em}
   .label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
   .hdr-right{display:flex;align-items:center;gap:8px}
   .icon-btn{
@@ -334,14 +352,15 @@
   #toast.show{transform:translate(-50%,0)}
   @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 
-  /* ── exercise mode: replaces actions/vibes in-flow, Jord stays visible above ── */
+  /* ── exercise mode: lives inside the stage card itself, right under Jord —
+     no popup, no separate box; actions/vibes just step aside while it's open ── */
   #modal{display:none}
   #modal.open{display:block}
-  body.mode-active .actions,body.mode-active .vibes{display:none}
+  .stage.mode-active ~ .actions,.stage.mode-active ~ .vibes{display:none}
+  .stage.mode-active #speech,.stage.mode-active .statusline{display:none}
   .exercise{
-    border:1.5px solid var(--ink);border-radius:14px;background:var(--panel);
-    padding:18px;text-align:center;display:flex;flex-direction:column;gap:14px;
-    box-shadow:3px 3px 0 var(--faint);
+    padding:8px 4px 2px;text-align:center;display:flex;flex-direction:column;gap:12px;
+    border-top:1px dashed var(--faint);margin-top:2px;
   }
   #ex-phase{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--leaf);min-height:1.4em}
   #ex-body{font-size:15px;min-height:4.5em;display:flex;align-items:center;justify-content:center;white-space:pre-wrap}
@@ -378,9 +397,9 @@
 <div class="unit">
 
   <header>
-    <h1>JORD <span class="rev">· grounding companion · rev E</span></h1>
+    <h1>JORD <span class="rev">· rev E</span></h1>
     <div class="hdr-right">
-      <span id="clock">--:--</span>
+      <span id="lastcheck">last check-in: —</span>
       <button id="b-settings" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
     </div>
   </header>
@@ -542,17 +561,17 @@
     </div>
     <div id="speech" class="quiet">…</div>
     <div class="statusline"><span class="label">jord is</span><span id="jordis">arriving…</span></div>
-  </section>
 
-  <div id="modal" role="region" aria-label="Exercise">
-    <div class="exercise">
-      <div id="ex-phase"></div>
-      <div id="ex-count"></div>
-      <div id="ex-body"></div>
-      <button id="ex-next" class="primary">Begin</button>
-      <button id="ex-close">Close</button>
+    <div id="modal" role="region" aria-label="Exercise">
+      <div class="exercise">
+        <div id="ex-phase"></div>
+        <div id="ex-count"></div>
+        <div id="ex-body"></div>
+        <button id="ex-next" class="primary">Begin</button>
+        <button id="ex-close">Close</button>
+      </div>
     </div>
-  </div>
+  </section>
 
   <section class="actions" aria-label="Check-in actions">
     <button id="b-breathe"><span class="icon">∿</span>Breathe</button>
@@ -574,7 +593,6 @@
   </section>
 
   <footer>
-    <span id="lastcheck">last check-in: —</span>
     <span id="orbitday">orbit day 1</span>
   </footer>
 </div>
@@ -1165,7 +1183,7 @@ const GOLDEN_FLOWER = `<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 
 
 /* ── dom ── */
 const $ = id => document.getElementById(id);
-const speech=$("speech"), jordis=$("jordis"), clock=$("clock"), toast=$("toast"),
+const speech=$("speech"), jordis=$("jordis"), toast=$("toast"),
       modal=$("modal"), exPhase=$("ex-phase"), exBody=$("ex-body"), exCount=$("ex-count"),
       exNext=$("ex-next"), exClose=$("ex-close"), lastEl=$("lastcheck"),
       notifBtn=$("b-notif"), notifState=$("notifstate"), intervalSel=$("interval"),
@@ -1186,6 +1204,15 @@ function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
 function rand(a,b){return a+Math.random()*(b-a)}
 function tierOf(c){ return c>=80 ? 3 : c>=50 ? 2 : c>=25 ? 1 : 0; }
 function isNight(){ const h=new Date().getHours(); return h>=21||h<6; }
+function isDarkHours(){ const h=new Date().getHours(); return h>=17||h<5; }
+function applyTheme(){
+  const dark = isDarkHours();
+  document.documentElement.classList.toggle("dark", dark);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", dark ? "#1c211f" : "#f7f8f5");
+}
+applyTheme();
+setInterval(applyTheme, 5*60*1000);
 
 function setEyes(name){ EYES.forEach(e=>{ $("e-"+e).style.display = e===name ? "" : "none"; }); }
 function setMouth(name){ MOUTHS.forEach(m=>{ $("m-"+m).style.display = m===name ? "" : "none"; }); }
@@ -1437,8 +1464,6 @@ setInterval(()=>{
   if(!busy && !sitting) jordis.textContent = (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[tierOf(calm)]);
 }, 7*60*1000);
 
-function tickClock(){ clock.textContent = new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
-tickClock(); setInterval(tickClock,10000);
 setInterval(()=>{ calm=clamp(calm-1,5,100); store.set("calm",calm); if(!busy && !sitting) render(); }, 4*60*1000);
 
 /* ── speech + toast ── */
@@ -1704,9 +1729,9 @@ $("tr-print").addEventListener("click", ()=>window.print());
 
 /* ── exercises (modal) ── */
 let exTimer=null;
-function openModal(){ modal.classList.add("open"); document.body.classList.add("mode-active"); busy=true; }
+function openModal(){ modal.classList.add("open"); stageEl.classList.add("mode-active"); busy=true; }
 function closeModal(){
-  modal.classList.remove("open"); document.body.classList.remove("mode-active"); busy=false;
+  modal.classList.remove("open"); stageEl.classList.remove("mode-active"); busy=false;
   clearInterval(exTimer); exTimer=null;
   render(); applyMood();
 }
