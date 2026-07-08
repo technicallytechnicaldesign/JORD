@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f8f5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="JORD">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>JORD · grounding companion</title>
+<style>
+  :root{
+    --paper:#f7f8f5;
+    --panel:#ffffff;
+    --ink:#3a4540;
+    --dim:#8a958e;
+    --faint:#d7dfd9;
+    --ghost:#eceeeb;
+    --leaf:#5f9f7c;
+    --water:#6fa8c0;
+    --sun:#d9a441;
+    --bloom:#cf8fa2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono',Menlo,Consolas,monospace;
+    font-size:14px;line-height:1.55;
+    display:flex;justify-content:center;padding:14px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .unit{width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px}
+
+  header{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px}
+  header h1{font-size:14px;font-weight:600;letter-spacing:.24em}
+  header h1 .rev{color:var(--dim);font-weight:400;letter-spacing:.06em;font-size:11px}
+  #clock{font-size:11px;color:var(--dim);letter-spacing:.08em}
+  .label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+
+  /* ── sitting: the world softens ── */
+  header,.status,.actions,.reminders,footer,#thought{transition:opacity 1.4s ease}
+  body.sitting header, body.sitting .status, body.sitting .actions,
+  body.sitting .reminders, body.sitting footer{opacity:.05;pointer-events:none}
+  body.sitting #thought{opacity:0 !important}
+  body.sitting .stage{border-color:var(--ghost)}
+  #sittimer{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:min(88px,22vw);color:var(--ghost);
+    font-variant-numeric:tabular-nums;letter-spacing:.04em;
+    z-index:0;opacity:0;transition:opacity 1.4s ease;
+    pointer-events:none;user-select:none;
+  }
+  body.sitting #sittimer{opacity:1}
+  #orbwrap{position:relative;z-index:1}
+  #speech{position:relative;z-index:1}
+
+  /* ── stage ── */
+  .stage{
+    position:relative;
+    background:var(--panel);
+    border:1.5px solid var(--ink);
+    border-radius:12px;
+    padding:6px 6px 8px;
+    text-align:center;
+    transition:border-color 1.4s ease;
+  }
+  #orbwrap{display:flex;justify-content:center}
+  #orbwrap svg{width:100%;max-width:400px;height:auto;display:block}
+  svg *{vector-effect:non-scaling-stroke}
+
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .bob{animation:bob 6s ease-in-out infinite}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
+  @keyframes wiggle{0%,100%{transform:rotate(0)}30%{transform:rotate(-2.5deg)}70%{transform:rotate(2deg)}}
+  .wiggling{transform-origin:140px 150px;animation:wiggle .9s ease-in-out}
+  @keyframes ripple{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.28);opacity:0}}
+  .rippling{transform-origin:140px 272px;animation:ripple 4.5s ease-out infinite}
+  .rippling.r2{animation-delay:2.2s}
+  @keyframes flutter{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(7px,-9px) rotate(9deg)}50%{transform:translate(13px,-3px) rotate(-7deg)}75%{transform:translate(5px,-11px) rotate(5deg)}}
+  .fluttering{animation:flutter 8s ease-in-out infinite}
+  @keyframes twinkle{0%,100%{opacity:.1}50%{opacity:.85}}
+  .twinkling{animation:twinkle 3.4s ease-in-out infinite}
+  .tier{transition:opacity 1.6s ease}
+  .tier.hidden{opacity:0}
+
+  #arm-l,#arm-r{transition:transform .4s ease}
+  @keyframes waveR{0%,100%{transform:translate(214.8px,172px) rotate(0)}18%{transform:translate(214.8px,172px) rotate(-115deg)}32%{transform:translate(214.8px,172px) rotate(-95deg)}46%{transform:translate(214.8px,172px) rotate(-120deg)}60%{transform:translate(214.8px,172px) rotate(-95deg)}74%{transform:translate(214.8px,172px) rotate(-112deg)}}
+  @keyframes waveL{0%,100%{transform:translate(65.2px,172px) rotate(0)}18%{transform:translate(65.2px,172px) rotate(115deg)}32%{transform:translate(65.2px,172px) rotate(95deg)}46%{transform:translate(65.2px,172px) rotate(120deg)}60%{transform:translate(65.2px,172px) rotate(95deg)}74%{transform:translate(65.2px,172px) rotate(112deg)}}
+  @keyframes flailR{0%,100%{transform:translate(214.8px,172px) rotate(0)}25%{transform:translate(214.8px,172px) rotate(-24deg)}50%{transform:translate(214.8px,172px) rotate(8deg)}75%{transform:translate(214.8px,172px) rotate(-18deg)}}
+  @keyframes flailL{0%,100%{transform:translate(65.2px,172px) rotate(0)}25%{transform:translate(65.2px,172px) rotate(24deg)}50%{transform:translate(65.2px,172px) rotate(-8deg)}75%{transform:translate(65.2px,172px) rotate(18deg)}}
+  @keyframes yayR{0%,100%{transform:translate(214.8px,172px) rotate(0)}20%,80%{transform:translate(214.8px,172px) rotate(-140deg)}}
+  @keyframes yayL{0%,100%{transform:translate(65.2px,172px) rotate(0)}20%,80%{transform:translate(65.2px,172px) rotate(140deg)}}
+  #arm-r.wave{animation:waveR 2.6s ease-in-out}
+  #arm-l.wave{animation:waveL 2.6s ease-in-out}
+  #arm-r.flail{animation:flailR 1.4s ease-in-out 2}
+  #arm-l.flail{animation:flailL 1.4s ease-in-out 2}
+  #arm-r.yay{animation:yayR 2.2s ease-in-out}
+  #arm-l.yay{animation:yayL 2.2s ease-in-out}
+
+  #faceflip{transform-origin:140px 150px;transition:transform .38s ease-in}
+  #faceflip.away{transform:scaleX(.04)}
+  #backface{opacity:0;transition:opacity .3s ease}
+  #backface.show{opacity:1}
+
+  @keyframes slowbreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  #orbbody.breathing{transform-origin:140px 150px;animation:slowbreathe 9s ease-in-out infinite}
+
+  @keyframes shoot{0%{opacity:0}8%{opacity:1}100%{transform:translate(-110px,60px);opacity:0}}
+  .shooting{animation:shoot 1.4s ease-out forwards}
+
+  .sprite{transition:opacity 1.8s ease, transform 1.2s ease}
+  .sprite.in{opacity:1}
+  .sprite.out{opacity:0}
+  .drop{transition:opacity .8s ease, transform .8s cubic-bezier(.2,.9,.3,1.2)}
+
+  @media (prefers-reduced-motion:reduce){
+    .bob,#surface,.rippling,.fluttering,.twinkling,.wiggling,
+    #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
+    #orbbody.breathing,.shooting{animation:none}
+  }
+
+  #thought{
+    position:absolute;top:8px;left:10px;
+    max-width:62%;
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:14px;
+    padding:9px 12px;
+    font-size:12px;text-align:left;
+    opacity:0;transform:translateY(6px) scale(.96);
+    transition:opacity .5s ease, transform .5s ease;
+    pointer-events:none;z-index:3;
+  }
+  #thought.show{opacity:1;transform:translateY(0) scale(1)}
+  #thought::after,#thought::before{
+    content:"";position:absolute;background:var(--paper);
+    border:1.5px solid var(--ink);border-radius:50%;
+  }
+  #thought::after{width:9px;height:9px;right:-10px;bottom:-6px}
+  #thought::before{width:5px;height:5px;right:-19px;bottom:-14px}
+
+  #speech{
+    min-height:3.4em;
+    display:flex;align-items:center;justify-content:center;
+    padding:8px 6px 0;margin-top:2px;
+    border-top:1px dashed var(--faint);
+    font-size:13px;transition:opacity .6s ease;
+  }
+  #speech.quiet{opacity:.35}
+  body.sitting #speech{font-size:14px;border-top-color:var(--ghost)}
+
+  .status{
+    background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
+    padding:10px 14px;display:flex;align-items:baseline;gap:10px;
+  }
+  .status .label{white-space:nowrap;color:var(--ink)}
+  #jordis{font-size:13px}
+
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{
+    font:inherit;color:var(--ink);background:var(--panel);
+    border:1.5px solid var(--ink);border-radius:10px;
+    padding:13px 8px;min-height:56px;
+    cursor:pointer;letter-spacing:.12em;font-size:12px;text-transform:uppercase;
+    transition:transform .1s ease, box-shadow .15s ease;
+    box-shadow:2px 2px 0 var(--faint);
+  }
+  button .sub{display:block;color:var(--dim);font-size:10px;letter-spacing:.05em;text-transform:none;margin-top:2px}
+  button:hover{box-shadow:3px 3px 0 var(--leaf)}
+  button:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--faint)}
+  button:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
+  button:disabled{opacity:.45;cursor:default;box-shadow:none}
+  button.primary{color:var(--leaf)}
+  button.wide{grid-column:1/-1}
+  button.small{min-height:42px;padding:8px 12px}
+
+  /* ── vibe slider ── */
+  .vibes{
+    background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
+    padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+  }
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  #vibeword{font-size:12px;color:var(--leaf)}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:24px;background:transparent;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--faint)}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--panel);border:2px solid var(--ink);
+    margin-top:-10px;
+  }
+  input[type=range]::-moz-range-track{height:2px;background:var(--faint)}
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;
+    background:var(--panel);border:2px solid var(--ink);
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--leaf);outline-offset:4px}
+  .scalelabels{font-size:10px;color:var(--dim);letter-spacing:.06em}
+
+  .reminders{
+    background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
+    padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+  }
+  select{
+    font:inherit;font-size:12px;color:var(--ink);
+    background:var(--paper);border:1.5px solid var(--ink);border-radius:8px;
+    padding:8px 10px;
+  }
+  select:focus-visible{outline:2px solid var(--leaf)}
+  #notifstate{font-size:10px;color:var(--dim);letter-spacing:.06em}
+  #notifstate.on{color:var(--leaf)}
+
+  footer{
+    font-size:10px;color:var(--dim);letter-spacing:.04em;
+    padding:2px 4px 8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;
+  }
+
+  #toast{
+    position:fixed;left:50%;bottom:24px;transform:translate(-50%,150%);
+    max-width:min(400px,90vw);
+    background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
+    padding:12px 16px;font-size:13px;
+    box-shadow:3px 3px 0 var(--faint);
+    transition:transform .3s ease;z-index:10;
+  }
+  #toast.show{transform:translate(-50%,0)}
+  @media (prefers-reduced-motion:reduce){#toast{transition:none}}
+
+  #modal{
+    position:fixed;inset:0;background:rgba(247,248,245,.94);
+    display:none;align-items:center;justify-content:center;padding:16px;z-index:20;
+  }
+  #modal.open{display:flex}
+  .exercise{
+    width:100%;max-width:390px;
+    border:1.5px solid var(--ink);border-radius:14px;background:var(--panel);
+    padding:22px;text-align:center;display:flex;flex-direction:column;gap:16px;
+    box-shadow:4px 4px 0 var(--faint);
+  }
+  #ex-phase{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--leaf);min-height:1.4em}
+  #ex-body{font-size:15px;min-height:4.5em;display:flex;align-items:center;justify-content:center;white-space:pre-wrap}
+  #ex-count{font-size:34px;color:var(--leaf);min-height:1.2em;font-variant-numeric:tabular-nums}
+
+  /* ── trends: the telemetry printout ── */
+  #trends{
+    position:fixed;inset:0;background:var(--paper);
+    display:none;z-index:30;overflow-y:auto;
+    padding:18px 16px 32px;
+  }
+  #trends.open{display:block}
+  .tr-inner{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .tr-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+  .tr-head h2{font-size:13px;letter-spacing:.22em;font-weight:600}
+  .tr-card{border:1.5px solid var(--ink);border-radius:10px;padding:12px 14px;background:var(--panel)}
+  .tr-card h3{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;font-weight:400}
+  .tr-card svg{width:100%;height:auto;display:block}
+  #tr-stats{font-size:12px}
+  #tr-note{font-size:12px;color:var(--leaf)}
+  #tr-encourage{font-size:13px;font-style:normal}
+  .tr-btns{display:flex;gap:10px}
+
+  @media print{
+    body{padding:0}
+    .unit,#toast,#modal,#thought{display:none !important}
+    #trends{display:block !important;position:static;overflow:visible;padding:0}
+    .tr-btns{display:none}
+    .tr-card{break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="unit">
+
+  <header>
+    <h1>JORD <span class="rev">· grounding companion · rev E</span></h1>
+    <span id="clock">--:--</span>
+  </header>
+
+  <section class="stage" aria-label="JORD">
+    <div id="thought" role="status"></div>
+    <div id="sittimer">2:00</div>
+    <div id="orbwrap">
+      <svg id="jord" class="bob" viewBox="0 0 280 310" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+           fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+        <g id="night" class="tier hidden" stroke="var(--ink)" stroke-width="1.5">
+          <path d="M 34 40 a 11 11 0 1 0 12 14 a 8.5 8.5 0 1 1 -12 -14 Z"/>
+          <path class="twinkling" d="M 250 36 v 8 M 246 40 h 8" stroke="var(--sun)"/>
+          <path class="twinkling" style="animation-delay:1.6s" d="M 226 66 v 6 M 223 69 h 6" stroke="var(--sun)"/>
+        </g>
+        <g id="meteor"></g>
+
+        <g id="t-water" class="tier hidden" stroke="var(--water)" stroke-width="1.5">
+          <ellipse class="rippling"    cx="140" cy="272" rx="66" ry="9"/>
+          <ellipse class="rippling r2" cx="140" cy="272" rx="66" ry="9"/>
+          <path d="M 86 272 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0" opacity=".6"/>
+        </g>
+
+        <g id="orbbody">
+          <g id="arm-l" transform="translate(65.2,172)" stroke="var(--ink)" stroke-width="2">
+            <path d="M 0 0 q -13 5 -17 17"/>
+            <path d="M -17 17 l -5 2 M -17 17 l -2 6 M -17 17 l -6 -2" stroke-width="1.6"/>
+          </g>
+          <g id="arm-r" transform="translate(214.8,172)" stroke="var(--ink)" stroke-width="2">
+            <path d="M 0 0 q 13 5 17 17"/>
+            <path d="M 17 17 l 5 2 M 17 17 l 2 6 M 17 17 l 6 -2" stroke-width="1.6"/>
+          </g>
+
+          <circle cx="140" cy="150" r="78" stroke="var(--ink)" stroke-width="2" fill="var(--panel)"/>
+          <g id="surface" stroke="var(--faint)" stroke-width="1.5">
+            <path d="M 72 124 Q 104 110 134 121"/>
+            <path d="M 150 192 Q 180 185 204 168"/>
+            <path d="M 82 182 q 11 9 26 7"/>
+            <path d="M 172 96 q 13 4 20 15"/>
+            <circle cx="104" cy="184" r="5"/>
+            <circle cx="182" cy="128" r="4"/>
+            <path d="M 118 86 q 9 -4 18 0"/>
+            <circle cx="94" cy="104" r="3"/>
+          </g>
+
+          <g id="backface" stroke="var(--faint)" stroke-width="1.5">
+            <path d="M 100 140 q 20 -12 44 -4"/>
+            <path d="M 112 176 q 22 10 44 2"/>
+            <circle cx="166" cy="152" r="5"/>
+            <g stroke="var(--ink)" stroke-width="1.4">
+              <rect x="128" y="196" width="24" height="12" rx="1.5" fill="var(--paper)"/>
+              <text x="140" y="205" text-anchor="middle" font-size="7" fill="var(--ink)" stroke="none"
+                    font-family="inherit" letter-spacing="1">JORD</text>
+            </g>
+          </g>
+
+          <g id="faceflip">
+          <g id="face" stroke="var(--ink)">
+            <g id="e-open" stroke-width="2">
+              <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
+              <g id="pupils" fill="var(--ink)" stroke="none">
+                <circle cx="117" cy="145" r="3.2"/><circle cx="163" cy="145" r="3.2"/>
+              </g>
+            </g>
+            <g id="e-happy" stroke-width="2.5" style="display:none">
+              <path d="M 109 146 Q 117 137 125 146"/><path d="M 155 146 Q 163 137 171 146"/>
+            </g>
+            <g id="e-closed" stroke-width="2.5" style="display:none">
+              <path d="M 109 144 Q 117 149 125 144"/><path d="M 155 144 Q 163 149 171 144"/>
+            </g>
+            <g id="e-wide" stroke-width="2" style="display:none">
+              <circle cx="117" cy="143" r="10.5"/><circle cx="163" cy="143" r="10.5"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="117" cy="144" r="2.4"/><circle cx="163" cy="144" r="2.4"/></g>
+            </g>
+            <g id="e-squint" stroke-width="2.2" style="display:none">
+              <path d="M 108 142 q 9 5 18 0 q -9 5 -18 0 Z"/><path d="M 154 142 q 9 5 18 0 q -9 5 -18 0 Z"/>
+            </g>
+            <g id="e-side" stroke-width="2" style="display:none">
+              <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="121.5" cy="145" r="3.2"/><circle cx="167.5" cy="145" r="3.2"/></g>
+            </g>
+            <g id="e-sparkle" stroke-width="1.8" fill="var(--ink)" style="display:none">
+              <path d="M 117 136 l 2.6 5.4 5.4 2.6 -5.4 2.6 -2.6 5.4 -2.6 -5.4 -5.4 -2.6 5.4 -2.6 Z"/>
+              <path d="M 163 136 l 2.6 5.4 5.4 2.6 -5.4 2.6 -2.6 5.4 -2.6 -5.4 -5.4 -2.6 5.4 -2.6 Z"/>
+            </g>
+            <g id="e-flat" stroke-width="2.2" style="display:none">
+              <path d="M 109 140 h 16"/><path d="M 155 140 h 16"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="117" cy="146" r="3"/><circle cx="163" cy="146" r="3"/></g>
+            </g>
+            <g id="e-chaos" stroke-width="2.2" style="display:none">
+              <path d="M 108 142 q 9 5 18 0 q -9 5 -18 0 Z"/>
+              <circle cx="163" cy="143" r="10.5"/>
+              <circle cx="163" cy="144" r="2.4" fill="var(--ink)" stroke="none"/>
+            </g>
+
+            <path id="m-smile" d="M 128 168 Q 140 178 152 168" stroke-width="2.5"/>
+            <path id="m-grin"  d="M 124 166 Q 140 182 156 166" stroke-width="2.5" style="display:none"/>
+            <path id="m-o"     d="M 140 173 m -5 0 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0" stroke-width="2.2" style="display:none"/>
+            <path id="m-flat"  d="M 131 171 h 18" stroke-width="2.5" style="display:none"/>
+            <path id="m-wavy"  d="M 128 171 q 4 -4 8 0 q 4 4 8 0 q 4 -4 8 0" stroke-width="2.2" style="display:none"/>
+            <path id="m-hmm"   d="M 132 172 q 8 -3 16 1" stroke-width="2.5" style="display:none"/>
+          </g>
+          </g>
+        </g>
+
+        <g id="flora"></g>
+        <g id="objects"></g>
+
+        <g id="t-zen" class="tier hidden">
+          <g class="fluttering" stroke="var(--ink)" stroke-width="1.6">
+            <g transform="translate(216,62)">
+              <path d="M 0 0 Q -9 -9 -12 -1 Q -9 7 0 2 Z"/>
+              <path d="M 0 0 Q 9 -9 12 -1 Q 9 7 0 2 Z"/>
+              <line x1="0" y1="-3" x2="0" y2="5"/>
+            </g>
+          </g>
+          <g stroke="var(--sun)" stroke-width="1.6">
+            <path class="twinkling" d="M 50 84 v 10 M 45 89 h 10"/>
+            <path class="twinkling" style="animation-delay:1.3s" d="M 240 158 v 8 M 236 162 h 8"/>
+            <path class="twinkling" style="animation-delay:2.1s" d="M 42 200 v 8 M 38 204 h 8"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div id="speech" class="quiet">…</div>
+  </section>
+
+  <section class="status" aria-label="JORD's state">
+    <span class="label">Jord is</span>
+    <span id="jordis">arriving…</span>
+  </section>
+
+  <section class="actions" aria-label="Check-in actions">
+    <button id="b-breathe">Breathe<span class="sub">box · 4×4s</span></button>
+    <button id="b-ground">Ground<span class="sub">5-4-3-2-1</span></button>
+    <button id="b-accept">Accept<span class="sub">radical, as-is</span></button>
+    <button id="b-enjoy">Enjoy<span class="sub">tiny mission</span></button>
+    <button id="b-sit" class="wide">Sit with Jord<span class="sub">two minutes of nothing · together</span></button>
+  </section>
+
+  <section class="vibes" aria-label="Vibe log">
+    <div class="row">
+      <span class="label">Today's vibe</span>
+      <span id="vibeword">steady</span>
+    </div>
+    <input type="range" id="vibeslider" min="0" max="100" value="60" aria-label="How's the vibe right now">
+    <div class="row scalelabels"><span>let's work on it</span><span>good vibe</span></div>
+    <div class="row">
+      <button id="b-logvibe" class="small" style="flex:1">Log vibe</button>
+      <button id="b-trends" class="small" style="flex:1">Trends</button>
+    </div>
+  </section>
+
+  <section class="reminders">
+    <div class="row">
+      <span class="label">Reminder interval</span>
+      <select id="interval" aria-label="Reminder interval">
+        <option value="0">off</option>
+        <option value="30">every 30 min</option>
+        <option value="60" selected>every 60 min</option>
+        <option value="90">every 90 min</option>
+        <option value="120">every 2 h</option>
+      </select>
+    </div>
+    <div class="row">
+      <span class="label">System notifications</span>
+      <button id="b-notif" style="min-height:38px;padding:6px 14px;box-shadow:none">Enable</button>
+    </div>
+    <div class="row"><span id="notifstate">in-page only · tab must stay open for reminders</span></div>
+  </section>
+
+  <footer>
+    <span id="lastcheck">last check-in: —</span>
+    <span id="orbitday">orbit day 1</span>
+    <span>jord · da. “earth”</span>
+  </footer>
+</div>
+
+<div id="toast" role="status"></div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-label="Exercise">
+  <div class="exercise">
+    <div id="ex-phase"></div>
+    <div id="ex-count"></div>
+    <div id="ex-body"></div>
+    <button id="ex-next" class="primary">Begin</button>
+    <button id="ex-close">Close</button>
+  </div>
+</div>
+
+<!-- trends printout -->
+<div id="trends" role="dialog" aria-label="Vibe trends">
+  <div class="tr-inner">
+    <div class="tr-head">
+      <h2>JORD · VIBE TELEMETRY</h2>
+      <span class="label" id="tr-date"></span>
+    </div>
+    <div class="tr-card">
+      <h3>Today · by hour</h3>
+      <div id="tr-today"></div>
+    </div>
+    <div class="tr-card">
+      <h3>Last 14 days · daily average</h3>
+      <div id="tr-hist"></div>
+    </div>
+    <div class="tr-card">
+      <h3>Field notes</h3>
+      <div id="tr-stats"></div>
+      <div id="tr-note"></div>
+    </div>
+    <div class="tr-card">
+      <h3>From Jord</h3>
+      <div id="tr-encourage"></div>
+    </div>
+    <div class="tr-btns">
+      <button id="tr-print" class="small" style="flex:1">Print</button>
+      <button id="tr-close" class="small primary" style="flex:1">Back to Jord</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ── persistence (memory fallback everywhere) ── */
+const mem = {};
+const store = {
+  get(k, d){ try { const v = window.localStorage.getItem("jord:"+k); return v===null ? (k in mem ? mem[k] : d) : JSON.parse(v); } catch(e){ return k in mem ? mem[k] : d; } },
+  set(k, v){ mem[k]=v; try { window.localStorage.setItem("jord:"+k, JSON.stringify(v)); } catch(e){} }
+};
+
+let calm = clamp(store.get("calm", 62), 5, 100);
+let lastCheck = store.get("lastCheck", null);
+let intervalMin = store.get("interval", 60);
+let pats = store.get("pats", 0);
+let vibes = store.get("vibes", []);
+let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
+let patTimes = [];
+
+/* ── streak ── */
+(function(){
+  const today = new Date().toDateString();
+  const last = store.get("lastVisit", null);
+  let streak = store.get("streak", 1);
+  if(last && last !== today){
+    const y = new Date(); y.setDate(y.getDate()-1);
+    streak = (last === y.toDateString()) ? streak+1 : 1;
+  }
+  store.set("lastVisit", today); store.set("streak", streak);
+  document.getElementById("orbitday").textContent = "orbit day " + streak;
+})();
+
+/* ── line pools ── */
+const LINES = [
+  "You are the universe experiencing paperwork. Take five.",
+  "Unclench the jaw. Yes, that one. I saw.",
+  "Shoulders are not earrings. Lower them.",
+  "You're not stuck in the day. You are the day. Breathe anyway.",
+  "Muddy water clears when you stop stirring. Stop stirring.",
+  "This moment: also acceptable.",
+  "You can't step in the same river twice, but you can drink some water. Go drink some water.",
+  "A wave doesn't clench. Be wave-shaped for a minute.",
+  "Five minutes of nothing is still something.",
+  "The plan can wait. The breath is already here.",
+  "Nothing is required of you for the next sixty seconds. Verify.",
+  "Perfection is a rumor. Proceed as-is.",
+  "You are allowed to be a work in progress and a whole person. Simultaneously.",
+  "The obstacle is the way. Also: snacks exist.",
+  "Trying to grab the water makes it slip. Open the hand.",
+  "Your worth is not a KPI. Stand down, inspector.",
+  "Look out a window. Report nothing. Just look.",
+  "The future is not in the room. You are. Hi.",
+  "Feet on floor. Gravity is doing its job. Let it.",
+  "You have survived 100% of your worst days. Solid track record.",
+  "Notice one soft thing. Fabric counts. Cats count double.",
+  "Thoughts are weather. You are the sky. Sky doesn't file complaints.",
+  "Uncrumple the forehead. That's premium real estate.",
+  "There is nowhere to get to. You're already it.",
+  "Sip something warm slowly, like it's a whole event. It is.",
+  "Being busy is not a personality. Being here is enough.",
+  "Do less, but do it completely.",
+  "The universe has been improvising for 13.8 billion years. You can wing it too.",
+  "Stretch toward the ceiling. Tell the ceiling nothing. It knows.",
+  "Kindness audit: have you been kind to you today? Fix if not.",
+  "The to-do list is immortal. You need breaks. It doesn't.",
+  "One deep breath is a tiny vacation. Take the trip.",
+  "You can't think your way out of a feeling. But you can breathe next to it.",
+  "Relax the tongue from the roof of the mouth. Weird, right? Better, right?",
+  "Whatever it is, it will still be there after five calm minutes. So will calmer you.",
+  "Let the exhale be longer than the inhale. That's the whole trick.",
+  "Be where your feet are.",
+  "You're doing better than the inner critic reports. Its data is stale.",
+  "Water the human. The human is you. Go get water.",
+  "Somewhere a tree is just standing there, nailing it. Be the tree.",
+  "It's okay to be a slow river today.",
+  "Blink at something far away. Your eyes called. They're tired.",
+  "Life is not a problem to be solved but an experience to be had. Have some.",
+  "The wobble is part of the orbit.",
+  /* reciprocity: you shape the world, the world shapes you */
+  "The room borrows your weather. Bring better weather.",
+  "Smile at the kettle. Studies (mine) show the kettle smiles back.",
+  "Be kind to the next object you touch. Watch what it does to you.",
+  "You water the world and the world waters you. Circular plumbing.",
+  "Your sigh changes the air in the room. Make it a good one.",
+  "Notice how the room softens when you do.",
+  "Everything you do ripples outward. Ripple gently.",
+  "The mundane is just magic running at normal speed.",
+  "Wash the dish like it matters. It will start to.",
+  "You are how the universe checks in on itself. Report kindly.",
+  "Hold the door for someone. The universe keeps ledgers, loosely, in your favor.",
+  "The mug is warm because a whole chain of tiny miracles happened. You're a link in it."
+];
+
+const THOUGHTS = [
+  "I contain multitudes. Mostly rock.",
+  "Today I am mostly rotating.",
+  "What if clouds are just slow thoughts?",
+  "I love it here. Here is also me.",
+  "Somewhere, a sock is missing. I feel it.",
+  "Beauty is chaos that decided to stay a while.",
+  "I tried being a cube once. No.",
+  "The flowers come and go. I respect their hustle.",
+  "Am I the ground, or is the ground me? …Yes.",
+  "I think, therefore I orbit.",
+  "Creativity is just the universe doodling.",
+  "The rain never asks permission. Iconic.",
+  "Trying my best is my entire business model.",
+  "A butterfly landed on me once. Career highlight.",
+  "Erosion is just very slow editing.",
+  "I have no hands and I must garden. Wait. I have arms now.",
+  "Chaos is a ladder. I also have a ladder somewhere.",
+  "If you hum quietly enough, everything harmonizes.",
+  "Moss is proof that patience wins.",
+  "Being round takes constant effort. Worth it.",
+  "The horizon and I have an understanding.",
+  "Some days you're the mountain. Some days the pebble. Both fine.",
+  "I collect weather. Rare drops only.",
+  "Every seed is a tiny bet on tomorrow. I like those odds.",
+  "Gravity is just the universe giving hugs.",
+  "I remembered something beautiful but not what. Keeping the feeling.",
+  "The moon and I don't talk, but we nod.",
+  "Imperfection is texture. I am extremely textured.",
+  "Stillness is also a verb, if you do it hard enough.",
+  "New arms. Same me. Growth.",
+  "I waved at nothing earlier. It felt right.",
+  /* reciprocity + mundane wonder */
+  "When you're calm the flowers show up. When flowers show up, you calm. Suspicious. Wonderful.",
+  "If you frown at the world, it files a report. If you wave, it waves back. Usually as weather.",
+  "Everything is made of everything else. Efficient. Beautiful. Slightly chaotic.",
+  "A spoon is a tiny mirror you can eat soup with. The mundane is riddled with treasure.",
+  "I rotate, therefore the view changes. Small moves. Whole new sky.",
+  "Joy is contagious and I am patient zero.",
+  "You grow the garden. The garden grows you. Nobody's in charge. Perfect system.",
+  "Today's mundane forecast: 100% chance of small wonders. Bring attention.",
+  "The world is your mood, wearing scenery.",
+  "The observer changes the observed. I observe you fondly. You're welcome.",
+  "Toast is bread that went through something and came out better. Relatable.",
+  "Your attention is a watering can. Aim it at good things."
+];
+
+const NIGHT_THOUGHTS = [
+  "The stars clock in. I clock out. We overlap briefly.",
+  "Night shift: mostly listening.",
+  "Even planets need to power down. Consider it.",
+  "The dark isn't empty. It's just resting.",
+  "Somewhere it's morning. Not my problem yet."
+];
+
+/* ── SIT: the deeper voice ── */
+const SIT_LINES = [
+  "You don't have to earn this pause. Rest is not a reward for finishing — it's part of the work itself.",
+  "Right now, nothing is missing. The list, the noise, the shoulds — they can all wait outside for two minutes. They will. They always do.",
+  "You are not behind. There is no behind. There is only this, and you're already doing it perfectly by being here.",
+  "Whatever you carried in here — it's allowed to set itself down. You can pick it up again after. Or notice it got lighter.",
+  "You are enough. Not when the project ships, not when the grade lands, not when it's all fixed. Now. As-is. Verified.",
+  "The world isn't something happening to you. You're something the world is doing — the way a wave is something the ocean is doing. And the ocean doesn't hurry.",
+  "Listen to the room. It's been holding you this whole time without asking for anything back.",
+  "This moment is not a gap between important things. It is one of the important things.",
+  "Breathe out longer than you breathe in. Let the body remember it knows how to be safe.",
+  "Beautiful things don't try to be beautiful. They just stay long enough to be seen. Stay a moment. Be seen.",
+  "You've been doing your best with what you had in every moment so far. That's not a consolation. That's the actual truth.",
+  "The stillness isn't empty. It's full of everything you don't have to do right now."
+];
+const SIT_THANKS = [
+  "Thank you for sitting with me. The nothing was excellent. We made it together.",
+  "Thank you. Two minutes of just being — that's the rarest thing you own, and you spent it well.",
+  "Thank you for the stillness. I'll keep a copy of it here for whenever you need it back."
+];
+
+const JORD_IS = [
+  ["seeking their earthing cable",
+   "running on stored sunlight — top-ups welcome",
+   "waiting by the watering can, no pressure",
+   "practicing patience (with love)",
+   "humming quietly until you're ready to hum along",
+   "holding a calm spot open for you"],
+  ["a little unwatered — one breath would help",
+   "listening for your exhale",
+   "saving a sunbeam for you",
+   "up for a shared pause whenever you are",
+   "gently suggesting: feet on floor?",
+   "keeping the ground warm for you"],
+  ["gently orbiting",
+   "steady, like a good stone",
+   "watching clouds do their thing",
+   "open for wonder",
+   "curating today's chaos",
+   "rooting for you — literally"],
+  ["basking in the now",
+   "photosynthesizing good vibes",
+   "rooted and radiant",
+   "humming with the hum of things",
+   "in full bloom, thanks to you",
+   "at one with the everything, no big deal"]
+];
+const NIGHT_IS = [
+  "winding down with you",
+  "on night watch — softly",
+  "counting stars, losing count, starting over",
+  "keeping the quiet company",
+  "dimming the lights inside"
+];
+
+const ACCEPT_LINES = [
+  "This is the situation. Starting from here, not from 'should'.",
+  "I am allowed to be exactly this tired, this human, this unfinished.",
+  "Resisting reality is a second job. I quit.",
+  "It is what it is — and I am what I am. Both are workable.",
+  "I can accept this moment fully and still work to change the next one.",
+  "The feeling is allowed to exist. It doesn't need my permission or my panic.",
+  "Today's version of me is the only one on shift. Good enough.",
+  "I don't have to like it to stop fighting it.",
+  "Mistakes logged. Lesson filed. Case closed. Walk on.",
+  "I release the argument with what already happened."
+];
+const ENJOY_LINES = [
+  "Mission: find one thing within arm's reach that is quietly excellent. Appreciate it for 20 seconds.",
+  "Mission: eat or drink the next thing 50% slower. Full sensory telemetry.",
+  "Mission: put on one song you love. No multitasking. Just ears.",
+  "Mission: step outside or open a window. Collect one sample of sky.",
+  "Mission: text someone something nice for no strategic reason.",
+  "Mission: do absolutely nothing for 90 seconds. This is the mission. Don't optimize it.",
+  "Mission: find something that smells good. Deploy nose.",
+  "Mission: stretch like a creature that has just woken up. Sound effects encouraged.",
+  "Mission: look at one photo that makes you smile. Linger.",
+  "Mission: warm beverage protocol. Both hands on the cup. That's it. That's the protocol."
+];
+const GROUND_STEPS = [
+  ["5 · SEE","Name five things you can see.\nOrdinary things count. Especially ordinary things."],
+  ["4 · TOUCH","Notice four things you can feel.\nChair. Fabric. Air. Floor via feet."],
+  ["3 · HEAR","Catch three sounds.\nHum of the room counts. Your own breath counts."],
+  ["2 · SMELL","Find two things you can smell.\nOr two you like the memory of."],
+  ["1 · TASTE","One thing you can taste.\nOr take one slow sip of something."],
+  ["0 · HERE","You are located.\nCoordinates: here. Time: now. Status: fine."]
+];
+
+const VIBE_NOTES = [
+  "Whatever the line does, you showed up to look at it. That's the practice.",
+  "Trends are weather maps, not verdicts. You are the sky either way.",
+  "Low days water something too. You just can't see the roots from here.",
+  "The line goes up when you're kind to yourself. Funny how that works. Not a coincidence.",
+  "Data point by data point, you're learning your own seasons. That's wisdom in slow motion.",
+  "Don't chase the high days. Tend the ordinary ones. The average takes care of itself.",
+  "You shape the days and the days shape you back. Log gently, live gently.",
+  "A dip is information, not a failure. Thank it and adjust the sails."
+];
+
+const OBJECTS = [
+  {react:"oh hey! I've been looking for that.",
+   svg:`<g stroke="var(--sun)" stroke-width="2"><path d="M 0 0 h 22 M 4 0 L 11 -20 L 18 0"/><path d="M 6.5 -7 h 9" stroke="var(--ink)"/></g>`},
+  {react:"a colleague.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><path d="M 2 0 q -3 -7 3 -9 q 2 -5 7 -4 q 5 1 4 6 q 7 -1 6 4 q -1 4 -10 3 q -8 1 -10 0 Z"/><path d="M 12 -12 h 4" stroke="var(--sun)" stroke-width="2.2"/><circle cx="9.5" cy="-10.5" r=".8" fill="var(--ink)"/></g>`},
+  {react:"for me? I have arms now, but no thumbs. the gesture is everything.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><path d="M 0 -8 h 14 q 0 8 -7 8 q -7 0 -7 -8 Z"/><path d="M 14 -7 q 5 0 4 4 q -1 3 -5 2"/><path d="M 5 -12 q 2 -2 0 -4 M 9 -12 q 2 -2 0 -4" stroke="var(--water)"/></g>`},
+  {react:"prepared for weather I cannot feel. beautiful.",
+   svg:`<g stroke="var(--bloom)" stroke-width="1.8"><path d="M -10 -8 q 10 -10 20 0"/><path d="M -10 -8 q 5 -3 10 0 q 5 -3 10 0" stroke-width="1.4"/><path d="M 0 -8 v 10 q 0 3 3 3" stroke="var(--ink)"/></g>`},
+  {react:"chaos, in convenient cube form.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><rect x="-8" y="-16" width="16" height="16" rx="2"/><g fill="var(--ink)" stroke="none"><circle cx="-3" cy="-11" r="1.4"/><circle cx="3" cy="-8" r="1.4"/><circle cx="-3" cy="-5" r="1.4"/><circle cx="3" cy="-13" r="1.4"/></g></g>`},
+  {react:"godspeed, little admiral.",
+   svg:`<g stroke="var(--water)" stroke-width="1.8"><path d="M -11 -5 h 22 l -5 5 h -12 Z"/><path d="M 0 -5 v -8 l 6 8" stroke="var(--ink)"/></g>`},
+  {react:"side B is where the truth lives.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><rect x="-11" y="-13" width="22" height="13" rx="1.5"/><circle cx="-4" cy="-6.5" r="2.2"/><circle cx="4" cy="-6.5" r="2.2"/><path d="M -4 -6.5 h 8" stroke-width="1.2"/></g>`},
+  {react:"stay. no— go, be free. no— stay.",
+   svg:`<g stroke="var(--bloom)" stroke-width="1.8"><circle cx="0" cy="-16" r="7"/><path d="M 0 -9 q -2 4 1 5 q 2 3 -1 4" stroke="var(--ink)" stroke-width="1.4"/></g>`},
+  {react:"at last. a way up myself.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><path d="M -5 0 L -1 -24 M 5 0 L 9 -24"/><path d="M -4 -5 h 10 M -3 -11 h 10 M -2 -17 h 10" stroke-width="1.4"/></g>`},
+  {react:"so THIS is where they go.",
+   svg:`<g stroke="var(--leaf)" stroke-width="1.8"><path d="M -2 -18 h 8 v 10 q 0 6 -6 7 q -6 1 -7 -4 q -1 -4 5 -5 Z"/><path d="M -2 -15 h 8" stroke-width="1.4"/></g>`}
+];
+
+const FLORA = [
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -11"/><g stroke="var(--bloom)"><circle cx="0" cy="-16" r="2.6"/><circle cx="-4.5" cy="-13.5" r="2.6"/><circle cx="4.5" cy="-13.5" r="2.6"/><circle cx="-2.8" cy="-19.5" r="2.6"/><circle cx="2.8" cy="-19.5" r="2.6"/></g><circle cx="0" cy="-16" r="1.3" stroke="var(--sun)"/></g>`,
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -10"/><path d="M -4 -10 Q 0 -19 4 -10 Q 0 -13 -4 -10 Z" stroke="var(--sun)"/></g>`,
+  `<g stroke="var(--leaf)" stroke-width="1.6"><path d="M 0 0 v -9"/><path d="M 0 -6 q -6 -2 -7 -8 q 6 1 7 8 Z"/><path d="M 0 -8 q 6 -2 7 -8 q -6 1 -7 8 Z"/></g>`,
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -6"/><path d="M -7 -6 Q 0 -15 7 -6 Z" stroke="var(--bloom)"/><circle cx="-2" cy="-9" r=".7" fill="var(--ink)" stroke="none"/><circle cx="2.5" cy="-8.5" r=".7" fill="var(--ink)" stroke="none"/></g>`,
+  `<g stroke="var(--leaf)" stroke-width="1.5"><path d="M 0 0 q -3 -6 -6 -8 M 0 0 v -9 M 0 0 q 3 -6 6 -8"/></g>`,
+  `<g stroke="var(--water)" stroke-width="1.6"><path d="M 0 0 v -12" stroke="var(--ink)"/><path d="M -3.5 -12 q 3.5 -7 7 0 q -3.5 5 -7 0 Z"/></g>`
+];
+const GOLDEN_FLOWER = `<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 v -11" stroke="var(--ink)"/><circle cx="0" cy="-16" r="2.8"/><circle cx="-4.8" cy="-13.5" r="2.8"/><circle cx="4.8" cy="-13.5" r="2.8"/><circle cx="-3" cy="-20" r="2.8"/><circle cx="3" cy="-20" r="2.8"/><circle cx="0" cy="-16" r="1.2" fill="var(--sun)"/></g>`;
+
+/* ── dom ── */
+const $ = id => document.getElementById(id);
+const speech=$("speech"), jordis=$("jordis"), clock=$("clock"), toast=$("toast"),
+      modal=$("modal"), exPhase=$("ex-phase"), exBody=$("ex-body"), exCount=$("ex-count"),
+      exNext=$("ex-next"), exClose=$("ex-close"), lastEl=$("lastcheck"),
+      notifBtn=$("b-notif"), notifState=$("notifstate"), intervalSel=$("interval"),
+      thought=$("thought"), orb=$("jord"), orbbody=$("orbbody"),
+      faceflip=$("faceflip"), backface=$("backface"),
+      armL=$("arm-l"), armR=$("arm-r"),
+      floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
+      sittimer=$("sittimer"),
+      vibeslider=$("vibeslider"), vibeword=$("vibeword"),
+      trends=$("trends");
+
+const EYES = ["open","happy","closed","wide","squint","side","sparkle","flat","chaos"];
+const MOUTHS = ["smile","grin","o","flat","wavy","hmm"];
+const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function rand(a,b){return a+Math.random()*(b-a)}
+function tierOf(c){ return c>=80 ? 3 : c>=50 ? 2 : c>=25 ? 1 : 0; }
+function isNight(){ const h=new Date().getHours(); return h>=21||h<6; }
+
+function setEyes(name){ EYES.forEach(e=>{ $("e-"+e).style.display = e===name ? "" : "none"; }); }
+function setMouth(name){ MOUTHS.forEach(m=>{ $("m-"+m).style.display = m===name ? "" : "none"; }); }
+
+/* ── arms ── */
+function armAnim(which, kind){
+  if(reduceMotion) return;
+  [["l",armL],["r",armR]].forEach(([k,el])=>{
+    if(which!=="both" && which!==k) return;
+    el.classList.remove("wave","flail","yay");
+    void el.getBoundingClientRect();
+    el.classList.add(kind);
+    el.addEventListener("animationend", ()=>el.classList.remove(kind), {once:true});
+  });
+}
+setInterval(()=>{
+  if(busy || sitting || Math.random()>.4) return;
+  const r=Math.random();
+  if(r<.5) armAnim(Math.random()<.5?"l":"r","wave");
+  else if(r<.85) armAnim("both","flail");
+  else armAnim("both","yay");
+}, 16000);
+
+/* ── turnaround ── */
+function turnAround(){
+  if(busy || sitting || reduceMotion) return;
+  busy=true;
+  faceflip.classList.add("away");
+  setTimeout(()=>{
+    backface.classList.add("show");
+    $("surface").style.animationDuration="14s";
+  }, 380);
+  setTimeout(()=>{
+    backface.classList.remove("show");
+    $("surface").style.animationDuration="";
+    faceflip.classList.remove("away");
+    busy=false;
+    applyMood();
+    if(Math.random()<.4) think(pick([
+      "all clear back there.",
+      "just checking. still round.",
+      "the back of me is also me. comforting.",
+      "thought I heard a flower."
+    ]), 10000);
+  }, 380 + rand(1600,2800));
+}
+function scheduleTurns(){
+  setTimeout(()=>{
+    if(!modal.classList.contains("open") && !sitting) turnAround();
+    scheduleTurns();
+  }, rand(140,360)*1000);
+}
+scheduleTurns();
+
+/* ── mood engine ── */
+const MOODS = {
+  delighted:[["sparkle","grin"],["happy","grin"],["happy","smile"],["wide","o"]],
+  content:  [["open","smile"],["closed","smile"],["happy","smile"],["side","smile"]],
+  curious:  [["wide","o"],["side","hmm"],["open","o"],["chaos","wavy"]],
+  pensive:  [["squint","hmm"],["flat","flat"],["side","flat"],["closed","flat"]],
+  sleepy:   [["closed","smile"],["closed","flat"],["squint","flat"],["flat","hmm"]],
+  chaotic:  [["chaos","wavy"],["squint","wavy"],["wide","wavy"],["sparkle","o"]]
+};
+function pickMood(){
+  const t=tierOf(calm);
+  let pools = t===3 ? ["delighted","content","curious","chaotic"]
+            : t===2 ? ["content","curious","chaotic","pensive"]
+            : t===1 ? ["curious","pensive","content","chaotic"]
+            :         ["pensive","curious","pensive","content"];
+  if(isNight()) pools = pools.concat(["sleepy","sleepy"]);
+  return pick(MOODS[pick(pools)]);
+}
+function applyMood(){
+  if(busy || sitting) return;
+  const [e,m]=pickMood();
+  setEyes(e); setMouth(m);
+  if(!reduceMotion && Math.random()<.3){
+    orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect();
+    orbbody.classList.add("wiggling");
+  }
+}
+setInterval(applyMood, 7000 + Math.random()*6000);
+
+if(!reduceMotion){
+  setInterval(()=>{
+    if(busy || sitting) return;
+    const openish = ["e-open","e-wide","e-side"].some(id=>$(id).style.display!=="none");
+    if(openish && Math.random()<.8){
+      const prev = EYES.find(e=>$("e-"+e).style.display!=="none");
+      setEyes("closed");
+      setTimeout(()=>{ if(!busy && !sitting) setEyes(prev); },150);
+    }
+  }, 4200);
+}
+
+/* ── thoughts ── */
+let thoughtTimer=null;
+function think(text, hold){
+  if(sitting) return;
+  thought.textContent=text;
+  thought.classList.add("show");
+  clearTimeout(thoughtTimer);
+  thoughtTimer=setTimeout(()=>thought.classList.remove("show"), hold || rand(14000,22000));
+}
+function scheduleThoughts(){
+  setTimeout(()=>{
+    if(!busy && !sitting && !modal.classList.contains("open")){
+      const pool = isNight() && Math.random()<.4 ? NIGHT_THOUGHTS : THOUGHTS;
+      think(pick(pool));
+    }
+    scheduleThoughts();
+  }, rand(70,180)*1000);
+}
+scheduleThoughts();
+setTimeout(()=>think(pick(THOUGHTS)), 6000);
+
+/* ── flora ── */
+let floraCount=0;
+function spawnFlora(){
+  const cap = 2 + tierOf(calm)*2;
+  if(floraCount>=cap) return;
+  let x,y,rot=0;
+  if(Math.random()<.6){
+    const a = rand(-95,95)*Math.PI/180;
+    x = 140 + 78*Math.sin(a);
+    y = 150 - 78*Math.cos(a);
+    rot = a*180/Math.PI;
+  } else {
+    x = Math.random()<.5 ? rand(28,66) : rand(214,252);
+    y = rand(262,272);
+  }
+  const golden = Math.random()<.03;
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("class","sprite out");
+  g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rot.toFixed(1)})`);
+  g.innerHTML = golden ? GOLDEN_FLOWER : pick(FLORA);
+  floraLayer.appendChild(g);
+  floraCount++;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ g.classList.remove("out"); g.classList.add("in"); }));
+  if(golden) setTimeout(()=>think("a golden one appeared. today is auspicious.", 14000), 1800);
+  setTimeout(()=>{
+    g.classList.remove("in"); g.classList.add("out");
+    setTimeout(()=>{ g.remove(); floraCount--; }, 2000);
+  }, golden ? rand(90,150)*1000 : rand(25,90)*1000);
+}
+setInterval(()=>{ if(!busy && !sitting && Math.random()<.7) spawnFlora(); }, 9000);
+for(let i=0;i<3;i++) setTimeout(spawnFlora, 800*i);
+
+/* ── objects ── */
+let objectPresent=false;
+function spawnObject(){
+  if(objectPresent) return;
+  objectPresent=true;
+  const o = pick(OBJECTS);
+  const left = Math.random()<.5;
+  const x = left ? rand(34,62) : rand(218,246);
+  const y = rand(264,272);
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("class","drop");
+  g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+  g.style.opacity="0";
+  g.innerHTML = o.svg;
+  objLayer.appendChild(g);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ g.style.opacity="1"; }));
+  setTimeout(()=>{
+    if(!busy && !sitting){ setEyes("wide"); setMouth("o"); armAnim(left?"l":"r","wave"); }
+    think(o.react, 16000);
+    setTimeout(()=>{ if(!busy) applyMood(); }, 2600);
+  }, 900);
+  setTimeout(()=>{
+    g.style.opacity="0";
+    setTimeout(()=>{ g.remove(); objectPresent=false; }, 1200);
+  }, rand(60,160)*1000);
+}
+function scheduleObjects(){
+  setTimeout(()=>{
+    if(!busy && !sitting && !modal.classList.contains("open")) spawnObject();
+    scheduleObjects();
+  }, rand(150,420)*1000);
+}
+scheduleObjects();
+setTimeout(spawnObject, 25000);
+
+/* ── shooting stars ── */
+function shootStar(){
+  if(!isNight() || reduceMotion || sitting) return;
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("class","shooting");
+  g.setAttribute("transform",`translate(${rand(190,255)},${rand(28,60)})`);
+  g.innerHTML = `<path d="M 0 0 l 26 -14" stroke="var(--sun)" stroke-width="1.6"/><circle cx="0" cy="0" r="1.6" fill="var(--sun)"/>`;
+  meteorLayer.appendChild(g);
+  setTimeout(()=>g.remove(), 1600);
+  if(Math.random()<.5) think("make a wish. I'll hold onto it for you.", 12000);
+}
+setInterval(()=>{ if(Math.random()<.3) shootStar(); }, 200*1000);
+
+/* ── render ── */
+function render(){
+  const t=tierOf(calm);
+  $("t-water").classList.toggle("hidden", t<2);
+  $("t-zen").classList.toggle("hidden", t<3);
+  $("night").classList.toggle("hidden", !isNight());
+  if(t!==currentTier){
+    currentTier=t;
+    jordis.textContent = (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[t]);
+  }
+  lastEl.textContent = "last check-in: " + (lastCheck ? new Date(lastCheck).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "—");
+}
+setInterval(()=>{
+  if(!busy && !sitting) jordis.textContent = (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[tierOf(calm)]);
+}, 7*60*1000);
+
+function tickClock(){ clock.textContent = new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
+tickClock(); setInterval(tickClock,10000);
+setInterval(()=>{ calm=clamp(calm-1,5,100); store.set("calm",calm); if(!busy && !sitting) render(); }, 4*60*1000);
+
+/* ── speech + toast ── */
+let speechTimer=null;
+function say(text, hold=10000){
+  speech.textContent=text;
+  speech.classList.remove("quiet");
+  clearTimeout(speechTimer);
+  speechTimer=setTimeout(()=>{ speech.textContent="…"; speech.classList.add("quiet"); }, hold);
+}
+let toastTimer=null;
+function showToast(text){
+  toast.textContent=text;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toast.classList.remove("show"), 8000);
+}
+
+/* ── reward ── */
+function reward(points, line){
+  calm=clamp(calm+points,5,100);
+  lastCheck=Date.now();
+  store.set("calm",calm); store.set("lastCheck",lastCheck);
+  setEyes("sparkle"); setMouth("grin");
+  armAnim("both","yay");
+  say(line);
+  render();
+  spawnFlora();
+  setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2400);
+}
+
+/* ── SIT: the world softens, JORD speaks slowly ── */
+let sitTick=null, sitLineTimer=null;
+function startSit(){
+  if(sitting || modal.classList.contains("open")) return;
+  sitting=true;
+  document.body.classList.add("sitting");
+  thought.classList.remove("show");
+  setEyes("closed"); setMouth("smile");
+  orbbody.classList.add("breathing");
+  let t=120;
+  sittimer.textContent="2:00";
+  const linesUsed = [...SIT_LINES].sort(()=>Math.random()-.5).slice(0,5);
+  let li=0;
+  say(linesUsed[li++], 23000);
+  sitLineTimer=setInterval(()=>{
+    if(li<linesUsed.length) say(linesUsed[li++], 23000);
+  }, 24000);
+  sitTick=setInterval(()=>{
+    t--;
+    sittimer.textContent = Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
+    if(t<=0) endSit(false);
+  },1000);
+}
+function endSit(early){
+  if(!sitting) return;
+  sitting=false;
+  clearInterval(sitTick); clearInterval(sitLineTimer);
+  sitTick=sitLineTimer=null;
+  document.body.classList.remove("sitting");
+  orbbody.classList.remove("breathing");
+  if(early){
+    reward(6, "Even a little stillness counts. Thank you for some of your nothing.");
+  } else {
+    reward(14, pick(SIT_THANKS));
+  }
+  /* …and then, back to being a bit of a goof */
+  setTimeout(()=>{
+    if(!sitting && !busy) think(pick([
+      "okay. back to gently vibrating.",
+      "resuming standard whimsy operations.",
+      "I felt very round just now. Still do.",
+      "the flowers missed us. we're back, everyone."
+    ]), 12000);
+  }, 8000);
+}
+$("b-sit").addEventListener("click", ()=>{ sitting ? endSit(true) : startSit(); });
+
+/* ── vibe slider + log ── */
+function vibeWordFor(v){
+  return v<20 ? "heavy — and valid" :
+         v<40 ? "working on it" :
+         v<60 ? "steady" :
+         v<80 ? "pretty good" : "glowing";
+}
+vibeslider.addEventListener("input", ()=>{ vibeword.textContent = vibeWordFor(+vibeslider.value); });
+vibeword.textContent = vibeWordFor(+vibeslider.value);
+
+$("b-logvibe").addEventListener("click", ()=>{
+  const v=+vibeslider.value;
+  vibes.push({t:Date.now(), v});
+  if(vibes.length>800) vibes=vibes.slice(-800);
+  store.set("vibes",vibes);
+  if(v<40){
+    calm=clamp(calm+3,5,100); store.set("calm",calm);
+    setEyes("open"); setMouth("hmm");
+    say("Logged, and heard. Heavy days are allowed here. Want to breathe or sit together? No pressure — I'm not going anywhere.", 14000);
+    spawnFlora();
+    setTimeout(()=>think("planted one for you. it'll grow while you do.", 12000), 2500);
+  } else if(v<70){
+    say("Logged. Steady is underrated — steady is how mountains do it.", 11000);
+    armAnim(Math.random()<.5?"l":"r","wave");
+  } else {
+    reward(4, "Logged. A good vibe, officially on the record. Wear it loudly.");
+  }
+});
+
+/* ── trends printout ── */
+function dayKey(d){ return d.toDateString(); }
+function fmtDate(d){ return d.toLocaleDateString([], {day:"2-digit",month:"short"}); }
+
+function chartToday(){
+  const today = dayKey(new Date());
+  const pts = vibes.filter(e=>dayKey(new Date(e.t))===today)
+                   .map(e=>{ const d=new Date(e.t); return {x:d.getHours()+d.getMinutes()/60, v:e.v}; });
+  if(!pts.length) return `<div style="font-size:12px;color:var(--dim)">no telemetry yet today. the slider awaits.</div>`;
+  const X=x=>20+(x/24)*280, Y=v=>8+(100-v)*0.7;
+  let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=`<line x1="20" y1="78" x2="300" y2="78" stroke="var(--faint)" stroke-width="1"/>`;
+  [0,6,12,18,24].forEach(h=>{
+    svg+=`<text x="${X(h)}" y="92" font-size="8" fill="var(--dim)" text-anchor="middle" font-family="inherit">${String(h).padStart(2,"0")}</text>`;
+    svg+=`<line x1="${X(h)}" y1="76" x2="${X(h)}" y2="80" stroke="var(--faint)"/>`;
+  });
+  if(pts.length>1){
+    svg+=`<polyline points="${pts.map(p=>X(p.x)+","+Y(p.v)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
+  }
+  pts.forEach(p=>{ svg+=`<circle cx="${X(p.x)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
+  svg+=`</svg>`;
+  return svg;
+}
+
+function chartHistory(){
+  const days=[];
+  for(let i=13;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const key=dayKey(d);
+    const es=vibes.filter(e=>dayKey(new Date(e.t))===key);
+    days.push({d, avg: es.length ? es.reduce((s,e)=>s+e.v,0)/es.length : null});
+  }
+  if(!days.some(x=>x.avg!==null)) return `<div style="font-size:12px;color:var(--dim)">the record begins with your first log.</div>`;
+  const X=i=>24+(i/13)*272, Y=v=>8+(100-v)*0.7;
+  let svg=`<svg viewBox="0 0 320 104" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=`<line x1="20" y1="78" x2="300" y2="78" stroke="var(--faint)"/>`;
+  [25,50,75].forEach(v=>{ svg+=`<line x1="20" y1="${Y(v)}" x2="300" y2="${Y(v)}" stroke="var(--ghost)" stroke-width="1"/>`; });
+  const present = days.map((x,i)=>({...x,i})).filter(x=>x.avg!==null);
+  if(present.length>1){
+    svg+=`<polyline points="${present.map(p=>X(p.i)+","+Y(p.avg)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
+  }
+  present.forEach(p=>{ svg+=`<circle cx="${X(p.i)}" cy="${Y(p.avg)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
+  [0,6,13].forEach(i=>{
+    svg+=`<text x="${X(i)}" y="94" font-size="8" fill="var(--dim)" text-anchor="middle" font-family="inherit">${fmtDate(days[i].d)}</text>`;
+  });
+  svg+=`</svg>`;
+  return svg;
+}
+
+function trendStats(){
+  const now=Date.now(), wk=7*24*3600*1000;
+  const last7 = vibes.filter(e=>now-e.t < wk);
+  const prev7 = vibes.filter(e=>now-e.t >= wk && now-e.t < 2*wk);
+  const avg = a => a.length ? Math.round(a.reduce((s,e)=>s+e.v,0)/a.length) : null;
+  const a7=avg(last7), p7=avg(prev7);
+  let stats = `entries logged: ${vibes.length}`;
+  if(a7!==null) stats += ` · 7-day average: ${a7}/100`;
+  let note = "";
+  if(a7!==null && p7!==null){
+    const d=a7-p7;
+    note = d>5 ? `drifting upward (+${d} vs last week). whatever you're doing — the garden approves.` :
+           d<-5 ? `a heavier week (${d} vs last). be extra kind to the human. reduce load where you can. this too is weather.` :
+           `holding steady. steady is how mountains do it.`;
+  } else if(a7!==null){
+    note = "first week of telemetry. every log teaches you your own seasons.";
+  }
+  return {stats, note};
+}
+
+$("b-trends").addEventListener("click", ()=>{
+  $("tr-date").textContent = new Date().toLocaleDateString([], {weekday:"short", day:"2-digit", month:"short", year:"numeric"});
+  $("tr-today").innerHTML = chartToday();
+  $("tr-hist").innerHTML = chartHistory();
+  const {stats,note}=trendStats();
+  $("tr-stats").textContent = stats;
+  $("tr-note").textContent = note;
+  $("tr-encourage").textContent = pick(VIBE_NOTES);
+  trends.classList.add("open");
+});
+$("tr-close").addEventListener("click", ()=>trends.classList.remove("open"));
+$("tr-print").addEventListener("click", ()=>window.print());
+
+/* ── exercises (modal) ── */
+let exTimer=null;
+function openModal(){ modal.classList.add("open"); busy=true; }
+function closeModal(){
+  modal.classList.remove("open"); busy=false;
+  clearInterval(exTimer); exTimer=null;
+  render(); applyMood();
+}
+exClose.addEventListener("click", closeModal);
+
+$("b-breathe").addEventListener("click", ()=>{
+  openModal();
+  exPhase.textContent="box breathing";
+  exBody.textContent="Four sides. Four seconds each. Four rounds.\nJORD breathes with you.";
+  exCount.textContent="";
+  exNext.textContent="Begin"; exNext.style.display="";
+  exNext.onclick=()=>{
+    exNext.style.display="none";
+    const phases=[["inhale",1.07],["hold",1.07],["exhale",0.94],["hold",0.94]];
+    let round=0,p=0,t=4;
+    exBody.textContent="";
+    function setScale(s){ if(reduceMotion) return; orb.style.transition="transform 3.6s ease-in-out"; orb.style.transform=`scale(${s})`; }
+    function step(){
+      exPhase.textContent=phases[p][0]+"  ·  round "+(round+1)+"/4";
+      setScale(phases[p][1]);
+      setEyes(phases[p][0]==="exhale"?"closed":"open"); setMouth("o");
+      exCount.textContent=t;
+      exTimer=setInterval(()=>{
+        t--;
+        if(t<=0){
+          clearInterval(exTimer);
+          p++; t=4;
+          if(p>=phases.length){ p=0; round++; }
+          if(round>=4){
+            exPhase.textContent="complete"; exCount.textContent="◡";
+            exBody.textContent="Sixty-four seconds well spent.";
+            orb.style.transform="";
+            exNext.style.display=""; exNext.textContent="Done";
+            exNext.onclick=()=>{ closeModal(); reward(14, pick(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."])); };
+            return;
+          }
+          step();
+        } else exCount.textContent=t;
+      },1000);
+    }
+    step();
+  };
+});
+
+$("b-ground").addEventListener("click", ()=>{
+  openModal();
+  let i=0;
+  function show(){
+    exPhase.textContent=GROUND_STEPS[i][0];
+    exBody.textContent=GROUND_STEPS[i][1];
+    exCount.textContent="";
+    exNext.textContent = i<GROUND_STEPS.length-1 ? "Next" : "Done";
+    exNext.style.display="";
+    exNext.onclick=()=>{
+      i++;
+      if(i>=GROUND_STEPS.length){ closeModal(); reward(14, pick(["Grounded. Coordinates confirmed.","All senses reporting in. Welcome back.","Contact with reality: re-established."])); }
+      else show();
+    };
+  }
+  show();
+});
+
+$("b-accept").addEventListener("click", ()=>{
+  openModal();
+  exPhase.textContent="radical acceptance";
+  exBody.textContent=pick(ACCEPT_LINES);
+  exCount.textContent="";
+  exNext.textContent="Accepted"; exNext.style.display="";
+  exNext.onclick=()=>{ closeModal(); reward(10, pick(["Accepted as-is. No revisions required.","Reality signed off. You too.","Noted, filed, released."])); };
+});
+$("b-enjoy").addEventListener("click", ()=>{
+  openModal();
+  exPhase.textContent="tiny mission";
+  exBody.textContent=pick(ENJOY_LINES);
+  exCount.textContent="";
+  exNext.textContent="Mission complete"; exNext.style.display="";
+  exNext.onclick=()=>{ closeModal(); reward(10, pick(["Joy sample collected. Excellent field work.","Delight confirmed at source.","JORD approves of your life choices."])); };
+});
+
+/* ── reminders ── */
+function fireReminder(){
+  const line=pick(LINES);
+  if(!sitting){ say(line,15000); showToast(line); }
+  if("Notification" in window && Notification.permission==="granted" && document.hidden){
+    try{ new Notification("JORD",{body:line,tag:"jord",silent:false}); }catch(e){}
+  }
+}
+function schedule(){
+  clearInterval(reminderTimer); reminderTimer=null;
+  if(intervalMin>0) reminderTimer=setInterval(fireReminder, intervalMin*60*1000);
+}
+intervalSel.value=String(intervalMin);
+intervalSel.addEventListener("change", ()=>{
+  intervalMin=parseInt(intervalSel.value,10);
+  store.set("interval",intervalMin);
+  schedule();
+  say(intervalMin>0 ? "Reminders every "+intervalMin+" min. I'll keep watch." : "Reminders off. I'll just orbit here, being.");
+});
+schedule();
+
+function refreshNotifUI(){
+  if(!("Notification" in window)){ notifBtn.disabled=true; notifState.textContent="not supported on this browser"; return; }
+  if(Notification.permission==="granted"){
+    notifBtn.disabled=true; notifBtn.textContent="Enabled";
+    notifState.textContent="system notifications on · keep this tab open in background";
+    notifState.classList.add("on");
+  } else if(Notification.permission==="denied"){
+    notifBtn.disabled=true; notifBtn.textContent="Blocked";
+    notifState.textContent="blocked in browser settings · in-page reminders still work";
+  } else {
+    notifState.textContent="in-page only · tab must stay open for reminders";
+  }
+}
+notifBtn.addEventListener("click", ()=>{ Notification.requestPermission().then(refreshNotifUI); });
+refreshNotifUI();
+
+/* ── boot ── */
+render(); applyMood();
+setTimeout(()=>armAnim(Math.random()<.5?"l":"r","wave"), 1200);
+(function bootGreeting(){
+  const h=new Date().getHours();
+  const pool = h<6  ? ["Small hours. Just us and the quiet. I'll keep watch."] :
+               h<11 ? ["Morning. The day is unwritten and the kettle believes in you.","Good morning. Today's forecast: mostly possible."] :
+               h<17 ? ["Afternoon check: still round, still rooting for you.","Hello. The day is half-composed. Plenty of margins left."] :
+               h<21 ? ["Evening. Time to trade doing for being, gradually.","Good evening. The light gets kind around now. So can you."] :
+                      ["Late orbit. Nothing is required of you at this hour.","Night mode. The stars and I have things handled."];
+  say(pick(pool));
+})();
+
+/* tap JORD: pats, dizzy, delight */
+$("orbwrap").addEventListener("click", ()=>{
+  if(sitting){ endSit(true); return; }
+  if(busy) return;
+  pats++; store.set("pats",pats);
+  /* rapid-pat dizziness */
+  const now=Date.now();
+  patTimes.push(now);
+  patTimes = patTimes.filter(t=>now-t<3000);
+  if(patTimes.length>=5){
+    patTimes=[];
+    setEyes("chaos"); setMouth("wavy");
+    armAnim("both","flail");
+    think("whoa. okay. the world is a carousel and I love it.", 11000);
+    if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+    setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2400);
+    return;
+  }
+  setEyes("sparkle"); setMouth("grin");
+  const r=Math.random();
+  if(pats===10) think("ten pats. I am thriving.", 12000);
+  else if(pats===50) think("fifty pats. we should get matching flowers.", 12000);
+  else if(pats===100) think("one hundred pats. I have peaked. no— wait. pat 101 says otherwise.", 14000);
+  else if(r<.18) spawnObject();
+  else if(r<.3) turnAround();
+  else think(pick(THOUGHTS), 12000);
+  armAnim("both","flail");
+  if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+  setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1600);
+});
+
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
