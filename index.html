@@ -98,8 +98,34 @@
   .fluttering{animation:flutter 8s ease-in-out infinite}
   @keyframes twinkle{0%,100%{opacity:.1}50%{opacity:.85}}
   .twinkling{animation:twinkle 3.4s ease-in-out infinite}
+  @keyframes twinkleSoft{0%,100%{opacity:.04}50%{opacity:.45}}
+  .twinkling.soft{animation:twinkleSoft 5.2s ease-in-out infinite}
+  @keyframes twinkleSharp{0%,100%{opacity:.15}50%{opacity:1}}
+  .twinkling.sharp{animation:twinkleSharp 2.1s ease-in-out infinite}
   .tier{transition:opacity 1.6s ease}
   .tier.hidden{opacity:0}
+
+  /* ── drifting background clouds ── */
+  #clouds{fill:none}
+  .cloud{opacity:0}
+  @keyframes cloudDrift1{
+    0%{transform:translate(-60px,42px);opacity:0}
+    12%{opacity:.4}82%{opacity:.4}
+    100%{transform:translate(340px,42px);opacity:0}
+  }
+  @keyframes cloudDrift2{
+    0%{transform:translate(340px,66px) scale(.82);opacity:0}
+    14%{opacity:.22}84%{opacity:.22}
+    100%{transform:translate(-60px,66px) scale(.82);opacity:0}
+  }
+  @keyframes cloudDrift3{
+    0%{transform:translate(-50px,95px) scale(.65);opacity:0}
+    16%{opacity:.3}86%{opacity:.3}
+    100%{transform:translate(330px,95px) scale(.65);opacity:0}
+  }
+  .cloud1{animation:cloudDrift1 58s linear infinite}
+  .cloud2{animation:cloudDrift2 79s linear infinite 9s}
+  .cloud3{animation:cloudDrift3 68s linear infinite 24s}
 
   #arm-l,#arm-r{transition:transform .4s ease}
   @keyframes waveR{0%,100%{transform:translate(214.8px,172px) rotate(0)}18%{transform:translate(214.8px,172px) rotate(-115deg)}32%{transform:translate(214.8px,172px) rotate(-95deg)}46%{transform:translate(214.8px,172px) rotate(-120deg)}60%{transform:translate(214.8px,172px) rotate(-95deg)}74%{transform:translate(214.8px,172px) rotate(-112deg)}}
@@ -123,6 +149,34 @@
   @keyframes slowbreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
   #orbbody.breathing{transform-origin:140px 150px;animation:slowbreathe 9s ease-in-out infinite}
 
+  /* ── vibe-slider live reaction ── */
+  @keyframes orbShaky{
+    0%,100%{transform:translate(0,0) rotate(0)}
+    20%{transform:translate(-2px,1px) rotate(-1deg)}
+    40%{transform:translate(2px,-1px) rotate(1deg)}
+    60%{transform:translate(-1px,-2px) rotate(-1deg)}
+    80%{transform:translate(1px,2px) rotate(1deg)}
+  }
+  @keyframes orbShakyHard{
+    0%,100%{transform:translate(0,0) rotate(0)}
+    15%{transform:translate(-4px,2px) rotate(-2deg)}
+    30%{transform:translate(3px,-3px) rotate(2deg)}
+    45%{transform:translate(-3px,-2px) rotate(-2deg)}
+    60%{transform:translate(4px,3px) rotate(2deg)}
+    75%{transform:translate(-2px,3px) rotate(1deg)}
+    90%{transform:translate(2px,-2px) rotate(-1deg)}
+  }
+  #orbwrap.orb-shaky{animation:orbShaky .34s ease-in-out infinite}
+  #orbwrap.orb-shaky-hard{animation:orbShakyHard .2s ease-in-out infinite}
+  #orbwrap.orb-still .bob{animation-play-state:paused}
+  #orbwrap.orb-still #surface{animation-play-state:paused}
+
+  @keyframes stageGlow{
+    0%,100%{box-shadow:0 0 0 0 rgba(217,164,65,0)}
+    50%{box-shadow:0 0 24px 8px rgba(217,164,65,.22)}
+  }
+  .stage.warm{animation:stageGlow 2.6s ease-in-out infinite}
+
   @keyframes shoot{0%{opacity:0}8%{opacity:1}100%{transform:translate(-110px,60px);opacity:0}}
   .shooting{animation:shoot 1.4s ease-out forwards}
 
@@ -134,7 +188,8 @@
   @media (prefers-reduced-motion:reduce){
     .bob,#surface,.rippling,.fluttering,.twinkling,.wiggling,
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
-    #orbbody.breathing,.shooting{animation:none}
+    #orbbody.breathing,.shooting,
+    .cloud1,.cloud2,.cloud3,#orbwrap.orb-shaky,#orbwrap.orb-shaky-hard,.stage.warm{animation:none}
   }
 
   #thought{
@@ -317,7 +372,7 @@
     </div>
   </header>
 
-  <section class="stage" aria-label="JORD">
+  <section class="stage" id="stage" aria-label="JORD">
     <div id="thought" role="status"></div>
     <div id="sittimer">2:00</div>
     <div id="orbwrap">
@@ -327,9 +382,30 @@
         <g id="night" class="tier hidden" stroke="var(--ink)" stroke-width="1.5">
           <path d="M 34 40 a 11 11 0 1 0 12 14 a 8.5 8.5 0 1 1 -12 -14 Z"/>
           <path class="twinkling" d="M 250 36 v 8 M 246 40 h 8" stroke="var(--sun)"/>
-          <path class="twinkling" style="animation-delay:1.6s" d="M 226 66 v 6 M 223 69 h 6" stroke="var(--sun)"/>
+          <path class="twinkling soft" style="animation-delay:1.6s" d="M 226 66 v 6 M 223 69 h 6" stroke="var(--sun)"/>
+          <path class="twinkling sharp" style="animation-delay:.8s" d="M 70 30 v 7 M 66.5 33.5 h 7" stroke="var(--sun)"/>
+          <path class="twinkling" style="animation-delay:2.4s" d="M 190 20 v 6 M 187 23 h 6" stroke="var(--sun)"/>
+          <path class="twinkling soft" style="animation-delay:3.2s" d="M 20 90 v 6 M 17 93 h 6" stroke="var(--sun)"/>
         </g>
         <g id="meteor"></g>
+
+        <g id="clouds" stroke="var(--faint)" stroke-width="1.3">
+          <g class="cloud cloud1">
+            <ellipse cx="0" cy="0" rx="17" ry="7"/>
+            <ellipse cx="-12" cy="3" rx="10" ry="5"/>
+            <ellipse cx="12" cy="3" rx="10" ry="5"/>
+          </g>
+          <g class="cloud cloud2">
+            <ellipse cx="0" cy="0" rx="14" ry="6"/>
+            <ellipse cx="-10" cy="2" rx="8" ry="4"/>
+            <ellipse cx="10" cy="2" rx="8" ry="4"/>
+          </g>
+          <g class="cloud cloud3">
+            <ellipse cx="0" cy="0" rx="11" ry="5"/>
+            <ellipse cx="-8" cy="2" rx="6.5" ry="3.4"/>
+            <ellipse cx="8" cy="2" rx="6.5" ry="3.4"/>
+          </g>
+        </g>
 
         <g id="t-water" class="tier hidden" stroke="var(--water)" stroke-width="1.5">
           <ellipse class="rippling"    cx="140" cy="272" rx="66" ry="9"/>
@@ -432,8 +508,10 @@
           </g>
           <g stroke="var(--sun)" stroke-width="1.6">
             <path class="twinkling" d="M 50 84 v 10 M 45 89 h 10"/>
-            <path class="twinkling" style="animation-delay:1.3s" d="M 240 158 v 8 M 236 162 h 8"/>
-            <path class="twinkling" style="animation-delay:2.1s" d="M 42 200 v 8 M 38 204 h 8"/>
+            <path class="twinkling soft" style="animation-delay:1.3s" d="M 240 158 v 8 M 236 162 h 8"/>
+            <path class="twinkling sharp" style="animation-delay:2.1s" d="M 42 200 v 8 M 38 204 h 8"/>
+            <path class="twinkling" style="animation-delay:.6s" d="M 250 210 v 7 M 246.5 213.5 h 7"/>
+            <path class="twinkling soft" style="animation-delay:2.8s" d="M 30 50 v 7 M 26.5 53.5 h 7"/>
           </g>
         </g>
       </svg>
@@ -458,7 +536,7 @@
       <button id="b-trends" class="icon-btn" aria-label="Trends" title="Trends">▤</button>
     </div>
     <input type="range" id="vibeslider" min="0" max="100" value="60" aria-label="How's the vibe right now">
-    <div class="row scalelabels"><span>let's work on it</span><span>good vibe</span></div>
+    <div class="row scalelabels"><span>let's work on it</span><span>jangly vibes</span></div>
   </section>
 
   <footer>
@@ -998,7 +1076,12 @@ const VIBE_NOTES = [
   "Data point by data point, you're learning your own seasons. That's wisdom in slow motion.",
   "Don't chase the high days. Tend the ordinary ones. The average takes care of itself.",
   "You shape the days and the days shape you back. Log gently, live gently.",
-  "A dip is information, not a failure. Thank it and adjust the sails."
+  "A dip is information, not a failure. Thank it and adjust the sails.",
+  "Middle isn't mediocre. Middle is where the roots are.",
+  "Too high, too low — both are just visiting. Center is home base.",
+  "Big sparkly days are lovely. Presence doesn't need fireworks to count.",
+  "The sweet spot band isn't a ceiling. It's just where things don't wobble.",
+  "Steady looks boring on a graph and feels like gold in a body."
 ];
 
 const OBJECTS = [
@@ -1044,7 +1127,7 @@ const speech=$("speech"), jordis=$("jordis"), clock=$("clock"), toast=$("toast")
       faceflip=$("faceflip"), backface=$("backface"),
       armL=$("arm-l"), armR=$("arm-r"),
       floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
-      sittimer=$("sittimer"),
+      sittimer=$("sittimer"), orbwrap=$("orbwrap"), stageEl=$("stage"),
       vibeslider=$("vibeslider"), vibeword=$("vibeword"),
       trends=$("trends"), settings=$("settings");
 
@@ -1214,9 +1297,10 @@ function spawnObject(){
   const left = Math.random()<.5;
   const x = left ? rand(34,62) : rand(218,246);
   const y = rand(264,272);
+  const scale = rand(.62,1.65);
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
   g.setAttribute("class","drop");
-  g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+  g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${scale.toFixed(2)})`);
   g.style.opacity="0";
   g.innerHTML = o.svg;
   objLayer.appendChild(g);
@@ -1349,38 +1433,102 @@ function endSit(early){
 }
 $("b-sit").addEventListener("click", ()=>{ sitting ? endSit(true) : startSit(); });
 
-/* ── vibe slider + log ── */
-function vibeWordFor(v){
-  return v<20 ? "heavy — and valid" :
-         v<40 ? "working on it" :
-         v<60 ? "steady" :
-         v<80 ? "pretty good" : "glowing";
+/* ── vibe slider + log ──
+   the sweet spot is the middle, not the ceiling — the bands below reward
+   being centered, and give the "too good" end its own levels of gentle grounding. */
+const VIBE_MID_LO=32, VIBE_MID_HI=68;
+const VIBE_BANDS = [
+  {max:16,  words:["heavy — and valid","running on empty, kindly","in the trenches today","low tide, temporarily","finding it heavy today"]},
+  {max:31,  words:["working on it","getting there, slowly","under construction","climbing out, gently","finding your feet"]},
+  {max:68,  words:["steady","right in the pocket","nicely centered","sweet spot","comfortably you"]},
+  {max:83,  words:["pretty good","riding a nice wave","feeling the glow","good, and grounded","warm, in a good way"]},
+  {max:93,  words:["buzzing","a little too electric","wired and dialed up","sparkling rather a lot","zooming somewhat"]},
+  {max:100, words:["supernova","full send","meteor-shower energy","orbit-breaking good","off the charts, wow"]}
+];
+function bandIndexFor(v){ return VIBE_BANDS.findIndex(b=>v<=b.max); }
+
+let vibeBandIdx=-1;
+function updateVibeWord(v, force){
+  const idx=bandIndexFor(v);
+  if(idx!==vibeBandIdx || force){
+    vibeBandIdx=idx;
+    vibeword.textContent = pick(VIBE_BANDS[idx].words);
+  }
 }
-vibeslider.addEventListener("input", ()=>{ vibeword.textContent = vibeWordFor(+vibeslider.value); });
-vibeword.textContent = vibeWordFor(+vibeslider.value);
+let vibeStillTimer=null;
+function reactToVibePreview(v){
+  if(reduceMotion) return;
+  clearTimeout(vibeStillTimer);
+  const buzzingFloor = VIBE_BANDS[3].max+1; /* first value past "pretty good" */
+  if(v>=buzzingFloor){
+    orbwrap.classList.remove("orb-still");
+    stageEl.classList.remove("warm");
+    const hard = v > VIBE_BANDS[4].max;
+    orbwrap.classList.toggle("orb-shaky-hard", hard);
+    orbwrap.classList.toggle("orb-shaky", !hard);
+  } else if(v<=VIBE_BANDS[0].max){
+    orbwrap.classList.remove("orb-shaky","orb-shaky-hard");
+    stageEl.classList.remove("warm");
+    orbwrap.classList.add("orb-still");
+    vibeStillTimer=setTimeout(()=>orbwrap.classList.remove("orb-still"), 900);
+  } else if(v>=VIBE_MID_LO && v<=VIBE_MID_HI){
+    orbwrap.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
+    stageEl.classList.add("warm");
+  } else {
+    orbwrap.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
+    stageEl.classList.remove("warm");
+  }
+}
+vibeslider.addEventListener("input", ()=>{
+  const v=+vibeslider.value;
+  updateVibeWord(v);
+  reactToVibePreview(v);
+});
+updateVibeWord(+vibeslider.value, true);
+reactToVibePreview(+vibeslider.value);
 
 $("b-logvibe").addEventListener("click", ()=>{
   const v=+vibeslider.value;
   vibes.push({t:Date.now(), v});
   if(vibes.length>800) vibes=vibes.slice(-800);
   store.set("vibes",vibes);
-  if(v<40){
+  const idx=bandIndexFor(v);
+  if(idx===0){
     calm=clamp(calm+3,5,100); store.set("calm",calm);
     setEyes("open"); setMouth("hmm");
     say("Logged, and heard. Heavy days are allowed here. Want to breathe or sit together? No pressure — I'm not going anywhere.", 14000);
     spawnFlora();
     setTimeout(()=>think("planted one for you. it'll grow while you do.", 12000), 2500);
-  } else if(v<70){
-    say("Logged. Steady is underrated — steady is how mountains do it.", 11000);
+  } else if(idx===1){
+    say(pick(["Logged. Every step counts, even the wobbly ones.","Logged. Working on it still counts as doing it."]), 12000);
     armAnim(Math.random()<.5?"l":"r","wave");
+  } else if(idx===2){
+    reward(6, pick([
+      "Logged. Right in the sweet spot — this is the good stuff.",
+      "Logged. Steady is the whole goal, and you're there.",
+      "Logged. Nicely centered. This is what balance feels like."
+    ]));
+  } else if(idx===3){
+    say(pick(["Logged. Feeling good — enjoy it, no need to chase more.","Logged. A good day, comfortably so."]), 11000);
+    armAnim(Math.random()<.5?"l":"r","wave");
+  } else if(idx===4){
+    setEyes("wide"); setMouth("o");
+    say("Logged. That's a lot of sparkle today — want to ground some of that energy with me for a second?", 14000);
   } else {
-    reward(4, "Logged. A good vibe, officially on the record. Wear it loudly.");
+    setEyes("chaos"); setMouth("wavy");
+    say("Logged. Whew, full send. Big feelings deserve a landing too — sit with me for two minutes?", 15000);
   }
 });
 
 /* ── trends printout ── */
 function dayKey(d){ return d.toDateString(); }
 function fmtDate(d){ return d.toLocaleDateString([], {day:"2-digit",month:"short"}); }
+
+function midBand(Y,x1,x2){
+  const yTop=Y(VIBE_MID_HI), yBot=Y(VIBE_MID_LO);
+  return `<rect x="${x1}" y="${yTop.toFixed(1)}" width="${x2-x1}" height="${(yBot-yTop).toFixed(1)}" fill="var(--leaf)" opacity=".12"/>`
+       + `<text x="${x1+3}" y="${(yTop+9).toFixed(1)}" font-size="6.5" fill="var(--leaf)" font-family="inherit" opacity=".85">sweet spot</text>`;
+}
 
 function chartToday(){
   const today = dayKey(new Date());
@@ -1389,6 +1537,7 @@ function chartToday(){
   if(!pts.length) return `<div style="font-size:12px;color:var(--dim)">no telemetry yet today. the slider awaits.</div>`;
   const X=x=>20+(x/24)*280, Y=v=>8+(100-v)*0.7;
   let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=midBand(Y,20,300);
   svg+=`<line x1="20" y1="78" x2="300" y2="78" stroke="var(--faint)" stroke-width="1"/>`;
   [0,6,12,18,24].forEach(h=>{
     svg+=`<text x="${X(h)}" y="92" font-size="8" fill="var(--dim)" text-anchor="middle" font-family="inherit">${String(h).padStart(2,"0")}</text>`;
@@ -1413,6 +1562,7 @@ function chartHistory(){
   if(!days.some(x=>x.avg!==null)) return `<div style="font-size:12px;color:var(--dim)">the record begins with your first log.</div>`;
   const X=i=>24+(i/13)*272, Y=v=>8+(100-v)*0.7;
   let svg=`<svg viewBox="0 0 320 104" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=midBand(Y,20,300);
   svg+=`<line x1="20" y1="78" x2="300" y2="78" stroke="var(--faint)"/>`;
   [25,50,75].forEach(v=>{ svg+=`<line x1="20" y1="${Y(v)}" x2="300" y2="${Y(v)}" stroke="var(--ghost)" stroke-width="1"/>`; });
   const present = days.map((x,i)=>({...x,i})).filter(x=>x.avg!==null);
@@ -1436,12 +1586,20 @@ function trendStats(){
   let stats = `entries logged: ${vibes.length}`;
   if(a7!==null) stats += ` · 7-day average: ${a7}/100`;
   let note = "";
-  if(a7!==null && p7!==null){
-    const d=a7-p7;
-    note = d>5 ? `drifting upward (+${d} vs last week). whatever you're doing — the garden approves.` :
-           d<-5 ? `a heavier week (${d} vs last). be extra kind to the human. reduce load where you can. this too is weather.` :
-           `holding steady. steady is how mountains do it.`;
-  } else if(a7!==null){
+  if(a7!==null){
+    const dist=Math.abs(a7-50);
+    if(p7!==null){
+      const pdist=Math.abs(p7-50);
+      if(dist < pdist-4) note = `drifting back toward center (${p7} → ${a7} avg). nicely balanced.`;
+      else if(dist > pdist+4) note = a7>50 ? `running a bit hot this week (${a7} avg vs ${p7}). big energy — sustainable beats spectacular.`
+                                          : `a heavier week (${a7} avg vs ${p7}). be extra kind to the human. this too is weather.`;
+      else note = dist<10 ? `holding steady near center, around ${a7}. steady is how mountains do it.` : `holding a similar pattern to last week, around ${a7}.`;
+    } else {
+      note = dist<10 ? `nicely centered this week, around ${a7}. that's the sweet spot.` :
+             a7>50 ? `running a little high this week (${a7} avg). big feelings — pace yourself kindly.` :
+                     `a heavier week (${a7} avg). be gentle with yourself.`;
+    }
+  } else {
     note = "first week of telemetry. every log teaches you your own seasons.";
   }
   return {stats, note};
