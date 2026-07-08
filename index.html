@@ -86,7 +86,7 @@
     pointer-events:none;user-select:none;
   }
   body.sitting #sittimer{opacity:1}
-  #orbwrap{position:relative;z-index:1}
+  #orbwrap{position:relative;z-index:1;transition:transform .5s ease, opacity .5s ease}
   #speech{position:relative;z-index:1}
 
   /* ── stage ── */
@@ -186,6 +186,11 @@
   }
   #orbwrap.orb-shaky{animation:orbShaky .34s ease-in-out infinite}
   #orbwrap.orb-shaky-hard{animation:orbShakyHard .2s ease-in-out infinite}
+  @keyframes orbDeflate{
+    0%{transform:scale(1,1) translateY(0);opacity:1}
+    100%{transform:scale(1.045,0.86) translateY(6px);opacity:.8}
+  }
+  #orbwrap.orb-still{animation:orbDeflate .7s ease-out forwards}
   #orbwrap.orb-still .bob{animation-play-state:paused}
   #orbwrap.orb-still #surface{animation-play-state:paused}
 
@@ -222,7 +227,7 @@
     .obj-floaty,.obj-shimmer,
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
     #orbbody.breathing,.shooting,
-    .cloud1,.cloud2,.cloud3,#orbwrap.orb-shaky,#orbwrap.orb-shaky-hard,.stage.warm{animation:none}
+    .cloud1,.cloud2,.cloud3,#orbwrap.orb-shaky,#orbwrap.orb-shaky-hard,#orbwrap.orb-still,.stage.warm{animation:none}
   }
 
   #thought{
@@ -1579,29 +1584,27 @@ function updateVibeWord(v, force){
     vibeword.textContent = pick(VIBE_BANDS[idx].words);
   }
 }
-let vibeStillTimer=null;
+/* live reactions are a brief flourish, not a sustained state — they clear
+   themselves out a couple seconds after the slider settles */
+let vibeReactTimer=null;
 function reactToVibePreview(v){
   if(reduceMotion) return;
-  clearTimeout(vibeStillTimer);
+  clearTimeout(vibeReactTimer);
+  orbwrap.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
+  stageEl.classList.remove("warm");
   const buzzingFloor = VIBE_BANDS[3].max+1; /* first value past "pretty good" */
   if(v>=buzzingFloor){
-    orbwrap.classList.remove("orb-still");
-    stageEl.classList.remove("warm");
     const hard = v > VIBE_BANDS[4].max;
-    orbwrap.classList.toggle("orb-shaky-hard", hard);
-    orbwrap.classList.toggle("orb-shaky", !hard);
+    orbwrap.classList.add(hard ? "orb-shaky-hard" : "orb-shaky");
   } else if(v<=VIBE_BANDS[0].max){
-    orbwrap.classList.remove("orb-shaky","orb-shaky-hard");
-    stageEl.classList.remove("warm");
     orbwrap.classList.add("orb-still");
-    vibeStillTimer=setTimeout(()=>orbwrap.classList.remove("orb-still"), 900);
   } else if(v>=VIBE_MID_LO && v<=VIBE_MID_HI){
-    orbwrap.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
     stageEl.classList.add("warm");
-  } else {
+  }
+  vibeReactTimer=setTimeout(()=>{
     orbwrap.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
     stageEl.classList.remove("warm");
-  }
+  }, 2200);
 }
 vibeslider.addEventListener("input", ()=>{
   const v=+vibeslider.value;
