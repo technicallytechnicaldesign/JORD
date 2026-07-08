@@ -316,6 +316,7 @@
   }
   select:focus-visible{outline:2px solid var(--leaf)}
   #notifstate{font-size:10px;color:var(--dim);letter-spacing:.06em}
+  input[type=checkbox]{accent-color:var(--leaf);width:16px;height:16px}
   #notifstate.on{color:var(--leaf)}
 
   footer{
@@ -631,6 +632,10 @@
       <h2>JORD · VIBE TELEMETRY</h2>
       <span class="label" id="tr-date"></span>
     </div>
+    <label class="row" style="cursor:pointer">
+      <span class="label">mission markers on charts</span>
+      <input type="checkbox" id="missiontoggle" checked>
+    </label>
     <div class="tr-card">
       <h3>Today · by hour</h3>
       <div id="tr-today"></div>
@@ -671,8 +676,17 @@ let lastCheck = store.get("lastCheck", null);
 let intervalMin = store.get("interval", 60);
 let pats = store.get("pats", 0);
 let vibes = store.get("vibes", []);
+let missions = store.get("missions", []);
+let showMissions = store.get("showMissions", true);
 let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
 let patTimes = [];
+
+const MISSION_ICON = {breathe:"💨",ground:"📍",accept:"🤝",enjoy:"✨",sit:"🧘"};
+function logMission(type){
+  missions.push({t:Date.now(), type});
+  if(missions.length>1000) missions=missions.slice(-1000);
+  store.set("missions", missions);
+}
 
 /* ── streak ── */
 (function(){
@@ -1525,6 +1539,7 @@ function endSit(early){
   sitTick=sitLineTimer=null;
   document.body.classList.remove("sitting");
   orbbody.classList.remove("breathing");
+  logMission("sit");
   if(early){
     reward(6, "Even a little stillness counts. Thank you for some of your nothing.");
   } else {
@@ -1643,7 +1658,8 @@ function chartToday(){
   const today = dayKey(new Date());
   const pts = vibes.filter(e=>dayKey(new Date(e.t))===today)
                    .map(e=>{ const d=new Date(e.t); return {x:d.getHours()+d.getMinutes()/60, v:e.v}; });
-  if(!pts.length) return `<div style="font-size:12px;color:var(--dim)">no telemetry yet today. the slider awaits.</div>`;
+  const todaysMissions = missions.filter(m=>dayKey(new Date(m.t))===today);
+  if(!pts.length && !(showMissions && todaysMissions.length)) return `<div style="font-size:12px;color:var(--dim)">no telemetry yet today. the slider awaits.</div>`;
   const X=x=>20+(x/24)*280, Y=v=>8+(100-v)*0.7;
   let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
   svg+=midBand(Y,20,300);
@@ -1656,6 +1672,12 @@ function chartToday(){
     svg+=`<polyline points="${pts.map(p=>X(p.x)+","+Y(p.v)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
   }
   pts.forEach(p=>{ svg+=`<circle cx="${X(p.x)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
+  if(showMissions){
+    todaysMissions.forEach(m=>{
+      const d=new Date(m.t); const hr=d.getHours()+d.getMinutes()/60;
+      svg+=`<text x="${X(hr)}" y="18" font-size="10" text-anchor="middle" font-family="inherit">${MISSION_ICON[m.type]||"•"}</text>`;
+    });
+  }
   svg+=`</svg>`;
   return svg;
 }
@@ -1668,7 +1690,8 @@ function chartHistory(){
     const es=vibes.filter(e=>dayKey(new Date(e.t))===key);
     days.push({d, avg: es.length ? es.reduce((s,e)=>s+e.v,0)/es.length : null});
   }
-  if(!days.some(x=>x.avg!==null)) return `<div style="font-size:12px;color:var(--dim)">the record begins with your first log.</div>`;
+  const hasMissionsInRange = showMissions && days.some(day=>missions.some(m=>dayKey(new Date(m.t))===dayKey(day.d)));
+  if(!days.some(x=>x.avg!==null) && !hasMissionsInRange) return `<div style="font-size:12px;color:var(--dim)">the record begins with your first log.</div>`;
   const X=i=>24+(i/13)*272, Y=v=>8+(100-v)*0.7;
   let svg=`<svg viewBox="0 0 320 104" xmlns="http://www.w3.org/2000/svg">`;
   svg+=midBand(Y,20,300);
@@ -1679,6 +1702,16 @@ function chartHistory(){
     svg+=`<polyline points="${present.map(p=>X(p.i)+","+Y(p.avg)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
   }
   present.forEach(p=>{ svg+=`<circle cx="${X(p.i)}" cy="${Y(p.avg)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
+  if(showMissions){
+    days.forEach((day,i)=>{
+      const key=dayKey(day.d);
+      const types=[...new Set(missions.filter(m=>dayKey(new Date(m.t))===key).map(m=>m.type))];
+      types.forEach((t,ti)=>{
+        const dx=(ti-(types.length-1)/2)*9;
+        svg+=`<text x="${(X(i)+dx).toFixed(1)}" y="16" font-size="9" text-anchor="middle" font-family="inherit">${MISSION_ICON[t]||"•"}</text>`;
+      });
+    });
+  }
   [0,6,13].forEach(i=>{
     svg+=`<text x="${X(i)}" y="94" font-size="8" fill="var(--dim)" text-anchor="middle" font-family="inherit">${fmtDate(days[i].d)}</text>`;
   });
@@ -1714,10 +1747,13 @@ function trendStats(){
   return {stats, note};
 }
 
-$("b-trends").addEventListener("click", ()=>{
-  $("tr-date").textContent = new Date().toLocaleDateString([], {weekday:"short", day:"2-digit", month:"short", year:"numeric"});
+function renderCharts(){
   $("tr-today").innerHTML = chartToday();
   $("tr-hist").innerHTML = chartHistory();
+}
+$("b-trends").addEventListener("click", ()=>{
+  $("tr-date").textContent = new Date().toLocaleDateString([], {weekday:"short", day:"2-digit", month:"short", year:"numeric"});
+  renderCharts();
   const {stats,note}=trendStats();
   $("tr-stats").textContent = stats;
   $("tr-note").textContent = note;
@@ -1726,6 +1762,12 @@ $("b-trends").addEventListener("click", ()=>{
 });
 $("tr-close").addEventListener("click", ()=>trends.classList.remove("open"));
 $("tr-print").addEventListener("click", ()=>window.print());
+$("missiontoggle").checked = showMissions;
+$("missiontoggle").addEventListener("change", ()=>{
+  showMissions = $("missiontoggle").checked;
+  store.set("showMissions", showMissions);
+  renderCharts();
+});
 
 /* ── exercises (modal) ── */
 let exTimer=null;
@@ -1765,7 +1807,7 @@ $("b-breathe").addEventListener("click", ()=>{
             exBody.textContent="Sixty-four seconds well spent.";
             orb.style.transform="";
             exNext.style.display=""; exNext.textContent="Done";
-            exNext.onclick=()=>{ closeModal(); reward(14, pick(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."])); };
+            exNext.onclick=()=>{ closeModal(); logMission("breathe"); reward(14, pick(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."])); };
             return;
           }
           step();
@@ -1787,7 +1829,7 @@ $("b-ground").addEventListener("click", ()=>{
     exNext.style.display="";
     exNext.onclick=()=>{
       i++;
-      if(i>=GROUND_STEPS.length){ closeModal(); reward(14, pick(["Grounded. Coordinates confirmed.","All senses reporting in. Welcome back.","Contact with reality: re-established."])); }
+      if(i>=GROUND_STEPS.length){ closeModal(); logMission("ground"); reward(14, pick(["Grounded. Coordinates confirmed.","All senses reporting in. Welcome back.","Contact with reality: re-established."])); }
       else show();
     };
   }
@@ -1800,7 +1842,7 @@ $("b-accept").addEventListener("click", ()=>{
   exBody.textContent=pick(ACCEPT_LINES);
   exCount.textContent="";
   exNext.textContent="Accepted"; exNext.style.display="";
-  exNext.onclick=()=>{ closeModal(); reward(10, pick(["Accepted as-is. No revisions required.","Reality signed off. You too.","Noted, filed, released."])); };
+  exNext.onclick=()=>{ closeModal(); logMission("accept"); reward(10, pick(["Accepted as-is. No revisions required.","Reality signed off. You too.","Noted, filed, released."])); };
 });
 $("b-enjoy").addEventListener("click", ()=>{
   openModal();
@@ -1808,7 +1850,7 @@ $("b-enjoy").addEventListener("click", ()=>{
   exBody.textContent=pick(ENJOY_LINES);
   exCount.textContent="";
   exNext.textContent="Mission complete"; exNext.style.display="";
-  exNext.onclick=()=>{ closeModal(); reward(10, pick(["Joy sample collected. Excellent field work.","Delight confirmed at source.","JORD approves of your life choices."])); };
+  exNext.onclick=()=>{ closeModal(); logMission("enjoy"); reward(10, pick(["Joy sample collected. Excellent field work.","Delight confirmed at source.","JORD approves of your life choices."])); };
 });
 
 /* ── reminders ── */
