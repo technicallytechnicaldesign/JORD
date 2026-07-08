@@ -30,21 +30,33 @@
     background:var(--paper);color:var(--ink);
     font-family:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono',Menlo,Consolas,monospace;
     font-size:14px;line-height:1.55;
-    display:flex;justify-content:center;padding:14px;
+    display:flex;justify-content:center;padding:8px;
     -webkit-tap-highlight-color:transparent;
   }
-  .unit{width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px}
+  .unit{width:100%;max-width:440px;display:flex;flex-direction:column;gap:8px}
 
-  header{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px}
+  header{display:flex;justify-content:space-between;align-items:center;padding:0 2px}
   header h1{font-size:14px;font-weight:600;letter-spacing:.24em}
   header h1 .rev{color:var(--dim);font-weight:400;letter-spacing:.06em;font-size:11px}
   #clock{font-size:11px;color:var(--dim);letter-spacing:.08em}
   .label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .hdr-right{display:flex;align-items:center;gap:8px}
+  .icon-btn{
+    font:inherit;color:var(--ink);background:var(--panel);
+    border:1.5px solid var(--ink);border-radius:8px;
+    width:28px;height:28px;padding:0;min-height:0;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:13px;line-height:1;
+    transition:transform .1s ease, box-shadow .15s ease;
+  }
+  .icon-btn:hover{box-shadow:2px 2px 0 var(--leaf)}
+  .icon-btn:active{transform:translate(1px,1px)}
+  .icon-btn:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
 
   /* ── sitting: the world softens ── */
-  header,.status,.actions,.reminders,footer,#thought{transition:opacity 1.4s ease}
-  body.sitting header, body.sitting .status, body.sitting .actions,
-  body.sitting .reminders, body.sitting footer{opacity:.05;pointer-events:none}
+  header,.statusline,.actions,.vibes,footer,#thought{transition:opacity 1.4s ease}
+  body.sitting header, body.sitting .statusline, body.sitting .actions,
+  body.sitting .vibes, body.sitting footer{opacity:.05;pointer-events:none}
   body.sitting #thought{opacity:0 !important}
   body.sitting .stage{border-color:var(--ghost)}
   #sittimer{
@@ -65,7 +77,7 @@
     background:var(--panel);
     border:1.5px solid var(--ink);
     border-radius:12px;
-    padding:6px 6px 8px;
+    padding:4px 4px 4px;
     text-align:center;
     transition:border-color 1.4s ease;
   }
@@ -146,23 +158,23 @@
   #thought::before{width:5px;height:5px;right:-19px;bottom:-14px}
 
   #speech{
-    min-height:3.4em;
+    min-height:2.6em;
     display:flex;align-items:center;justify-content:center;
-    padding:8px 6px 0;margin-top:2px;
+    padding:6px 6px 0;margin-top:2px;
     border-top:1px dashed var(--faint);
     font-size:13px;transition:opacity .6s ease;
   }
   #speech.quiet{opacity:.35}
   body.sitting #speech{font-size:14px;border-top-color:var(--ghost)}
 
-  .status{
-    background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
-    padding:10px 14px;display:flex;align-items:baseline;gap:10px;
+  .statusline{
+    padding:4px 4px 2px;text-align:center;
+    display:flex;justify-content:center;align-items:baseline;gap:6px;flex-wrap:wrap;
   }
-  .status .label{white-space:nowrap;color:var(--ink)}
-  #jordis{font-size:13px}
+  .statusline .label{color:var(--dim)}
+  #jordis{font-size:11px;color:var(--ink)}
 
-  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .actions{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
   button{
     font:inherit;color:var(--ink);background:var(--panel);
     border:1.5px solid var(--ink);border-radius:10px;
@@ -171,22 +183,25 @@
     transition:transform .1s ease, box-shadow .15s ease;
     box-shadow:2px 2px 0 var(--faint);
   }
-  button .sub{display:block;color:var(--dim);font-size:10px;letter-spacing:.05em;text-transform:none;margin-top:2px}
+  .actions button{
+    padding:8px 3px;min-height:50px;font-size:9px;letter-spacing:.03em;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  }
+  .actions button .icon{font-size:16px;line-height:1}
   button:hover{box-shadow:3px 3px 0 var(--leaf)}
   button:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--faint)}
   button:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
   button:disabled{opacity:.45;cursor:default;box-shadow:none}
   button.primary{color:var(--leaf)}
-  button.wide{grid-column:1/-1}
   button.small{min-height:42px;padding:8px 12px}
 
   /* ── vibe slider ── */
   .vibes{
     background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
-    padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:6px;
   }
   .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-  #vibeword{font-size:12px;color:var(--leaf)}
+  #vibeword{font-size:12px;color:var(--leaf);flex:1}
   input[type=range]{
     -webkit-appearance:none;appearance:none;
     width:100%;height:24px;background:transparent;cursor:pointer;
@@ -206,10 +221,6 @@
   input[type=range]:focus-visible{outline:2px solid var(--leaf);outline-offset:4px}
   .scalelabels{font-size:10px;color:var(--dim);letter-spacing:.06em}
 
-  .reminders{
-    background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
-    padding:12px 14px;display:flex;flex-direction:column;gap:10px;
-  }
   select{
     font:inherit;font-size:12px;color:var(--ink);
     background:var(--paper);border:1.5px solid var(--ink);border-radius:8px;
@@ -221,8 +232,26 @@
 
   footer{
     font-size:10px;color:var(--dim);letter-spacing:.04em;
-    padding:2px 4px 8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;
+    padding:2px 4px 2px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;
   }
+
+  /* ── settings ── */
+  #settings{
+    position:fixed;inset:0;background:rgba(247,248,245,.94);
+    display:none;align-items:center;justify-content:center;padding:16px;z-index:25;
+  }
+  #settings.open{display:flex}
+  .settings-card{
+    width:100%;max-width:380px;
+    border:1.5px solid var(--ink);border-radius:14px;background:var(--panel);
+    padding:18px;display:flex;flex-direction:column;gap:12px;
+    box-shadow:4px 4px 0 var(--faint);
+  }
+  .settings-head{
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1.5px solid var(--ink);padding-bottom:8px;
+  }
+  .settings-head .label{font-size:12px;letter-spacing:.2em}
 
   #toast{
     position:fixed;left:50%;bottom:24px;transform:translate(-50%,150%);
@@ -282,7 +311,10 @@
 
   <header>
     <h1>JORD <span class="rev">· grounding companion · rev E</span></h1>
-    <span id="clock">--:--</span>
+    <div class="hdr-right">
+      <span id="clock">--:--</span>
+      <button id="b-settings" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
+    </div>
   </header>
 
   <section class="stage" aria-label="JORD">
@@ -407,35 +439,40 @@
       </svg>
     </div>
     <div id="speech" class="quiet">…</div>
-  </section>
-
-  <section class="status" aria-label="JORD's state">
-    <span class="label">Jord is</span>
-    <span id="jordis">arriving…</span>
+    <div class="statusline"><span class="label">jord is</span><span id="jordis">arriving…</span></div>
   </section>
 
   <section class="actions" aria-label="Check-in actions">
-    <button id="b-breathe">Breathe<span class="sub">box · 4×4s</span></button>
-    <button id="b-ground">Ground<span class="sub">5-4-3-2-1</span></button>
-    <button id="b-accept">Accept<span class="sub">radical, as-is</span></button>
-    <button id="b-enjoy">Enjoy<span class="sub">tiny mission</span></button>
-    <button id="b-sit" class="wide">Sit with Jord<span class="sub">two minutes of nothing · together</span></button>
+    <button id="b-breathe"><span class="icon">∿</span>Breathe</button>
+    <button id="b-ground"><span class="icon">▽</span>Ground</button>
+    <button id="b-accept"><span class="icon">✓</span>Accept</button>
+    <button id="b-enjoy"><span class="icon">✦</span>Enjoy</button>
+    <button id="b-sit"><span class="icon">◯</span>Sit</button>
   </section>
 
   <section class="vibes" aria-label="Vibe log">
     <div class="row">
       <span class="label">Today's vibe</span>
       <span id="vibeword">steady</span>
+      <button id="b-logvibe" class="icon-btn" aria-label="Log vibe" title="Log vibe">✓</button>
+      <button id="b-trends" class="icon-btn" aria-label="Trends" title="Trends">▤</button>
     </div>
     <input type="range" id="vibeslider" min="0" max="100" value="60" aria-label="How's the vibe right now">
     <div class="row scalelabels"><span>let's work on it</span><span>good vibe</span></div>
-    <div class="row">
-      <button id="b-logvibe" class="small" style="flex:1">Log vibe</button>
-      <button id="b-trends" class="small" style="flex:1">Trends</button>
-    </div>
   </section>
 
-  <section class="reminders">
+  <footer>
+    <span id="lastcheck">last check-in: —</span>
+    <span id="orbitday">orbit day 1</span>
+  </footer>
+</div>
+
+<div id="settings" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="settings-card">
+    <div class="settings-head">
+      <span class="label">Settings</span>
+      <button id="settings-close" class="icon-btn" aria-label="Close settings">✕</button>
+    </div>
     <div class="row">
       <span class="label">Reminder interval</span>
       <select id="interval" aria-label="Reminder interval">
@@ -451,13 +488,8 @@
       <button id="b-notif" style="min-height:38px;padding:6px 14px;box-shadow:none">Enable</button>
     </div>
     <div class="row"><span id="notifstate">in-page only · tab must stay open for reminders</span></div>
-  </section>
-
-  <footer>
-    <span id="lastcheck">last check-in: —</span>
-    <span id="orbitday">orbit day 1</span>
-    <span>jord · da. “earth”</span>
-  </footer>
+    <div class="row"><span class="label">jord</span><span style="color:var(--dim)">da. "earth"</span></div>
+  </div>
 </div>
 
 <div id="toast" role="status"></div>
@@ -1014,7 +1046,7 @@ const speech=$("speech"), jordis=$("jordis"), clock=$("clock"), toast=$("toast")
       floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
       sittimer=$("sittimer"),
       vibeslider=$("vibeslider"), vibeword=$("vibeword"),
-      trends=$("trends");
+      trends=$("trends"), settings=$("settings");
 
 const EYES = ["open","happy","closed","wide","squint","side","sparkle","flat","chaos"];
 const MOUTHS = ["smile","grin","o","flat","wavy","hmm"];
@@ -1548,6 +1580,11 @@ function refreshNotifUI(){
 }
 notifBtn.addEventListener("click", ()=>{ Notification.requestPermission().then(refreshNotifUI); });
 refreshNotifUI();
+
+/* ── settings panel ── */
+$("b-settings").addEventListener("click", ()=>settings.classList.add("open"));
+$("settings-close").addEventListener("click", ()=>settings.classList.remove("open"));
+settings.addEventListener("click", (e)=>{ if(e.target===settings) settings.classList.remove("open"); });
 
 /* ── boot ── */
 render(); applyMood();
