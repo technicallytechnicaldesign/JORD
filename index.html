@@ -268,26 +268,28 @@
   /* ── one bubble, centered above Jord's head, for both musings (think) and
      dialogue (say) — plus a quiet idle phrase when there's nothing to add ── */
   #thought{
-    position:absolute;top:6px;left:50%;
-    max-width:min(80%,340px);
+    position:absolute;top:2px;left:50%;
+    max-width:min(66%,240px);
     background:var(--paper);
     border:1.5px solid var(--ink);
-    border-radius:14px;
-    padding:9px 13px;
-    font-size:12px;text-align:center;line-height:1.4;
-    opacity:0;transform:translateX(-50%) translateY(6px) scale(.96);
+    border-radius:13px;
+    padding:6px 11px;
+    font-size:11px;text-align:center;line-height:1.35;
+    box-shadow:2px 2px 0 var(--faint);
+    opacity:0;transform:translateX(-50%) translateY(5px) scale(.96);
     transition:opacity .5s ease, transform .5s ease;
     pointer-events:none;z-index:3;
   }
   #thought.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
   #thought.idle{color:var(--dim)}
   #thought.idle.show{opacity:.55}
-  #thought::after,#thought::before{
-    content:"";position:absolute;background:var(--paper);
-    border:1.5px solid var(--ink);border-radius:50%;left:50%;
+  /* a single small tail dot, anchoring the pill toward Jord's head */
+  #thought::after{
+    content:"";position:absolute;left:50%;bottom:-5px;
+    width:7px;height:7px;margin-left:-3.5px;
+    background:var(--paper);
+    border:1.5px solid var(--ink);border-radius:50%;
   }
-  #thought::after{width:9px;height:9px;bottom:-6px;margin-left:-11px}
-  #thought::before{width:5px;height:5px;bottom:-13px;margin-left:2px}
 
   .statusline{
     padding:4px 4px 2px;text-align:center;
