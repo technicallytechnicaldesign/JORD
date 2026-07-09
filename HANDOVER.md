@@ -1,8 +1,20 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-09, after a long collaborative session redesigning and heavily
-expanding the app. This doc exists so a fresh Claude Code session (after a context
-clear) can pick up exactly where things left off without re-deriving everything.
+Last updated: 2026-07-09 (night), after several more rounds on top of the redesign
+below: cheek blush, fading vibe-word tint, a slimmer/more-blended thought bubble,
+a one-page infographic-style PDF with a spiky→smooth wave, header/viewBox layout
+changes, a new Garden page, and a service-worker caching fix. This doc exists so a
+fresh Claude Code session (after a context clear) can pick up exactly where things
+left off without re-deriving everything.
+
+**In flight:** a one-time cloud routine (`trig_01Sj3XQ6zPdgMKrJTRc4AS2s`, via
+`RemoteTrigger`) is scheduled for 2026-07-09T23:00:00Z (1am Europe/Copenhagen) to
+work unattended overnight on: a wider/top-bar thought bubble for long text, a
+loading-moment flourish, a floatier/randomized Jord bounce, a moon phase + sky-drift
+animation, and multiple water tier states (wild/calm). If you're picking this repo
+up fresh, check `git log` for commits after "Fix garden appearing broken" to see
+whether it landed, and check the routine's status at
+https://claude.ai/code/routines/trig_01Sj3XQ6zPdgMKrJTRc4AS2s if not.
 
 ## What this is
 
@@ -41,8 +53,19 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   same convention: `position:fixed; inset:0`, toggled via an `.open` class, own
   close button. Mirror this for any new full-screen page.
 - **Vibe slider** (`#vibeslider`) drives `reactToVibePreview(v)`, which computes
-  mood bands and now also drives hot/cold tinting on the slider itself and a
-  "blush" overlay (`#orbblush`) on Jord.
+  mood bands and drives hot/cold tinting on the slider track and two small cheek
+  ellipses (`#orbblush`, NOT a whole-body wash) on Jord. The vibe *word*
+  (`#vibeword`) separately tints on genuine slider interaction via `tintVibeWord()`
+  and fades back to its neutral color a couple seconds after you let go
+  (`vibeWordFadeTimer`) — this is deliberately decoupled from the slider's own
+  persistent tint.
+- **Garden** (`#garden` panel, `❀` header icon) — the anti-shelf: one flower
+  plants per calendar day, but only when you actually *do* an activity
+  (`plantGardenToday()` is called from `logMission(type)`, not from vibe-logging —
+  that was a real bug once, see caveats). Flowers scatter/overlap chaotically
+  (deterministic per-entry hash via `gseed()`, not a tidy grid like the shelf),
+  each paired with a small symbol from `MISSION_ICON` for whichever activity
+  triggered it.
 - **`think()`/`say()`** are called from dozens of places throughout the file.
   They've been unified to render through one bubble (`#thought`, now centered
   above Jord's head, not the old top-left corner placement) with a random idle
@@ -61,9 +84,12 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   icon, not buried in Settings). Includes a "variety" control that scales how
   much the generative engine wanders.
 - **PDF export** — Trends → "Save as PDF" uses the browser's native
-  `window.print()`. `#tr-keepsake` is a whimsical print-only summary page;
-  `#tr-wave` is a second, data-only page (`break-before:page`) showing the
-  week's logged vibes as one smooth line, no icons/glyphs.
+  `window.print()`. `#tr-keepsake` + `#tr-wave` now render on ONE printed page
+  (no `break-before:page` anymore) — tightened copy, infographic-leaning. The
+  wave line uses `smoothPathRamp(pts, sAt)`: the last 24h stays genuinely
+  jagged (low `sAt`), older-than-24h overshoots past normal Catmull-Rom
+  smoothing (`sAt` up to ~1.6) for an exaggeratedly silky look, so "spiky day →
+  smooth week" reads as one continuous but clearly-contrasted line.
 - **Dark mode** — auto 5pm–5am, with a manual override (auto/always-on/always-off)
   in Settings.
 - **`prefers-reduced-motion`** — there's a `reduceMotion` const and a
@@ -104,6 +130,18 @@ Latest big round:
 - Whimsical, private (not social) two-page PDF export via print
 - Hot/cold tinting on the slider + a subtle blush on Jord at the extremes
 - Unified speech/thought bubble, centered above Jord, varied idle phrases
+
+Latest rounds (same day, later):
+- Cheek-only blush (was tinting Jord's whole body), vibe-word tint-then-fade
+- Slimmer, more translucent/blended thought bubble (color-mix + backdrop-filter)
+- One-page infographic PDF with the spiky-day/smooth-week wave blend
+- Rev tag moved from the `<h1>` into the footer; viewBox reworked so there's
+  real sky above Jord and he sits low, tight against a cropped water tier
+  (`viewBox="0 -40 280 304"`, `#t-water` raised to `cy=248`)
+- Garden page added, then its trigger corrected from vibe-logging to actually
+  doing an activity (`logMission()`)
+- `sw.js` fixed from stale-while-revalidate to network-first for `index.html`,
+  since that staleness was making shipped/working features look broken
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
@@ -147,10 +185,24 @@ For anything beyond a small tweak, the effective loop has been:
    for a one-time delayed run and silently produced nothing (fired, marked
    complete, zero commits, no visible error via the API). The local background
    `Agent` approach has been reliable every time it's been used instead — prefer
-   it unless there's a specific reason to need the cloud path again.
+   it unless there's a specific reason to need the cloud path again. It was
+   tried a second time on 2026-07-09 specifically because the user was going
+   to sleep and asked for work to happen at a specific future clock time
+   (something a local `Agent` call can't do — it runs to completion now, it
+   doesn't sleep-then-run). Check the changelog/"in flight" note above for
+   whether that second attempt actually landed commits; update this note with
+   the outcome once known either way.
 
 ## Known caveats
 
+- **`sw.js` caches `index.html` network-first now** (as of the "Fix garden
+  appearing broken" commit) — it used to be stale-while-revalidate with a
+  never-bumped `CACHE_NAME`, so a user could sit a full round of changes behind
+  for an entire session and a brand-new feature would look completely broken.
+  Static assets (icons/manifest) are still cache-first for offline support. If
+  something *shipped and verified in this repo* still looks broken to the
+  user, a stale PWA install is worth ruling out before assuming the code is
+  wrong — ask them to hard-refresh / reopen the PWA.
 - No browser automation is available in this environment — all verification of
   animation feel, audio character, print/PDF layout, and gesture timing is
   static/reasoned. Always flag this and suggest specific things for the user
