@@ -323,7 +323,11 @@
     padding:10px 12px;display:flex;flex-direction:column;gap:6px;
   }
   .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-  #vibeword{font-size:12px;color:var(--leaf);flex:1}
+  #vibeword{font-size:12px;color:var(--leaf);flex:1;transition:color 1.2s ease}
+  /* on genuine slider interaction the word borrows the hot/cold tint, then
+     fades back to the neutral leaf a couple seconds after you let go */
+  #vibeword.word-cold{color:var(--water)}
+  #vibeword.word-hot{color:var(--bloom)}
   input[type=range]{
     -webkit-appearance:none;appearance:none;
     width:100%;height:24px;background:transparent;cursor:pointer;
@@ -2013,10 +2017,23 @@ function reactToVibePreview(v){
     stageEl.classList.remove("warm");
   }, 2200);
 }
+/* the vibe word borrows the hot/cold tint while you're moving the slider,
+   then fades back to neutral leaf a couple seconds after you settle.
+   kept separate from vibeReactTimer so it doesn't touch the body-shake logic. */
+let vibeWordFadeTimer=null;
+function tintVibeWord(v){
+  vibeword.classList.toggle("word-cold", v<50);
+  vibeword.classList.toggle("word-hot", v>=50);
+  clearTimeout(vibeWordFadeTimer);
+  vibeWordFadeTimer=setTimeout(()=>{
+    vibeword.classList.remove("word-cold","word-hot");
+  }, 2200);
+}
 vibeslider.addEventListener("input", ()=>{
   const v=+vibeslider.value;
   updateVibeWord(v);
   reactToVibePreview(v);
+  tintVibeWord(v);
 });
 updateVibeWord(+vibeslider.value, true);
 reactToVibePreview(+vibeslider.value);
