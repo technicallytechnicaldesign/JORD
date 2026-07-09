@@ -937,6 +937,15 @@ function logMission(type){
   missions.push({t:Date.now(), type});
   if(missions.length>1000) missions=missions.slice(-1000);
   store.set("missions", missions);
+  /* one bloom per day, planted when you actually *do* something —
+     called after the push so the flower's symbol matches this very mission */
+  if(typeof plantGardenToday==="function" && plantGardenToday()){
+    setTimeout(()=>think(pick([
+      "something just grew. quietly. because you showed up.",
+      "planted one for today. it'll keep growing while you do.",
+      "there — a little bloom for the doing of it."
+    ]), 11000), 3200);
+  }
 }
 
 /* ── streak ── */
@@ -2094,14 +2103,12 @@ $("b-logvibe").addEventListener("click", ()=>{
   vibes.push({t:Date.now(), v});
   if(vibes.length>800) vibes=vibes.slice(-800);
   store.set("vibes",vibes);
-  plantGardenToday();
   const idx=bandIndexFor(v);
   if(idx===0){
     calm=clamp(calm+3,5,100); store.set("calm",calm);
     setEyes("open"); setMouth("hmm");
     say("Logged, and heard. Heavy days are allowed here. Want to breathe or sit together? No pressure — I'm not going anywhere.", 14000);
     spawnFlora();
-    setTimeout(()=>think("planted one for you. it'll grow while you do.", 12000), 2500);
   } else if(idx===1){
     say(pick(["Logged. Every step counts, even the wobbly ones.","Logged. Working on it still counts as doing it."]), 12000);
     armAnim(Math.random()<.5?"l":"r","wave");
@@ -2557,7 +2564,7 @@ const GARDEN_LINES = [
    small neutral mark if none) — mirrors the streak/shelf-cap patterns */
 function plantGardenToday(){
   const key=dayKey(new Date());
-  if(garden.some(g=>dayKey(new Date(g.t))===key)) return;
+  if(garden.some(g=>dayKey(new Date(g.t))===key)) return false;
   const golden=Math.random()<.05;
   const today=missions.filter(m=>dayKey(new Date(m.t))===key).sort((a,b)=>a.t-b.t);
   const last=today.length?today[today.length-1]:null;
@@ -2565,6 +2572,7 @@ function plantGardenToday(){
   garden.push({t:Date.now(), i:Math.floor(Math.random()*FLORA.length), golden, sym});
   if(garden.length>240) garden=garden.slice(-240);
   store.set("garden", garden);
+  return true;
 }
 /* deterministic 0..1 from a seed, so a flower's spot/tilt/tint stays put across renders */
 function gseed(n){ const x=Math.sin(n)*43758.5453; return x-Math.floor(x); }
