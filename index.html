@@ -2817,11 +2817,16 @@ function populateWave(){
     const X=t=>padX+((t-t0)/span)*(W-2*padX);
     const Y=v=>padY+(100-v)/100*(H-2*padY);
     const pts=week.map(e=>({x:X(e.t), y:Y(clamp(e.v,0,100)), t:e.t}));
-    /* 0 (fully jagged) at the newest edge → up to 1 (full wave) a week back;
-       the last 24h barely smooth (≤.3), everything older relaxes the rest of the way */
+    /* two distinct characters, not a gradient: the last 24h stays genuinely
+       jagged the whole way (≤.08), then a sharp handoff right at the 24h marker
+       relaxes older points into an exaggerated, silky wave (>1 overshoots the
+       control points for that extra-smooth sweep) */
     const sAt=i=>{
       const age=now-pts[i].t;
-      return age<=day ? (age/day)*0.3 : 0.3 + Math.min(1,(age-day)/(wk-day))*0.7;
+      if(age<=day) return (age/day)*0.08;              /* jagged across the whole day */
+      const k=Math.min(1,(age-day)/(day*0.5));         /* full handoff within ~12h of the marker */
+      const eased=k*k*(3-2*k);                          /* smoothstep, so the break reads crisp */
+      return 0.08 + eased*(1.6-0.08);                  /* settle into a really-smooth 1.6 */
     };
     const d=smoothPathRamp(pts, sAt);
     const dayX=X(now-day);
