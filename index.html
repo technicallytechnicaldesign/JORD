@@ -612,6 +612,14 @@
       <button id="settings-close" class="icon-btn" aria-label="Close settings">✕</button>
     </div>
     <div class="row">
+      <span class="label">Night mode</span>
+      <select id="nightmode" aria-label="Night mode">
+        <option value="auto">auto (5pm–5am)</option>
+        <option value="on">always on</option>
+        <option value="off">always off</option>
+      </select>
+    </div>
+    <div class="row">
       <span class="label">Reminder interval</span>
       <select id="interval" aria-label="Reminder interval">
         <option value="0">off</option>
@@ -685,6 +693,7 @@ let pats = store.get("pats", 0);
 let vibes = store.get("vibes", []);
 let missions = store.get("missions", []);
 let showMissions = store.get("showMissions", true);
+let nightModeOverride = store.get("nightModeOverride", "auto");
 let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
 let patTimes = [];
 
@@ -1227,7 +1236,9 @@ function tierOf(c){ return c>=80 ? 3 : c>=50 ? 2 : c>=25 ? 1 : 0; }
 function isNight(){ const h=new Date().getHours(); return h>=21||h<6; }
 function isDarkHours(){ const h=new Date().getHours(); return h>=17||h<5; }
 function applyTheme(){
-  const dark = isDarkHours();
+  const dark = nightModeOverride==="on" ? true
+             : nightModeOverride==="off" ? false
+             : isDarkHours();
   document.documentElement.classList.toggle("dark", dark);
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta) meta.setAttribute("content", dark ? "#1c211f" : "#f7f8f5");
@@ -1896,6 +1907,16 @@ notifBtn.addEventListener("click", ()=>{ Notification.requestPermission().then(r
 refreshNotifUI();
 
 /* ── settings panel ── */
+const nightSel=$("nightmode");
+nightSel.value=nightModeOverride;
+nightSel.addEventListener("change", ()=>{
+  nightModeOverride=nightSel.value;
+  store.set("nightModeOverride", nightModeOverride);
+  applyTheme();
+  say(nightModeOverride==="on" ? "Night mode locked on. The cool dark stays. I like it here too."
+     : nightModeOverride==="off" ? "Daylight, always. Bright and steady it is."
+     : "Night mode back on auto — I'll dim with the evening.");
+});
 $("b-settings").addEventListener("click", ()=>settings.classList.add("open"));
 $("settings-close").addEventListener("click", ()=>settings.classList.remove("open"));
 settings.addEventListener("click", (e)=>{ if(e.target===settings) settings.classList.remove("open"); });
