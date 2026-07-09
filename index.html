@@ -270,25 +270,32 @@
   #thought{
     position:absolute;top:2px;left:50%;
     max-width:min(66%,240px);
+    /* translucent paper + a soft blur so it settles into the scene rather than
+       sitting on top of it as opaque UI chrome (solid-paper fallback first for
+       browsers without color-mix / backdrop-filter — still perfectly legible) */
     background:var(--paper);
-    border:1.5px solid var(--ink);
+    background:color-mix(in srgb, var(--paper) 76%, transparent);
+    -webkit-backdrop-filter:blur(2.5px);
+    backdrop-filter:blur(2.5px);
+    border:1px solid var(--faint);
     border-radius:13px;
     padding:6px 11px;
     font-size:11px;text-align:center;line-height:1.35;
-    box-shadow:2px 2px 0 var(--faint);
+    box-shadow:0 1px 5px rgba(0,0,0,.05);
     opacity:0;transform:translateX(-50%) translateY(5px) scale(.96);
     transition:opacity .5s ease, transform .5s ease;
     pointer-events:none;z-index:3;
   }
-  #thought.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  #thought.show{opacity:.9;transform:translateX(-50%) translateY(0) scale(1)}
   #thought.idle{color:var(--dim)}
-  #thought.idle.show{opacity:.55}
+  #thought.idle.show{opacity:.5}
   /* a single small tail dot, anchoring the pill toward Jord's head */
   #thought::after{
     content:"";position:absolute;left:50%;bottom:-5px;
     width:7px;height:7px;margin-left:-3.5px;
     background:var(--paper);
-    border:1.5px solid var(--ink);border-radius:50%;
+    background:color-mix(in srgb, var(--paper) 76%, transparent);
+    border:1px solid var(--faint);border-radius:50%;
   }
 
   .statusline{
