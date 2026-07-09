@@ -2642,11 +2642,11 @@ function populateKeepsake(){
   const streak = store.get("streak",1);
   const dateStr = new Date().toLocaleDateString([], {weekday:"long", day:"2-digit", month:"long", year:"numeric"});
   let sweet;
-  if(pct===null) sweet="Your record is just beginning — this is the first quiet page.";
-  else if(pct>=45) sweet=`You spent about ${pct}% of your logged moments right in the steady sweet spot — that unflashy middle where things don't wobble. That's the good stuff.`;
-  else if(pct>0) sweet=`Around ${pct}% of your logged moments landed in the steady band. The rest was just weather, and weather always passes.`;
-  else sweet="No steady-band moments logged yet — and that's alright. The band stays lit for whenever you drift back toward it.";
-  const notes=[...VIBE_NOTES].sort(()=>Math.random()-.5).slice(0,2);
+  if(pct===null) sweet="A blank first page. Your record starts here.";
+  else if(pct>=45) sweet=`${pct}% of your moments sat in the steady middle. That's the good stuff.`;
+  else if(pct>0) sweet=`${pct}% landed steady. The rest was weather — it passes.`;
+  else sweet="No steady moments yet. The band stays lit for your return.";
+  const notes=[...VIBE_NOTES].sort(()=>Math.random()-.5).slice(0,1);
   const art = `<svg class="ks-art" viewBox="0 0 150 100" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
     + `<circle cx="62" cy="52" r="33" stroke="var(--ink)" stroke-width="2"/>`
     + `<path d="M 44 47 Q 51 41 58 47" stroke="var(--ink)" stroke-width="2"/>`
@@ -2667,43 +2667,58 @@ function populateKeepsake(){
   populateWave();
 }
 
-/* ── second sheet: the week's logged vibes as one plain, smooth wave ──
-   no grid, no dots, no axis, no glyphs — just the line the week made. */
-function smoothPath(pts){
+/* ── second sheet: the week's logged vibes as one continuous line whose
+   rendering itself relaxes from spiky to smooth — catmull-rom control points
+   scaled 0→1 per point, so the recent (last-24h) edge stays jagged and the
+   older week rounds into a wave. sAt(i) returns the per-point smoothing (0 =
+   straight segments, 1 = full bezier). smoothPath() is the plain full-smooth
+   line, kept as the sAt=1 special case. */
+function smoothPathRamp(pts, sAt){
   if(pts.length<2) return "";
   let d=`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
   for(let i=0;i<pts.length-1;i++){
     const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
-    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
-    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    const s=(sAt(i)+sAt(i+1))/2;                     /* blend smoothing across the segment */
+    const c1x=p1.x+s*(p2.x-p0.x)/6, c1y=p1.y+s*(p2.y-p0.y)/6;
+    const c2x=p2.x-s*(p3.x-p1.x)/6, c2y=p2.y-s*(p3.y-p1.y)/6;
     d+=` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
   }
   return d;
 }
+function smoothPath(pts){ return smoothPathRamp(pts, ()=>1); }
 function populateWave(){
-  const now=Date.now(), wk=7*24*3600*1000;
+  const now=Date.now(), wk=7*24*3600*1000, day=24*3600*1000;
   const week=vibes.filter(e=>now-e.t < wk).sort((a,b)=>a.t-b.t);
   const from=new Date(now-wk), to=new Date(now);
   const range=`${fmtDate(from)} – ${fmtDate(to)}`;
   let body;
   if(week.length<2){
-    body=`<div class="wv-none">not enough of the week logged yet to draw its wave. a couple more check-ins and the line appears here.</div>`;
+    body=`<div class="wv-none">not enough logged yet to draw the line. a couple more check-ins and it appears — jagged at first, then calmer.</div>`;
   } else {
     const W=420, H=150, padX=14, padY=18;
-    const n=week.length;
-    const X=i=>padX+(i/(n-1))*(W-2*padX);
+    const t0=week[0].t, t1=Math.max(now, week[week.length-1].t), span=Math.max(1, t1-t0);
+    const X=t=>padX+((t-t0)/span)*(W-2*padX);
     const Y=v=>padY+(100-v)/100*(H-2*padY);
-    const pts=week.map((e,i)=>({x:X(i), y:Y(clamp(e.v,0,100))}));
-    const d=smoothPath(pts);
+    const pts=week.map(e=>({x:X(e.t), y:Y(clamp(e.v,0,100)), t:e.t}));
+    /* 0 (fully jagged) at the newest edge → up to 1 (full wave) a week back;
+       the last 24h barely smooth (≤.3), everything older relaxes the rest of the way */
+    const sAt=i=>{
+      const age=now-pts[i].t;
+      return age<=day ? (age/day)*0.3 : 0.3 + Math.min(1,(age-day)/(wk-day))*0.7;
+    };
+    const d=smoothPathRamp(pts, sAt);
+    const dayX=X(now-day);
+    const marker = dayX>padX+2 ? `<line x1="${dayX.toFixed(1)}" y1="${padY}" x2="${dayX.toFixed(1)}" y2="${H-padY}" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2 3"/>` : "";
     body=`<svg class="wv-art" viewBox="0 0 ${W} ${H}" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+      + marker
       + `<path d="${d}" stroke="var(--ink)" stroke-width="2"/>`
       + `</svg>`;
   }
   $("tr-wave").innerHTML =
-      `<div class="wv-head">the week, as a wave</div>`
-    + `<div class="wv-sub">${range} · ${week.length} check-in${week.length===1?"":"s"}</div>`
+      `<div class="wv-head">jagged now, smoother back</div>`
+    + `<div class="wv-sub">${range} · ${week.length} check-in${week.length===1?"":"s"}${week.length<2?"":" · dashes mark 24h ago"}</div>`
     + body
-    + `<div class="wv-foot">JORD · vibe telemetry</div>`;
+    + `<div class="wv-foot">even the spikiest days round off, given the week</div>`;
 }
 populateKeepsake();   /* so even a raw Ctrl+P prints a warm sheet, not a blank one */
 
