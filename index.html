@@ -1621,7 +1621,8 @@ function spawnObject(){
   const oi = Math.floor(Math.random()*OBJECTS.length);
   const o = OBJECTS[oi];
   /* passive keepsake shelf: quietly log every visitor */
-  shelf.push({i:oi, react:o.react, t:Date.now()});
+  const spawnT=Date.now();
+  shelf.push({i:oi, react:o.react, t:spawnT});
   if(shelf.length>240) shelf=shelf.slice(-240);
   store.set("shelf", shelf);
   const left = Math.random()<.5;
@@ -1653,6 +1654,8 @@ function spawnObject(){
   if(Math.random()<.5) lifeClasses.push("obj-floaty");
   if(Math.random()<.35) lifeClasses.push("obj-shimmer");
   if(lifeClasses.length) lifeWrap.setAttribute("class", lifeClasses.join(" "));
+  const spawnHue=objHue(spawnT);
+  if(spawnHue) lifeWrap.style.filter=`hue-rotate(${spawnHue}deg)`;
   lifeWrap.innerHTML = o.svg;
   scaleWrap.appendChild(lifeWrap);
   /* generous invisible hit target — the line-art itself is too thin to reliably
@@ -2388,6 +2391,12 @@ const SHELF_MEMORY = [
   "a souvenir from a quiet minute.",
   "you were here when this came by."
 ];
+/* a subtle, deterministic per-instance hue nudge so repeated sightings of the
+   same object type (e.g. the snowflake) aren't a perfect stamp every time */
+function objHue(t){
+  const buckets=[-24,-12,0,12,24];
+  return buckets[Math.abs(t|0)%buckets.length];
+}
 function renderShelf(){
   const grid=$("sh-grid");
   if(!shelf.length){ $("sh-count").textContent=""; grid.innerHTML=""; $("sh-empty").style.display="block"; return; }
@@ -2405,10 +2414,12 @@ function renderShelf(){
   grid.innerHTML = list.map((g,idx)=>{
     const o=OBJECTS[g.i]; if(!o) return "";
     const delay=(idx*0.29%2.6).toFixed(2);
+    const hue=objHue(g.t);
+    const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
     const badge = g.n>1 ? `<span class="sh-badge">×${g.n}</span>` : "";
     return `<div class="sh-item" data-i="${g.i}">`
       + `<svg viewBox="-20 -30 44 44" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
-      + `<g class="sh-art obj-floaty" style="animation-delay:${delay}s">${o.svg}</g></svg>`
+      + `<g class="sh-art obj-floaty" style="animation-delay:${delay}s;${filt}">${o.svg}</g></svg>`
       + badge
       + `</div>`;
   }).join("");
