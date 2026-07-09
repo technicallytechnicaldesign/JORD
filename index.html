@@ -1887,6 +1887,7 @@ function openModal(){ modal.classList.add("open"); stageEl.classList.add("mode-a
 function closeModal(){
   modal.classList.remove("open"); stageEl.classList.remove("mode-active"); busy=false;
   clearInterval(exTimer); exTimer=null;
+  orbbody.style.transition=""; orbbody.style.transform="";
   render(); applyMood();
 }
 exClose.addEventListener("click", closeModal);
@@ -1899,10 +1900,12 @@ $("b-breathe").addEventListener("click", ()=>{
   exNext.textContent="Begin"; exNext.style.display="";
   exNext.onclick=()=>{
     exNext.style.display="none";
-    const phases=[["inhale",1.07],["hold",1.07],["exhale",0.94],["hold",0.94]];
+    const phases=[["inhale",1.09],["hold",1.09],["exhale",0.91],["hold",0.91]];
     let round=0,p=0,t=4;
     exBody.textContent="";
-    function setScale(s){ if(reduceMotion) return; orb.style.transition="transform 3.6s ease-in-out"; orb.style.transform=`scale(${s})`; }
+    /* only Jord's body breathes; transition spans the full 4s phase so it
+       finishes exactly as the next phase begins (continuous, well-synced) */
+    function setScale(s){ if(reduceMotion) return; orbbody.style.transformOrigin="140px 150px"; orbbody.style.transition="transform 4s ease-in-out"; orbbody.style.transform=`scale(${s})`; }
     function step(){
       exPhase.textContent=phases[p][0]+"  ·  round "+(round+1)+"/4";
       setScale(phases[p][1]);
@@ -1917,7 +1920,7 @@ $("b-breathe").addEventListener("click", ()=>{
           if(round>=4){
             exPhase.textContent="complete"; exCount.textContent="◡";
             exBody.textContent="Sixty-four seconds well spent.";
-            orb.style.transform="";
+            orbbody.style.transition=""; orbbody.style.transform="";
             exNext.style.display=""; exNext.textContent="Done";
             exNext.onclick=()=>{ closeModal(); logMission("breathe"); reward(14, pick(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."])); };
             return;
