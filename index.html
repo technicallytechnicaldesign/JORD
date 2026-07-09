@@ -262,7 +262,7 @@
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
     .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise,
-    .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer{animation:none}
+    .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway{animation:none}
   }
 
   /* ── one bubble, centered above Jord's head, for both musings (think) and
@@ -445,12 +445,12 @@
   .tr-btns{display:flex;gap:10px}
 
   /* ── keepsake shelf + soundscape: same full-screen paper panel as #trends ── */
-  #shelf,#sound{
+  #shelf,#sound,#garden{
     position:fixed;inset:0;background:var(--paper);
     display:none;z-index:30;overflow-y:auto;
     padding:18px 16px 32px;
   }
-  #shelf.open,#sound.open{display:block}
+  #shelf.open,#sound.open,#garden.open{display:block}
   #sh-empty{font-size:12px;color:var(--dim);text-align:center;padding:30px 8px;line-height:1.8}
   .sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px}
   .sh-item{
@@ -482,6 +482,27 @@
   .snd-note{font-size:12px;color:var(--dim);line-height:1.7}
   #sound .tr-card input[type=range]{margin-top:2px}
 
+  /* ── garden: the anti-shelf — a wild, overlapping meadow, no grid ── */
+  #gd-empty{font-size:12px;color:var(--dim);text-align:center;padding:30px 8px;line-height:1.8}
+  #gd-field{position:relative;min-height:66vh;margin:8px 0 2px}
+  .gd-flower{position:absolute;transform-origin:50% 100%;cursor:pointer}
+  .gd-flower svg{width:56px;height:auto;display:block;overflow:visible}
+  .gd-sway{transform-origin:50% 100%;animation:gdSway 6.5s ease-in-out infinite}
+  @keyframes gdSway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(2.1deg)}}
+  @keyframes gdPop{0%{transform:scale(1)}35%{transform:scale(1.2)}70%{transform:scale(.95)}100%{transform:scale(1)}}
+  .gd-sway.pop{animation:gdPop .5s ease}
+  .gd-word{
+    position:absolute;transform:translate(-50%,calc(-100% - 6px));
+    background:var(--paper);
+    background:color-mix(in srgb, var(--paper) 82%, transparent);
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+    border:1px solid var(--faint);border-radius:9px;padding:5px 8px;
+    font-size:11px;line-height:1.35;text-align:center;color:var(--ink);
+    width:max-content;max-width:150px;pointer-events:none;z-index:999;
+    opacity:0;transition:opacity .35s ease;box-shadow:0 1px 5px rgba(0,0,0,.05);
+  }
+  .gd-word.show{opacity:.95}
+
   /* ── keepsake print sheet (screen-hidden, print-only) — keepsake + wave now
      share ONE page, so both halves are kept deliberately compact ── */
   #tr-keepsake{display:none}
@@ -504,7 +525,7 @@
 
   @media print{
     body{padding:0}
-    .unit,#toast,#modal,#thought,#settings,#shelf,#sound{display:none !important}
+    .unit,#toast,#modal,#thought,#settings,#shelf,#sound,#garden{display:none !important}
     #trends{display:block !important;position:static;overflow:visible;padding:0}
     #trends .screen-only{display:none !important}
     .tr-btns{display:none}
@@ -523,6 +544,7 @@
     <h1>JORD</h1>
     <div class="hdr-right">
       <span id="lastcheck">last check-in: —</span>
+      <button id="b-garden" class="icon-btn" aria-label="Garden" title="Garden">❀</button>
       <button id="b-shelf" class="icon-btn" aria-label="Keepsake shelf" title="Keepsake shelf">▦</button>
       <button id="b-sound" class="icon-btn" aria-label="Soundscape" title="Soundscape">♫</button>
       <button id="b-settings" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
@@ -825,6 +847,20 @@
   </div>
 </div>
 
+<div id="garden" role="dialog" aria-label="Garden">
+  <div class="tr-inner">
+    <div class="tr-head">
+      <h2>JORD · GARDEN</h2>
+      <span class="label" id="gd-count"></span>
+    </div>
+    <div id="gd-empty">the garden's bare for now.<br>log a vibe and something takes root — one small bloom a day, no rushing it.</div>
+    <div id="gd-field"></div>
+    <div class="tr-btns">
+      <button id="gd-close" class="small primary" style="flex:1">Back to Jord</button>
+    </div>
+  </div>
+</div>
+
 <!-- soundscape controls -->
 <div id="sound" role="dialog" aria-label="Soundscape">
   <div class="tr-inner">
@@ -894,6 +930,7 @@ let nightModeOverride = store.get("nightModeOverride", "auto");
 let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
 let patTimes = [];
 let shelf = store.get("shelf", []);
+let garden = store.get("garden", []);
 
 const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯"};
 function logMission(type){
@@ -1452,7 +1489,7 @@ const jordis=$("jordis"), toast=$("toast"),
       sittimer=$("sittimer"), orbwrap=$("orbwrap"), stageEl=$("stage"),
       vibeslider=$("vibeslider"), vibeword=$("vibeword"),
       trends=$("trends"), settings=$("settings"),
-      shelfPanel=$("shelf"), soundPanel=$("sound");
+      shelfPanel=$("shelf"), soundPanel=$("sound"), gardenPanel=$("garden");
 
 const EYES = ["open","happy","closed","wide","squint","side","sparkle","flat","chaos","wink","heart"];
 const MOUTHS = ["smile","grin","o","flat","wavy","hmm","smirk","kiss"];
@@ -2057,6 +2094,7 @@ $("b-logvibe").addEventListener("click", ()=>{
   vibes.push({t:Date.now(), v});
   if(vibes.length>800) vibes=vibes.slice(-800);
   store.set("vibes",vibes);
+  plantGardenToday();
   const idx=bandIndexFor(v);
   if(idx===0){
     calm=clamp(calm+3,5,100); store.set("calm",calm);
@@ -2503,6 +2541,77 @@ $("sh-grid").addEventListener("click", (e)=>{
 $("b-shelf").addEventListener("click", ()=>{ renderShelf(); shelfPanel.classList.add("open"); });
 $("sh-close").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
 shelfPanel.addEventListener("click", (e)=>{ if(e.target===shelfPanel) shelfPanel.classList.remove("open"); });
+
+/* ── garden: one quiet bloom a day, kept in a wild overlapping meadow ── */
+const GARDEN_LINES = [
+  "this one's from a Tuesday, I think.",
+  "planted on a day you showed up.",
+  "no two the same. like the days.",
+  "it grew while you weren't looking.",
+  "roots don't rush. nice, isn't it?",
+  "a small thing, still growing.",
+  "you were here. that's why it's here.",
+  "the wild kind. it prefers no rows."
+];
+/* one bloom per calendar day, seeded from the day's most recent mission (or a
+   small neutral mark if none) — mirrors the streak/shelf-cap patterns */
+function plantGardenToday(){
+  const key=dayKey(new Date());
+  if(garden.some(g=>dayKey(new Date(g.t))===key)) return;
+  const golden=Math.random()<.05;
+  const today=missions.filter(m=>dayKey(new Date(m.t))===key).sort((a,b)=>a.t-b.t);
+  const last=today.length?today[today.length-1]:null;
+  const sym=last ? (MISSION_ICON[last.type]||"·") : pick(["·","˚","∘","‧"]);
+  garden.push({t:Date.now(), i:Math.floor(Math.random()*FLORA.length), golden, sym});
+  if(garden.length>240) garden=garden.slice(-240);
+  store.set("garden", garden);
+}
+/* deterministic 0..1 from a seed, so a flower's spot/tilt/tint stays put across renders */
+function gseed(n){ const x=Math.sin(n)*43758.5453; return x-Math.floor(x); }
+function renderGarden(){
+  const field=$("gd-field");
+  if(!garden.length){ $("gd-count").textContent=""; field.innerHTML=""; $("gd-empty").style.display="block"; return; }
+  $("gd-empty").style.display="none";
+  $("gd-count").textContent = `${garden.length} bloom${garden.length===1?"":"s"} · one a day`;
+  field.innerHTML = garden.map((g,idx)=>{
+    const seed=(g.t||0)+idx+1;
+    const rx=(6+gseed(seed*0.9)*86).toFixed(1);        /* 6%..92% across */
+    const ry=(8+gseed(seed*1.7+11)*80).toFixed(1);     /* 8%..88% down */
+    const rot=((gseed(seed*2.3+5)-0.5)*32).toFixed(1); /* ±16deg lean */
+    const scale=(0.72+gseed(seed*3.1+7)*0.72).toFixed(2);
+    const hue=objHue(seed);
+    const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
+    const delay=(gseed(seed*4.2+3)*5).toFixed(2);
+    const art=g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length];
+    return `<div class="gd-flower" style="left:${rx}%;top:${ry}%;transform:translate(-50%,-100%) rotate(${rot}deg) scale(${scale});z-index:${idx}">`
+      + `<div class="gd-sway" style="animation-delay:${delay}s;${filt}">`
+      + `<svg viewBox="-14 -26 28 34" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+      + art
+      + `<text x="0" y="6" text-anchor="middle" font-size="7" fill="var(--dim)" stroke="none" font-family="inherit">${g.sym||"·"}</text>`
+      + `</svg></div></div>`;
+  }).join("");
+}
+$("gd-field").addEventListener("click", (e)=>{
+  const fl=e.target.closest(".gd-flower"); if(!fl) return;
+  const sway=fl.querySelector(".gd-sway");
+  if(!reduceMotion && sway){
+    sway.classList.remove("pop"); void sway.getBoundingClientRect(); sway.classList.add("pop");
+    sway.addEventListener("animationend", ()=>sway.classList.remove("pop"), {once:true});
+  }
+  if(Math.random()<.5){
+    const field=$("gd-field");
+    field.querySelectorAll(".gd-word").forEach(w=>w.remove());
+    const w=document.createElement("div");
+    w.className="gd-word"; w.textContent=pick(GARDEN_LINES);
+    w.style.left=fl.style.left; w.style.top=fl.style.top;
+    field.appendChild(w);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add("show")));
+    setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2400);
+  }
+});
+$("b-garden").addEventListener("click", ()=>{ renderGarden(); gardenPanel.classList.add("open"); });
+$("gd-close").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
+gardenPanel.addEventListener("click", (e)=>{ if(e.target===gardenPanel) gardenPanel.classList.remove("open"); });
 
 /* ── ambient soundscape (opt-in · Web Audio only · state-responsive) ── */
 let ambientOn = store.get("ambientOn", false);
