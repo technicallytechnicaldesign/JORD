@@ -2429,6 +2429,13 @@ function showShelfBubble(item, text){
   const b=document.createElement("div");
   b.className="sh-bubble"; b.textContent=text;
   item.appendChild(b);
+  /* clamp horizontally so edge-column tiles don't push the bubble off-screen:
+     measure once laid out, then nudge its transform back inside the panel */
+  const margin=8, pr=shelfPanel.getBoundingClientRect(), br=b.getBoundingClientRect();
+  let dx=0;
+  if(br.left < pr.left+margin) dx = (pr.left+margin) - br.left;
+  else if(br.right > pr.right-margin) dx = (pr.right-margin) - br.right;
+  if(dx) b.style.transform = `translate(calc(-50% + ${dx.toFixed(0)}px), -6px)`;
   requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.add("show")));
   setTimeout(()=>{ b.classList.remove("show"); setTimeout(()=>b.remove(),450); }, 2600);
 }
