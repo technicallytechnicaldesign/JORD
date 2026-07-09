@@ -715,7 +715,7 @@ let nightModeOverride = store.get("nightModeOverride", "auto");
 let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
 let patTimes = [];
 
-const MISSION_ICON = {breathe:"💨",ground:"📍",accept:"🤝",enjoy:"✨",sit:"🧘"};
+const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯"};
 function logMission(type){
   missions.push({t:Date.now(), type});
   if(missions.length>1000) missions=missions.slice(-1000);
