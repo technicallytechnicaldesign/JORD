@@ -470,6 +470,14 @@
   .ks-notes p{font-size:12.5px;font-style:italic;text-align:center;color:var(--ink);margin:8px auto;max-width:340px;line-height:1.6}
   .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:18px;text-transform:uppercase}
 
+  /* ── second keepsake sheet: the week, as a single plain wave (print-only) ── */
+  #tr-wave{display:none}
+  .wv-head{font-size:15px;letter-spacing:.14em;text-align:center;font-weight:600}
+  .wv-sub{font-size:11px;letter-spacing:.08em;color:var(--dim);text-align:center;margin-top:4px}
+  .wv-art{display:block;margin:32px auto 10px;width:100%;max-width:420px;height:auto}
+  .wv-none{font-size:12.5px;text-align:center;color:var(--dim);margin:60px auto;max-width:320px;line-height:1.6}
+  .wv-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:20px;text-transform:uppercase}
+
   @media print{
     body{padding:0}
     .unit,#toast,#modal,#thought,#settings,#shelf,#sound{display:none !important}
@@ -478,6 +486,7 @@
     .tr-btns{display:none}
     .tr-card{break-inside:avoid;box-shadow:none}
     #tr-keepsake{display:block !important;break-inside:avoid;padding:20px 10px}
+    #tr-wave{display:block !important;break-before:page;break-inside:avoid;padding:28px 10px}
   }
 </style>
 </head>
@@ -734,6 +743,7 @@
 <div id="trends" role="dialog" aria-label="Vibe trends">
   <div class="tr-inner">
     <div id="tr-keepsake"></div>
+    <div id="tr-wave"></div>
     <div class="tr-head screen-only">
       <h2>JORD · VIBE TELEMETRY</h2>
       <span class="label" id="tr-date"></span>
@@ -2548,6 +2558,46 @@ function populateKeepsake(){
     + `<div class="ks-sweet">${sweet}</div>`
     + `<div class="ks-notes">${notes.map(n=>`<p>&ldquo;${n}&rdquo;</p>`).join("")}</div>`
     + `<div class="ks-foot">orbit day ${streak} · kept, not scored</div>`;
+  populateWave();
+}
+
+/* ── second sheet: the week's logged vibes as one plain, smooth wave ──
+   no grid, no dots, no axis, no glyphs — just the line the week made. */
+function smoothPath(pts){
+  if(pts.length<2) return "";
+  let d=`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    d+=` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+function populateWave(){
+  const now=Date.now(), wk=7*24*3600*1000;
+  const week=vibes.filter(e=>now-e.t < wk).sort((a,b)=>a.t-b.t);
+  const from=new Date(now-wk), to=new Date(now);
+  const range=`${fmtDate(from)} – ${fmtDate(to)}`;
+  let body;
+  if(week.length<2){
+    body=`<div class="wv-none">not enough of the week logged yet to draw its wave. a couple more check-ins and the line appears here.</div>`;
+  } else {
+    const W=420, H=150, padX=14, padY=18;
+    const n=week.length;
+    const X=i=>padX+(i/(n-1))*(W-2*padX);
+    const Y=v=>padY+(100-v)/100*(H-2*padY);
+    const pts=week.map((e,i)=>({x:X(i), y:Y(clamp(e.v,0,100))}));
+    const d=smoothPath(pts);
+    body=`<svg class="wv-art" viewBox="0 0 ${W} ${H}" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+      + `<path d="${d}" stroke="var(--ink)" stroke-width="2"/>`
+      + `</svg>`;
+  }
+  $("tr-wave").innerHTML =
+      `<div class="wv-head">the week, as a wave</div>`
+    + `<div class="wv-sub">${range} · ${week.length} check-in${week.length===1?"":"s"}</div>`
+    + body
+    + `<div class="wv-foot">JORD · vibe telemetry</div>`;
 }
 populateKeepsake();   /* so even a raw Ctrl+P prints a warm sheet, not a blank one */
 
