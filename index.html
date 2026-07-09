@@ -201,6 +201,23 @@
   @keyframes shoot{0%{opacity:0}8%{opacity:1}100%{transform:translate(-110px,60px);opacity:0}}
   .shooting{animation:shoot 1.4s ease-out forwards}
 
+  /* ── rare UFO fly-by: drifts in, hovers over Jord with a light beam, drifts out ── */
+  @keyframes ufoFly{
+    0%{transform:translate(-70px,34px);opacity:0}
+    10%{opacity:1}
+    38%{transform:translate(118px,34px)}
+    62%{transform:translate(122px,34px)}
+    90%{opacity:1}
+    100%{transform:translate(330px,34px);opacity:0}
+  }
+  .ufo-fly{animation:ufoFly 11s ease-in-out forwards}
+  @keyframes ufoBeam{
+    0%,34%{opacity:0}
+    44%,56%{opacity:.5}
+    66%,100%{opacity:0}
+  }
+  .ufo-beam{animation:ufoBeam 11s ease-in-out forwards}
+
   .sprite{transition:opacity 1.8s ease, transform 1.2s ease}
   .sprite.in{opacity:1}
   .sprite.out{opacity:0}
@@ -229,7 +246,7 @@
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
-    .stage.warm,.stage.warm #orbbody{animation:none}
+    .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam{animation:none}
   }
 
   #thought{
@@ -428,6 +445,7 @@
           <path class="twinkling soft" style="animation-delay:3.2s" d="M 20 90 v 6 M 17 93 h 6" stroke="var(--sun)"/>
         </g>
         <g id="meteor"></g>
+        <g id="visitor"></g>
 
         <g id="clouds" stroke="var(--faint)" stroke-width="1.3">
           <g class="cloud cloud1">
@@ -1510,6 +1528,53 @@ function shootStar(){
   if(Math.random()<.5) think("make a wish. I'll hold onto it for you.", 12000);
 }
 setInterval(()=>{ if(Math.random()<.3) shootStar(); }, 200*1000);
+
+/* ── rare UFO visitor ── */
+const ALIEN_LINES = [
+  "...that's new.",
+  "please don't abduct the flowers, I just planted those.",
+  "hi. yes. hello. I'm the local guy.",
+  "a visitor. from a fair bit further out than usual.",
+  "we come in peace. I assume they do too.",
+  "I waved. seemed like the neighborly thing.",
+  "take me to your— actually, no, I like it here.",
+  "long way to come just to hover politely. respect."
+];
+let visitorPresent=false;
+function summonUFO(){
+  if(reduceMotion || sitting || visitorPresent) return;
+  visitorPresent=true;
+  const layer=$("visitor");
+  const flyer=document.createElementNS("http://www.w3.org/2000/svg","g");
+  flyer.setAttribute("class","ufo-fly");
+  flyer.innerHTML =
+    `<path class="ufo-beam" d="M -7 5 L -19 118 L 19 118 L 7 5 Z" fill="var(--sun)" stroke="none"/>`
+    + `<g stroke="var(--ink)" stroke-width="1.8">`
+    +   `<ellipse cx="0" cy="0" rx="18" ry="6"/>`
+    +   `<path d="M -9 -3 q 9 -12 18 0" stroke="var(--water)"/>`
+    +   `<circle cx="-9" cy="1.6" r="1.4" fill="var(--sun)" stroke="var(--sun)"/>`
+    +   `<circle cx="0" cy="3" r="1.4" fill="var(--sun)" stroke="var(--sun)"/>`
+    +   `<circle cx="9" cy="1.6" r="1.4" fill="var(--sun)" stroke="var(--sun)"/>`
+    + `</g>`;
+  layer.appendChild(flyer);
+  /* react as it hovers overhead (~mid-flight) */
+  setTimeout(()=>{
+    if(!busy && !sitting){
+      setEyes("wide"); setMouth("o");
+      armAnim(Math.random()<.5?"l":"r","wave");
+      think(pick(ALIEN_LINES), 12000);
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 4000);
+    }
+  }, 4800);
+  setTimeout(()=>{ flyer.remove(); visitorPresent=false; }, 11400);
+}
+function scheduleUFO(){
+  setTimeout(()=>{
+    if(!reduceMotion && !sitting && !modal.classList.contains("open") && Math.random()<.13) summonUFO();
+    scheduleUFO();
+  }, rand(25,50)*60*1000);
+}
+scheduleUFO();
 
 /* ── render ── */
 function render(){
