@@ -1196,7 +1196,21 @@ const OBJECTS = [
   {react:"just passing through. metaphorically and literally.",
    svg:`<g stroke="var(--water)" stroke-width="1.8"><path d="M -12 0 Q 0 -9 12 0 Q 0 9 -12 0 Z"/><path d="M 12 0 l 6 -5 v 10 Z"/><circle cx="-7" cy="-1" r="1" fill="var(--ink)" stroke="none"/></g>`},
   {react:"grew here overnight. bold of it.",
-   svg:`<g stroke="var(--bloom)" stroke-width="1.8"><path d="M -9 -4 Q 0 -16 9 -4 Z"/><path d="M -4 -4 v 8 q 0 3 4 3 q 4 0 4 -3 v -8" stroke="var(--ink)"/></g>`}
+   svg:`<g stroke="var(--bloom)" stroke-width="1.8"><path d="M -9 -4 Q 0 -16 9 -4 Z"/><path d="M -4 -4 v 8 q 0 3 4 3 q 4 0 4 -3 v -8" stroke="var(--ink)"/></g>`},
+  {react:"quack. that's the whole update.",
+   svg:`<g stroke="var(--sun)" stroke-width="1.8"><path d="M -11 -4 q -2 -9 8 -9 q 9 0 9 6 q 5 0 4 4 q -2 4 -11 3 q -9 1 -10 -4 Z"/><circle cx="8" cy="-17" r="5"/><path d="M 13 -17 h 5 l -2 2.5" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="-18" r=".9" fill="var(--ink)" stroke="none"/></g>`},
+  {react:"its other half is a myth. this one's real.",
+   svg:`<g stroke="var(--water)" stroke-width="1.8"><path d="M -4 -24 v 15 q 0 4 -4 5 l -6 2 q -4 1 -4 -3 q 0 -3 4 -4 l 5 -2 v -13 Z"/><path d="M -4 -24 h 8 v 3 h -8 Z" stroke="var(--ink)" stroke-width="1.4"/></g>`},
+  {react:"a perfect wedge of a good decision.",
+   svg:`<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 L -11 -24 q 11 -5 22 0 Z"/><path d="M -9 -20 q 9 -4 18 0" stroke="var(--bloom)" stroke-width="1.4"/><circle cx="-2" cy="-15" r="1.5" fill="var(--bloom)" stroke="var(--bloom)"/><circle cx="4" cy="-18" r="1.5" fill="var(--bloom)" stroke="var(--bloom)"/><circle cx="-3" cy="-9" r="1.5" fill="var(--bloom)" stroke="var(--bloom)"/></g>`},
+  {react:"now we're both watching. cozy.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><circle cx="-7" cy="-9" r="7"/><circle cx="7" cy="-9" r="7"/><circle cx="-7" cy="-7" r="2.6" fill="var(--ink)" stroke="none"/><circle cx="7" cy="-7" r="2.6" fill="var(--ink)" stroke="none"/></g>`},
+  {react:"distinguished. I have no head, but still.",
+   svg:`<g stroke="var(--ink)" stroke-width="1.8"><path d="M -13 0 h 26"/><path d="M -8 0 v -16 q 0 -3 8 -3 q 8 0 8 3 v 16"/><path d="M -8 -13 q 8 3 16 0" stroke="var(--bloom)" stroke-width="1.4"/></g>`},
+  {react:"a small sun for indoor weather.",
+   svg:`<g stroke="var(--water)" stroke-width="1.6"><path d="M 0 -7 v -5" stroke="var(--ink)"/><circle cx="0" cy="-16" r="9"/><path d="M -9 -16 h 18 M 0 -25 v 18 M -6.4 -9.6 L 6.4 -22.4 M 6.4 -9.6 L -6.4 -22.4"/></g>`},
+  {react:"comedy, pre-loaded. mind your step.",
+   svg:`<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 q -3 -19 -12 -23 q 3 8 5 11 M 0 0 v -25 M 0 0 q 3 -19 12 -23 q -3 8 -5 11"/><path d="M -6 -7 q 6 3 12 0" stroke="var(--ink)" stroke-width="1.3"/></g>`}
 ];
 
 const MINI_SAYS = ["✨","!","hm.","oh.",":)","~","hehe","oop","aha","hi.","♪","o_o"];
@@ -1415,8 +1429,17 @@ function spawnObject(){
   g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
   g.style.opacity="0";
 
+  const restTilt = rand(-7,7);
+  const startRot = restTilt + (left ? -22 : 22);
   const scaleWrap = document.createElementNS(svgNS,"g");
-  scaleWrap.setAttribute("transform",`scale(${scale.toFixed(2)})`);
+  scaleWrap.style.transformOrigin = "0 0";
+  if(reduceMotion){
+    scaleWrap.setAttribute("transform",`scale(${scale.toFixed(2)})`);
+  } else {
+    /* start tucked small + twisted, then pop out to full scale + resting tilt */
+    scaleWrap.style.transition = "transform .55s cubic-bezier(.25,1.6,.4,1)";
+    scaleWrap.style.transform = `scale(${(scale*0.25).toFixed(2)}) rotate(${startRot.toFixed(1)}deg)`;
+  }
 
   const lifeWrap = document.createElementNS(svgNS,"g");
   const lifeClasses=[];
@@ -1444,7 +1467,10 @@ function spawnObject(){
   }
 
   objLayer.appendChild(g);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ g.style.opacity="1"; }));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    g.style.opacity="1";
+    if(!reduceMotion) scaleWrap.style.transform = `scale(${scale.toFixed(2)}) rotate(${restTilt.toFixed(1)}deg)`;
+  }));
   setTimeout(()=>{
     if(!busy && !sitting){
       if(huge){ setEyes("heart"); setMouth("o"); } else { setEyes("wide"); setMouth("o"); }
@@ -1455,6 +1481,11 @@ function spawnObject(){
   }, 900);
   setTimeout(()=>{
     g.style.opacity="0";
+    if(!reduceMotion){
+      /* shrink + twist away instead of a flat fade */
+      scaleWrap.style.transition = "transform .6s ease-in";
+      scaleWrap.style.transform = `scale(${(scale*0.2).toFixed(2)}) rotate(${(restTilt + (left?-46:46)).toFixed(1)}deg)`;
+    }
     setTimeout(()=>{ g.remove(); objectPresent=false; }, 1200);
   }, rand(60,160)*1000);
 }
