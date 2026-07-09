@@ -576,9 +576,13 @@
             <circle cx="94" cy="104" r="3"/>
           </g>
 
-          <!-- hot/cold blush: soft wash tinted by the vibe slider's extremes -->
-          <circle id="orbblush" cx="140" cy="150" r="78" fill="var(--water)" opacity="0"
-                  stroke="none" pointer-events="none"/>
+          <!-- hot/cold blush: two soft cheek marks tinted by the vibe slider's extremes.
+               fill/opacity live on the <g> so reactToVibePreview() can set them and the
+               ellipses inherit; tilted outward so they read as cheeks, not a whole-body wash -->
+          <g id="orbblush" fill="var(--water)" opacity="0" stroke="none" pointer-events="none">
+            <ellipse cx="100" cy="165" rx="13" ry="8.5" transform="rotate(18 100 165)"/>
+            <ellipse cx="180" cy="165" rx="13" ry="8.5" transform="rotate(-18 180 165)"/>
+          </g>
 
           <g id="backface" stroke="var(--faint)" stroke-width="1.5">
             <path d="M 100 140 q 20 -12 44 -4"/>
