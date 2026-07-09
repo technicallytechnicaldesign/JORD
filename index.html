@@ -814,8 +814,13 @@
       </div>
     </div>
     <div class="tr-card">
+      <h3>Variety</h3>
+      <input type="range" id="snd-variety" min="0" max="100" value="50" aria-label="Variety">
+      <div class="row scalelabels"><span>steady drone</span><span>wandering</span></div>
+    </div>
+    <div class="tr-card">
       <h3>About</h3>
-      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. It pauses itself when you leave the tab.</div>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders. It pauses itself when you leave the tab.</div>
     </div>
     <div class="tr-btns">
       <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -2387,6 +2392,7 @@ shelfPanel.addEventListener("click", (e)=>{ if(e.target===shelfPanel) shelfPanel
 let ambientOn = store.get("ambientOn", false);
 let ambWarmth = clamp(store.get("ambWarmth",50),0,100);
 let ambDensity = clamp(store.get("ambDensity",45),0,100);
+let ambVariety = clamp(store.get("ambVariety",50),0,100);
 let ambTimbre = store.get("ambTimbre","glass");
 const AMB_WAVE = { glass:"sine", reed:"triangle", string:"sawtooth", hush:"sine" };
 const AMB_PENTA = [1, 9/8, 5/4, 3/2, 5/3];
@@ -2420,13 +2426,18 @@ function startAmbient(){
 function ambEvolve(){
   if(!actx || actx.state==="closed") return;
   const now=actx.currentTime, tier=tierOf(calm), v=+vibeslider.value, dark=isDarkHours();
+  const vari=ambVariety/100;
   const vol = 0.05 + (ambDensity/100)*0.035;
   ambMaster.gain.setTargetAtTime(ambientOn?vol:0, now, 1.5);
   let cut = 260 + (100-ambWarmth)*7 + tier*90 + (dark?-120:140);
   if(objectPresent) cut += 170;
+  /* variety wanders the cutoff — steadier at low, roving at high */
+  cut += rand(-1,1)*vari*340;
   cut = clamp(cut, 160, 2600);
-  ambFilter.frequency.setTargetAtTime(cut, now, 2.0);
+  /* high variety = faster, wider drift; low variety = slow, near-static */
+  ambFilter.frequency.setTargetAtTime(cut, now, 2.4 - vari*1.3);
   const dens=ambDensity/100, base=0.28;
+  const detSpread = 2 + vari*24;    /* detune wander range in cents */
   ambVoices.forEach(vo=>{
     let g;
     if(vo.m===1) g=base;
@@ -2434,8 +2445,10 @@ function ambEvolve(){
     else if(vo.m===1.5) g=base*0.5*dens;
     else g=base*0.5*(0.4+dens*0.4);
     if(v<=VIBE_BANDS[0].max && vo.m>=1.5) g*=0.5;
-    vo.g.gain.setTargetAtTime(g, now, 2.0);
-    vo.osc.detune.setTargetAtTime(rand(-8,8), now, 3.0);
+    /* variety adds a gentle wandering gain jitter to the texture */
+    g *= 1 + rand(-1,1)*vari*0.28;
+    vo.g.gain.setTargetAtTime(g, now, 2.4 - vari*1.0);
+    vo.osc.detune.setTargetAtTime(rand(-detSpread,detSpread), now, 3.2 - vari*1.6);
   });
 }
 function scheduleAmbNote(){
@@ -2483,6 +2496,7 @@ function setAmbient(on){
 }
 $("snd-warmth").value=ambWarmth;
 $("snd-density").value=ambDensity;
+$("snd-variety").value=ambVariety;
 $("snd-timbre").value=ambTimbre;
 $("ambienttoggle").checked=ambientOn;
 $("snd-toggle").checked=ambientOn;
@@ -2493,6 +2507,7 @@ $("b-sound").addEventListener("click", ()=>{ settings.classList.remove("open"); 
 $("snd-close").addEventListener("click", ()=>soundPanel.classList.remove("open"));
 $("snd-warmth").addEventListener("input", e=>{ ambWarmth=clamp(+e.target.value,0,100); store.set("ambWarmth",ambWarmth); if(actx) ambEvolve(); });
 $("snd-density").addEventListener("input", e=>{ ambDensity=clamp(+e.target.value,0,100); store.set("ambDensity",ambDensity); if(actx){ ambEvolve(); scheduleAmbNote(); } });
+$("snd-variety").addEventListener("input", e=>{ ambVariety=clamp(+e.target.value,0,100); store.set("ambVariety",ambVariety); if(actx) ambEvolve(); });
 $("snd-timbre").addEventListener("change", e=>{ ambTimbre=e.target.value; store.set("ambTimbre",ambTimbre); const w=AMB_WAVE[ambTimbre]||"sine"; if(actx) ambVoices.forEach(vo=>{ try{vo.osc.type=w;}catch(_){} }); });
 document.addEventListener("visibilitychange", ()=>{
   if(!ambientOn || !actx) return;
