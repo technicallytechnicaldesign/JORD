@@ -263,7 +263,8 @@
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
-    .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise{animation:none}
+    .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise,
+    .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer{animation:none}
   }
 
   #thought{
@@ -426,12 +427,57 @@
   #tr-encourage{font-size:13px;font-style:normal}
   .tr-btns{display:flex;gap:10px}
 
+  /* ── keepsake shelf + soundscape: same full-screen paper panel as #trends ── */
+  #shelf,#sound{
+    position:fixed;inset:0;background:var(--paper);
+    display:none;z-index:30;overflow-y:auto;
+    padding:18px 16px 32px;
+  }
+  #shelf.open,#sound.open{display:block}
+  #sh-empty{font-size:12px;color:var(--dim);text-align:center;padding:30px 8px;line-height:1.8}
+  .sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px}
+  .sh-item{
+    border:1.5px solid var(--ink);border-radius:10px;background:var(--panel);
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;box-shadow:2px 2px 0 var(--faint);
+    transition:transform .1s ease, box-shadow .15s ease;
+  }
+  .sh-item:hover{box-shadow:3px 3px 0 var(--leaf)}
+  .sh-item:active{transform:translate(1px,1px)}
+  .sh-item svg{width:78%;height:78%;overflow:visible;display:block}
+  @keyframes shSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .sh-art.spun{animation:shSpin .7s ease-in-out}
+  .sh-bubble{
+    position:absolute;bottom:100%;left:50%;
+    transform:translate(-50%,-6px);
+    background:var(--paper);border:1.5px solid var(--ink);border-radius:10px;
+    padding:6px 9px;font-size:11px;line-height:1.4;text-align:center;
+    width:max-content;max-width:150px;z-index:6;pointer-events:none;
+    opacity:0;transition:opacity .4s ease;
+    box-shadow:2px 2px 0 var(--faint);
+  }
+  .sh-bubble.show{opacity:1}
+  .snd-note{font-size:12px;color:var(--dim);line-height:1.7}
+  #sound .tr-card input[type=range]{margin-top:2px}
+
+  /* ── keepsake print sheet (screen-hidden, print-only) ── */
+  #tr-keepsake{display:none}
+  .ks-head{font-size:15px;letter-spacing:.14em;text-align:center;font-weight:600}
+  .ks-sub{font-size:11px;letter-spacing:.08em;color:var(--dim);text-align:center;margin-top:4px}
+  .ks-art{display:block;margin:14px auto 8px;width:180px;height:auto}
+  .ks-sweet{font-size:13px;line-height:1.7;text-align:center;max-width:340px;margin:6px auto 0}
+  .ks-notes{margin-top:14px}
+  .ks-notes p{font-size:12.5px;font-style:italic;text-align:center;color:var(--ink);margin:8px auto;max-width:340px;line-height:1.6}
+  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:18px;text-transform:uppercase}
+
   @media print{
     body{padding:0}
-    .unit,#toast,#modal,#thought{display:none !important}
+    .unit,#toast,#modal,#thought,#settings,#shelf,#sound{display:none !important}
     #trends{display:block !important;position:static;overflow:visible;padding:0}
+    #trends .screen-only{display:none !important}
     .tr-btns{display:none}
     .tr-card{break-inside:avoid;box-shadow:none}
+    #tr-keepsake{display:block !important;break-inside:avoid;padding:20px 10px}
   }
 </style>
 </head>
@@ -442,6 +488,7 @@
     <h1>JORD <span class="rev">· rev E</span></h1>
     <div class="hdr-right">
       <span id="lastcheck">last check-in: —</span>
+      <button id="b-shelf" class="icon-btn" aria-label="Keepsake shelf" title="Keepsake shelf">▦</button>
       <button id="b-settings" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
     </div>
   </header>
@@ -669,6 +716,14 @@
       <button id="b-notif" style="min-height:38px;padding:6px 14px;box-shadow:none">Enable</button>
     </div>
     <div class="row"><span id="notifstate">in-page only · tab must stay open for reminders</span></div>
+    <label class="row" style="cursor:pointer">
+      <span class="label">Ambient sound</span>
+      <input type="checkbox" id="ambienttoggle">
+    </label>
+    <div class="row">
+      <span id="ambienthint" style="font-size:10px;color:var(--dim);letter-spacing:.05em">a quiet, evolving hum · off by default</span>
+      <button id="b-sound" class="icon-btn" aria-label="Soundscape settings" title="Soundscape settings">♫</button>
+    </div>
     <div class="row"><span class="label">jord</span><span style="color:var(--dim)">da. "earth"</span></div>
   </div>
 </div>
@@ -678,34 +733,92 @@
 <!-- trends printout -->
 <div id="trends" role="dialog" aria-label="Vibe trends">
   <div class="tr-inner">
-    <div class="tr-head">
+    <div id="tr-keepsake"></div>
+    <div class="tr-head screen-only">
       <h2>JORD · VIBE TELEMETRY</h2>
       <span class="label" id="tr-date"></span>
     </div>
-    <label class="row" style="cursor:pointer">
+    <label class="row screen-only" style="cursor:pointer">
       <span class="label">mission markers on charts</span>
       <input type="checkbox" id="missiontoggle" checked>
     </label>
-    <div class="tr-card">
+    <div class="tr-card screen-only">
       <h3>Today · by hour</h3>
       <div id="tr-today"></div>
     </div>
-    <div class="tr-card">
+    <div class="tr-card screen-only">
       <h3>Last 14 days · daily average</h3>
       <div id="tr-hist"></div>
     </div>
-    <div class="tr-card">
+    <div class="tr-card screen-only">
       <h3>Field notes</h3>
       <div id="tr-stats"></div>
       <div id="tr-note"></div>
     </div>
-    <div class="tr-card">
+    <div class="tr-card screen-only">
       <h3>From Jord</h3>
       <div id="tr-encourage"></div>
     </div>
     <div class="tr-btns">
-      <button id="tr-print" class="small" style="flex:1">Print</button>
+      <button id="tr-print" class="small" style="flex:1">Save as PDF</button>
       <button id="tr-close" class="small primary" style="flex:1">Back to Jord</button>
+    </div>
+  </div>
+</div>
+
+<!-- keepsake shelf -->
+<div id="shelf" role="dialog" aria-label="Keepsake shelf">
+  <div class="tr-inner">
+    <div class="tr-head">
+      <h2>JORD · KEEPSAKE SHELF</h2>
+      <span class="label" id="sh-count"></span>
+    </div>
+    <div id="sh-empty">nothing on the shelf yet.<br>little things drift by while you're here — Jord keeps the ones that visit.</div>
+    <div id="sh-grid" class="sh-grid"></div>
+    <div class="tr-btns">
+      <button id="sh-close" class="small primary" style="flex:1">Back to Jord</button>
+    </div>
+  </div>
+</div>
+
+<!-- soundscape controls -->
+<div id="sound" role="dialog" aria-label="Soundscape">
+  <div class="tr-inner">
+    <div class="tr-head">
+      <h2>JORD · SOUNDSCAPE</h2>
+      <span class="label" id="snd-state">off</span>
+    </div>
+    <label class="row" style="cursor:pointer">
+      <span class="label">ambient sound</span>
+      <input type="checkbox" id="snd-toggle">
+    </label>
+    <div class="tr-card">
+      <h3>Warmth</h3>
+      <input type="range" id="snd-warmth" min="0" max="100" value="50" aria-label="Warmth">
+      <div class="row scalelabels"><span>airy &amp; bright</span><span>deep &amp; warm</span></div>
+    </div>
+    <div class="tr-card">
+      <h3>Density</h3>
+      <input type="range" id="snd-density" min="0" max="100" value="45" aria-label="Density">
+      <div class="row scalelabels"><span>sparse</span><span>lush</span></div>
+    </div>
+    <div class="tr-card">
+      <h3>Timbre</h3>
+      <div class="row">
+        <select id="snd-timbre" aria-label="Timbre">
+          <option value="glass">glass</option>
+          <option value="reed">reed</option>
+          <option value="string">strings</option>
+          <option value="hush">hush</option>
+        </select>
+      </div>
+    </div>
+    <div class="tr-card">
+      <h3>About</h3>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. It pauses itself when you leave the tab.</div>
+    </div>
+    <div class="tr-btns">
+      <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
     </div>
   </div>
 </div>
@@ -731,6 +844,7 @@ let showMissions = store.get("showMissions", true);
 let nightModeOverride = store.get("nightModeOverride", "auto");
 let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
 let patTimes = [];
+let shelf = store.get("shelf", []);
 
 const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯"};
 function logMission(type){
@@ -1288,7 +1402,8 @@ const speech=$("speech"), jordis=$("jordis"), toast=$("toast"),
       floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
       sittimer=$("sittimer"), orbwrap=$("orbwrap"), stageEl=$("stage"),
       vibeslider=$("vibeslider"), vibeword=$("vibeword"),
-      trends=$("trends"), settings=$("settings");
+      trends=$("trends"), settings=$("settings"),
+      shelfPanel=$("shelf"), soundPanel=$("sound");
 
 const EYES = ["open","happy","closed","wide","squint","side","sparkle","flat","chaos","wink","heart"];
 const MOUTHS = ["smile","grin","o","flat","wavy","hmm","smirk","kiss"];
@@ -1467,7 +1582,12 @@ let objectPresent=false;
 function spawnObject(){
   if(objectPresent) return;
   objectPresent=true;
-  const o = pick(OBJECTS);
+  const oi = Math.floor(Math.random()*OBJECTS.length);
+  const o = OBJECTS[oi];
+  /* passive keepsake shelf: quietly log every visitor */
+  shelf.push({i:oi, react:o.react, t:Date.now()});
+  if(shelf.length>240) shelf=shelf.slice(-240);
+  store.set("shelf", shelf);
   const left = Math.random()<.5;
   const x = left ? rand(34,62) : rand(218,246);
   const y = rand(264,272);
@@ -1983,10 +2103,11 @@ $("b-trends").addEventListener("click", ()=>{
   $("tr-stats").textContent = stats;
   $("tr-note").textContent = note;
   $("tr-encourage").textContent = pick(VIBE_NOTES);
+  populateKeepsake();
   trends.classList.add("open");
 });
 $("tr-close").addEventListener("click", ()=>trends.classList.remove("open"));
-$("tr-print").addEventListener("click", ()=>window.print());
+$("tr-print").addEventListener("click", ()=>{ populateKeepsake(); window.print(); });
 $("missiontoggle").checked = showMissions;
 $("missiontoggle").addEventListener("change", ()=>{
   showMissions = $("missiontoggle").checked;
@@ -2146,8 +2267,278 @@ setTimeout(()=>armAnim(Math.random()<.5?"l":"r","wave"), 1200);
   say(pick(pool));
 })();
 
+/* ── long-press: co-regulation breathing ──
+   press and hold Jord (~600ms) and his body slowly breathes with you.
+   builds on the box-breathing setScale approach (inline transform on #orbbody,
+   transition synced to the phase length). a held press must NOT also pat. */
+const EXHALES = [
+  "ahhhhhhhh","ahhhhhhhhhhh","oooooooooh","oooohhhhhh","mmmmmmm","mmmmmmmmmm",
+  "haaaaaaah","hoooooooo","ohhhhhhh","aaahhhhhhh","mmmhmmmm","phewwwwww"
+];
+const HOLD_SETTLE = ["okay.","mmm.","better.","there.","thank you.","that helped."];
+let holdTimer=null, holdBreatheTimer=null, holdSettleT=null,
+    holdBreathing=false, holdSuppress=false, holdPhase=0;
+function holdBreatheStep(){
+  if(!holdBreathing) return;
+  const expand = holdPhase%2===0;          /* even = swell (in), odd = shrink (out) */
+  if(!reduceMotion){
+    orbbody.style.transformOrigin="140px 150px";
+    orbbody.style.transition="transform 3.8s ease-in-out";
+    orbbody.style.transform=`scale(${expand?1.075:0.945})`;
+  }
+  if(!expand && holdPhase>1 && Math.random()<.5) say(pick(EXHALES), 4500);
+  holdPhase++;
+  holdBreatheTimer=setTimeout(holdBreatheStep, 3800);
+}
+function startHoldBreath(){
+  if(busy || sitting || holdBreathing) return;
+  holdBreathing=true; holdSuppress=true; busy=true;   /* busy keeps eyes closed & pauses idle blinks */
+  clearTimeout(holdSettleT);
+  setEyes("closed"); setMouth("o");
+  say(pick(EXHALES), 4500);
+  holdPhase=0;
+  holdBreatheStep();
+}
+function endHoldBreath(){
+  if(!holdBreathing) return;
+  holdBreathing=false; busy=false;
+  clearTimeout(holdBreatheTimer); holdBreatheTimer=null;
+  if(!reduceMotion){
+    orbbody.style.transition="transform 1.4s ease-out";
+    orbbody.style.transform="scale(1)";
+  }
+  if(Math.random()<.5) say(pick(HOLD_SETTLE), 4000);
+  holdSettleT=setTimeout(()=>{
+    orbbody.style.transition=""; orbbody.style.transform="";
+    if(!busy && !sitting) applyMood();
+  }, 1500);
+}
+function releaseHold(){
+  clearTimeout(holdTimer); holdTimer=null;
+  if(holdBreathing) endHoldBreath();
+}
+orbwrap.addEventListener("pointerdown", (e)=>{
+  holdSuppress=false;   /* fresh gesture; bounds suppression to one hold even if a child swallows the click */
+  if(sitting || busy) return;
+  if(e.pointerType==="mouse" && e.button!==0) return;
+  clearTimeout(holdTimer);
+  holdTimer=setTimeout(startHoldBreath, 600);
+});
+orbwrap.addEventListener("pointerup", releaseHold);
+orbwrap.addEventListener("pointercancel", releaseHold);
+orbwrap.addEventListener("pointerleave", releaseHold);
+
+/* ── passive keepsake shelf ── */
+const SHELF_MEMORY = [
+  "you kept this one.",
+  "still here. still yours.",
+  "a small thing, remembered.",
+  "this drifted in on some ordinary, good day.",
+  "we found this together, once.",
+  "it stayed just long enough to matter.",
+  "no reason to keep it. kept it anyway.",
+  "proof the day had something small in it.",
+  "a souvenir from a quiet minute.",
+  "you were here when this came by."
+];
+function renderShelf(){
+  const grid=$("sh-grid");
+  $("sh-count").textContent = shelf.length ? shelf.length+" kept" : "";
+  if(!shelf.length){ grid.innerHTML=""; $("sh-empty").style.display="block"; return; }
+  $("sh-empty").style.display="none";
+  const items=[...shelf].reverse();
+  grid.innerHTML = items.map((s,idx)=>{
+    const o=OBJECTS[s.i]; if(!o) return "";
+    const delay=(idx*0.29%2.6).toFixed(2);
+    return `<div class="sh-item" data-i="${s.i}">`
+      + `<svg viewBox="-20 -30 44 44" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+      + `<g class="sh-art obj-floaty" style="animation-delay:${delay}s">${o.svg}</g></svg>`
+      + `</div>`;
+  }).join("");
+}
+function showShelfBubble(item, text){
+  item.querySelectorAll(".sh-bubble").forEach(b=>b.remove());
+  const b=document.createElement("div");
+  b.className="sh-bubble"; b.textContent=text;
+  item.appendChild(b);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.add("show")));
+  setTimeout(()=>{ b.classList.remove("show"); setTimeout(()=>b.remove(),450); }, 2600);
+}
+$("sh-grid").addEventListener("click", (e)=>{
+  const item=e.target.closest(".sh-item"); if(!item) return;
+  const art=item.querySelector(".sh-art");
+  if(!reduceMotion && art){
+    const spin=Math.random()<.4;
+    art.classList.remove("obj-boing","spun"); void art.getBoundingClientRect();
+    art.classList.add(spin?"spun":"obj-boing");
+    art.addEventListener("animationend", ()=>art.classList.remove("obj-boing","spun"), {once:true});
+  }
+  if(Math.random()<.55){
+    const o=OBJECTS[+item.dataset.i];
+    const line = (o && Math.random()<.5) ? o.react : pick(SHELF_MEMORY);
+    showShelfBubble(item, line);
+  }
+});
+$("b-shelf").addEventListener("click", ()=>{ renderShelf(); shelfPanel.classList.add("open"); });
+$("sh-close").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
+shelfPanel.addEventListener("click", (e)=>{ if(e.target===shelfPanel) shelfPanel.classList.remove("open"); });
+
+/* ── ambient soundscape (opt-in · Web Audio only · state-responsive) ── */
+let ambientOn = store.get("ambientOn", false);
+let ambWarmth = clamp(store.get("ambWarmth",50),0,100);
+let ambDensity = clamp(store.get("ambDensity",45),0,100);
+let ambTimbre = store.get("ambTimbre","glass");
+const AMB_WAVE = { glass:"sine", reed:"triangle", string:"sawtooth", hush:"sine" };
+const AMB_PENTA = [1, 9/8, 5/4, 3/2, 5/3];
+let actx=null, ambVoices=[], ambFilter=null, ambMaster=null, ambNoteTimer=null, ambEvolveTimer=null;
+function ambRootFreq(){ return isDarkHours() ? 98 : 130.81; }   /* G2 at night, C3 by day */
+function startAmbient(){
+  if(actx) return;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    actx = new AC();
+    ambMaster = actx.createGain(); ambMaster.gain.value = 0;
+    ambFilter = actx.createBiquadFilter();
+    ambFilter.type="lowpass"; ambFilter.frequency.value=420; ambFilter.Q.value=4;
+    ambFilter.connect(ambMaster); ambMaster.connect(actx.destination);
+    const wave = AMB_WAVE[ambTimbre]||"sine";
+    const root = ambRootFreq();
+    ambVoices = [0.5,1,1.5,2].map(m=>{
+      const osc=actx.createOscillator();
+      osc.type=wave; osc.frequency.value=root*m; osc.detune.value=rand(-7,7);
+      const g=actx.createGain(); g.gain.value=0;
+      osc.connect(g); g.connect(ambFilter); osc.start();
+      return {osc,g,m};
+    });
+    ambEvolve();
+    ambEvolveTimer=setInterval(ambEvolve, 4000);
+    scheduleAmbNote();
+    if(actx.state==="suspended") actx.resume();
+  }catch(e){ actx=null; }
+}
+function ambEvolve(){
+  if(!actx || actx.state==="closed") return;
+  const now=actx.currentTime, tier=tierOf(calm), v=+vibeslider.value, dark=isDarkHours();
+  const vol = 0.05 + (ambDensity/100)*0.035;
+  ambMaster.gain.setTargetAtTime(ambientOn?vol:0, now, 1.5);
+  let cut = 260 + (100-ambWarmth)*7 + tier*90 + (dark?-120:140);
+  if(objectPresent) cut += 170;
+  cut = clamp(cut, 160, 2600);
+  ambFilter.frequency.setTargetAtTime(cut, now, 2.0);
+  const dens=ambDensity/100, base=0.28;
+  ambVoices.forEach(vo=>{
+    let g;
+    if(vo.m===1) g=base;
+    else if(vo.m===2) g=base*0.6*(0.5+dens*0.5);
+    else if(vo.m===1.5) g=base*0.5*dens;
+    else g=base*0.5*(0.4+dens*0.4);
+    if(v<=VIBE_BANDS[0].max && vo.m>=1.5) g*=0.5;
+    vo.g.gain.setTargetAtTime(g, now, 2.0);
+    vo.osc.detune.setTargetAtTime(rand(-8,8), now, 3.0);
+  });
+}
+function scheduleAmbNote(){
+  clearTimeout(ambNoteTimer);
+  const dens=ambDensity/100;
+  const wait = rand(5,14) * (1.4 - dens*0.8);
+  ambNoteTimer=setTimeout(()=>{ playAmbNote(); scheduleAmbNote(); }, wait*1000);
+}
+function playAmbNote(){
+  if(!actx || actx.state!=="running") return;
+  if(Math.random() > 0.5 + (ambDensity/100)*0.4) return;
+  const root=ambRootFreq(), ratio=pick(AMB_PENTA), oct=Math.random()<.5?2:4;
+  const now=actx.currentTime;
+  const osc=actx.createOscillator();
+  osc.type = AMB_WAVE[ambTimbre]||"sine";
+  osc.frequency.value = root*ratio*oct;
+  const g=actx.createGain(); g.gain.value=0;
+  osc.connect(g); g.connect(ambFilter);
+  const peak = 0.045 + (tierOf(calm)/3)*0.05;
+  const dur = rand(3.5,7);
+  osc.start(now);
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peak, now+dur*0.35);
+  g.gain.linearRampToValueAtTime(0, now+dur);
+  osc.stop(now+dur+0.1);
+}
+function stopAmbient(){
+  clearInterval(ambEvolveTimer); ambEvolveTimer=null;
+  clearTimeout(ambNoteTimer); ambNoteTimer=null;
+  if(!actx){ return; }
+  const ctx=actx, voices=ambVoices;
+  try{ if(ambMaster) ambMaster.gain.setTargetAtTime(0, ctx.currentTime, 0.4); }catch(e){}
+  setTimeout(()=>{
+    voices.forEach(vo=>{ try{vo.osc.stop();}catch(e){} });
+    try{ ctx.close(); }catch(e){}
+  }, 700);
+  actx=null; ambVoices=[]; ambFilter=null; ambMaster=null;
+}
+function setAmbient(on){
+  ambientOn=!!on; store.set("ambientOn", ambientOn);
+  const c1=$("ambienttoggle"), c2=$("snd-toggle"), st=$("snd-state");
+  if(c1) c1.checked=ambientOn; if(c2) c2.checked=ambientOn;
+  if(st) st.textContent = ambientOn ? "on · evolving" : "off";
+  if(ambientOn) startAmbient(); else stopAmbient();
+}
+$("snd-warmth").value=ambWarmth;
+$("snd-density").value=ambDensity;
+$("snd-timbre").value=ambTimbre;
+$("ambienttoggle").checked=ambientOn;
+$("snd-toggle").checked=ambientOn;
+$("snd-state").textContent=ambientOn?"on · evolving":"off";
+$("ambienttoggle").addEventListener("change", e=>setAmbient(e.target.checked));
+$("snd-toggle").addEventListener("change", e=>setAmbient(e.target.checked));
+$("b-sound").addEventListener("click", ()=>{ settings.classList.remove("open"); soundPanel.classList.add("open"); });
+$("snd-close").addEventListener("click", ()=>soundPanel.classList.remove("open"));
+$("snd-warmth").addEventListener("input", e=>{ ambWarmth=clamp(+e.target.value,0,100); store.set("ambWarmth",ambWarmth); if(actx) ambEvolve(); });
+$("snd-density").addEventListener("input", e=>{ ambDensity=clamp(+e.target.value,0,100); store.set("ambDensity",ambDensity); if(actx){ ambEvolve(); scheduleAmbNote(); } });
+$("snd-timbre").addEventListener("change", e=>{ ambTimbre=e.target.value; store.set("ambTimbre",ambTimbre); const w=AMB_WAVE[ambTimbre]||"sine"; if(actx) ambVoices.forEach(vo=>{ try{vo.osc.type=w;}catch(_){} }); });
+document.addEventListener("visibilitychange", ()=>{
+  if(!ambientOn || !actx) return;
+  if(document.hidden){ try{actx.suspend();}catch(_){} } else { try{actx.resume();}catch(_){} }
+});
+if(ambientOn){
+  /* persisted-on can't autoplay; wait for the first gesture to (re)start it */
+  document.addEventListener("pointerdown", function armAmbient(){ if(ambientOn && !actx) startAmbient(); }, {once:true});
+}
+
+/* ── whimsical keepsake sheet for the print-to-PDF export ── */
+function populateKeepsake(){
+  const total=vibes.length;
+  const steady=vibes.filter(e=>e.v>=VIBE_MID_LO && e.v<=VIBE_MID_HI).length;
+  const pct = total ? Math.round(steady/total*100) : null;
+  const streak = store.get("streak",1);
+  const dateStr = new Date().toLocaleDateString([], {weekday:"long", day:"2-digit", month:"long", year:"numeric"});
+  let sweet;
+  if(pct===null) sweet="Your record is just beginning — this is the first quiet page.";
+  else if(pct>=45) sweet=`You spent about ${pct}% of your logged moments right in the steady sweet spot — that unflashy middle where things don't wobble. That's the good stuff.`;
+  else if(pct>0) sweet=`Around ${pct}% of your logged moments landed in the steady band. The rest was just weather, and weather always passes.`;
+  else sweet="No steady-band moments logged yet — and that's alright. The band stays lit for whenever you drift back toward it.";
+  const notes=[...VIBE_NOTES].sort(()=>Math.random()-.5).slice(0,2);
+  const art = `<svg class="ks-art" viewBox="0 0 150 100" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+    + `<circle cx="62" cy="52" r="33" stroke="var(--ink)" stroke-width="2"/>`
+    + `<path d="M 44 47 Q 51 41 58 47" stroke="var(--ink)" stroke-width="2"/>`
+    + `<path d="M 66 47 Q 73 41 80 47" stroke="var(--ink)" stroke-width="2"/>`
+    + `<path d="M 52 62 Q 62 70 72 62" stroke="var(--ink)" stroke-width="2.4"/>`
+    + `<path d="M 36 40 Q 50 30 64 35" stroke="var(--faint)" stroke-width="1.4"/>`
+    + `<path d="M 70 68 Q 84 64 90 55" stroke="var(--faint)" stroke-width="1.4"/>`
+    + `<g transform="translate(122,82) scale(1.5)">${pick(FLORA)}</g>`
+    + `<g transform="translate(20,86) scale(1.15)">${pick(FLORA)}</g>`
+    + `</svg>`;
+  $("tr-keepsake").innerHTML =
+      `<div class="ks-head">a keepsake from JORD</div>`
+    + `<div class="ks-sub">${dateStr} · private · just for you</div>`
+    + art
+    + `<div class="ks-sweet">${sweet}</div>`
+    + `<div class="ks-notes">${notes.map(n=>`<p>&ldquo;${n}&rdquo;</p>`).join("")}</div>`
+    + `<div class="ks-foot">orbit day ${streak} · kept, not scored</div>`;
+}
+populateKeepsake();   /* so even a raw Ctrl+P prints a warm sheet, not a blank one */
+
 /* tap JORD: pats, dizzy, delight */
 $("orbwrap").addEventListener("click", ()=>{
+  if(holdSuppress){ holdSuppress=false; return; }   /* a completed long-press must not also pat */
   if(sitting){ endSit(true); return; }
   if(busy) return;
   pats++; store.set("pats",pats);
