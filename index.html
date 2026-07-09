@@ -201,6 +201,14 @@
   @keyframes shoot{0%{opacity:0}8%{opacity:1}100%{transform:translate(-110px,60px);opacity:0}}
   .shooting{animation:shoot 1.4s ease-out forwards}
 
+  /* rare content-heart that drifts up off a high-vibe Jord */
+  @keyframes heartRise{
+    0%{transform:translateY(2px) scale(.4);opacity:0}
+    22%{opacity:.85}
+    100%{transform:translateY(-72px) scale(1);opacity:0}
+  }
+  .heart-rise{animation:heartRise 3.4s ease-out forwards}
+
   /* ── rare UFO fly-by: drifts in, hovers over Jord with a light beam, drifts out ── */
   @keyframes ufoFly{
     0%{transform:translate(-70px,34px);opacity:0}
@@ -255,7 +263,7 @@
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
-    .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam{animation:none}
+    .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise{animation:none}
   }
 
   #thought{
@@ -1617,6 +1625,23 @@ function shootStar(){
 }
 setInterval(()=>{ if(Math.random()<.3) shootStar(); }, 200*1000);
 
+/* ── rare content-heart: when the vibe's kept high and Jord's just being,
+   a little heart occasionally drifts up off the top of it ── */
+function floatHeart(){
+  if(reduceMotion || busy || sitting) return;
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("transform",`translate(${rand(120,160).toFixed(0)},${rand(96,116).toFixed(0)})`);
+  const inner = document.createElementNS("http://www.w3.org/2000/svg","g");
+  inner.setAttribute("class","heart-rise");
+  inner.innerHTML = `<path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" stroke="var(--bloom)" stroke-width="1.4" fill="none"/>`;
+  g.appendChild(inner);
+  meteorLayer.appendChild(g);
+  setTimeout(()=>g.remove(), 3600);
+}
+setInterval(()=>{
+  if(tierOf(calm)>=3 && !busy && !sitting && !modal.classList.contains("open") && Math.random()<.22) floatHeart();
+}, 45*1000);
+
 /* ── rare UFO visitor ── */
 const ALIEN_LINES = [
   "...that's new.",
@@ -2151,6 +2176,30 @@ $("orbwrap").addEventListener("click", ()=>{
   if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
   setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1600);
 });
+
+/* footer easter egg: a few quick taps on the orbit-day counter and Jord
+   makes a small, sincere fuss about your streak */
+(function(){
+  const el=$("orbitday");
+  if(!el) return;
+  el.style.cursor="pointer";
+  let taps=[];
+  el.addEventListener("click", ()=>{
+    if(busy || sitting) return;
+    const now=Date.now();
+    taps.push(now); taps=taps.filter(t=>now-t<1600);
+    if(taps.length<3) return;
+    taps=[];
+    const streak=store.get("streak",1);
+    setEyes("heart"); setMouth("grin");
+    armAnim("both","yay");
+    think(streak>=2
+      ? `${streak} orbits, and you keep coming back. I count every one.`
+      : "day one. the best kind of day to begin.", 12000);
+    for(let i=0;i<3;i++) setTimeout(spawnFlora, 260*i);
+    setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2800);
+  });
+})();
 
 })();
 </script>
