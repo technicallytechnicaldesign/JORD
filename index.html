@@ -230,6 +230,15 @@
   .obj-floaty{animation:objFloat 4.4s ease-in-out infinite}
   @keyframes objShimmer{0%,100%{opacity:.5}50%{opacity:1}}
   .obj-shimmer{animation:objShimmer 2.6s ease-in-out infinite}
+  @keyframes objBoing{
+    0%{transform:translateY(0) scale(1,1)}
+    20%{transform:translateY(-11px) scale(.9,1.12)}
+    42%{transform:translateY(0) scale(1.1,.88)}
+    62%{transform:translateY(-6px) scale(.96,1.05)}
+    80%{transform:translateY(0) scale(1.03,.97)}
+    100%{transform:translateY(0) scale(1,1)}
+  }
+  .obj-boing{animation:objBoing .62s ease-in-out}
 
   .mini-say{
     opacity:0;transform:translateY(4px);
@@ -242,7 +251,7 @@
 
   @media (prefers-reduced-motion:reduce){
     .bob,#surface,.rippling,.fluttering,.twinkling,.wiggling,
-    .obj-floaty,.obj-shimmer,
+    .obj-floaty,.obj-shimmer,.obj-boing,
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
@@ -1482,6 +1491,12 @@ function spawnObject(){
   if(lifeClasses.length) lifeWrap.setAttribute("class", lifeClasses.join(" "));
   lifeWrap.innerHTML = o.svg;
   scaleWrap.appendChild(lifeWrap);
+  /* generous invisible hit target — the line-art itself is too thin to reliably
+     click; child of scaleWrap so it scales with the object */
+  const hit = document.createElementNS(svgNS,"circle");
+  hit.setAttribute("cx","0"); hit.setAttribute("cy","-14"); hit.setAttribute("r","20");
+  hit.setAttribute("fill","transparent"); hit.setAttribute("pointer-events","all");
+  scaleWrap.appendChild(hit);
   g.appendChild(scaleWrap);
 
   if(Math.random()<.35){
@@ -1513,15 +1528,72 @@ function spawnObject(){
     think(o.react, 16000);
     setTimeout(()=>{ if(!busy) applyMood(); }, 2600);
   }, 900);
-  setTimeout(()=>{
+  /* ── lifecycle + click interactions ──
+     curRot tracks the object's live rotation (spins accumulate onto it);
+     removed guards against double-cleanup when a click launches it early. */
+  let curRot = restTilt, removed = false;
+  const lifeClass = lifeClasses.join(" ");
+  function cleanup(){ if(removed) return; removed=true; g.remove(); objectPresent=false; }
+  function doExit(){
     g.style.opacity="0";
     if(!reduceMotion){
       /* shrink + twist away instead of a flat fade */
       scaleWrap.style.transition = "transform .6s ease-in";
-      scaleWrap.style.transform = `scale(${(scale*0.2).toFixed(2)}) rotate(${(restTilt + (left?-46:46)).toFixed(1)}deg)`;
+      scaleWrap.style.transform = `scale(${(scale*0.2).toFixed(2)}) rotate(${(curRot + (left?-46:46)).toFixed(1)}deg)`;
     }
-    setTimeout(()=>{ g.remove(); objectPresent=false; }, 1200);
-  }, rand(60,160)*1000);
+    setTimeout(cleanup, 1200);
+  }
+  let exitTimer = setTimeout(doExit, rand(60,160)*1000);
+
+  /* occasionally Jord notices you poked its visitor */
+  function ackJord(){
+    if(busy || sitting) return;
+    if(Math.random()<.45){
+      think(pick([
+        "hi, little one.","oh, you found it too.","careful with that one.",
+        "yes, it's real. I checked.","we're keeping it. briefly.",
+        "it likes you, I think.","good eye."
+      ]), 8000);
+    } else {
+      setEyes(pick(["happy","wink","sparkle"]));
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1400);
+    }
+  }
+
+  g.style.cursor = "pointer";
+  g.addEventListener("click", (e)=>{
+    /* must not also trigger Jord's own pat handler on #orbwrap */
+    e.stopPropagation();
+    if(removed) return;
+    if(reduceMotion){ think(o.react, 8000); return; }
+    const r = Math.random();
+    if(r < .34){
+      /* (a) spin — full turn or two, settling back at its resting tilt */
+      curRot += (Math.random()<.5 ? 360 : 720) * (left ? -1 : 1);
+      scaleWrap.style.transition = "transform .95s cubic-bezier(.3,1.25,.4,1)";
+      scaleWrap.style.transform = `scale(${scale.toFixed(2)}) rotate(${curRot.toFixed(1)}deg)`;
+    } else if(r < .67){
+      /* (b) launch — flies off in a random direction and is removed early.
+         translate rides on scaleWrap (its own style-transform, in g-space
+         since it's applied outermost) so it uses the proven transform path. */
+      clearTimeout(exitTimer);
+      const dx = rand(-70,70), dy = -rand(90,150), tumble = curRot + rand(-260,260);
+      scaleWrap.style.transition = "transform 1s ease-in";
+      scaleWrap.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${scale.toFixed(2)}) rotate(${tumble.toFixed(0)}deg)`;
+      g.style.opacity = "0";
+      setTimeout(cleanup, 1000);
+    } else {
+      /* (c) bob — a quick boing that leaves the natural lifecycle alone */
+      lifeWrap.classList.remove("obj-floaty","obj-shimmer","obj-boing");
+      void lifeWrap.getBoundingClientRect();
+      lifeWrap.classList.add("obj-boing");
+      lifeWrap.addEventListener("animationend", ()=>{
+        lifeWrap.classList.remove("obj-boing");
+        if(lifeClass) lifeWrap.setAttribute("class", lifeClass);
+      }, {once:true});
+    }
+    if(Math.random()<.5) ackJord();
+  });
 }
 function scheduleObjects(){
   setTimeout(()=>{
