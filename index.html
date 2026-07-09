@@ -457,6 +457,11 @@
   .sh-item:hover{box-shadow:3px 3px 0 var(--leaf)}
   .sh-item:active{transform:translate(1px,1px)}
   .sh-item svg{width:78%;height:78%;overflow:visible;display:block}
+  .sh-badge{
+    position:absolute;bottom:3px;right:4px;
+    font-size:9px;letter-spacing:.02em;color:var(--dim);
+    pointer-events:none;font-variant-numeric:tabular-nums;
+  }
   @keyframes shSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .sh-art.spun{animation:shSpin .7s ease-in-out}
   .sh-bubble{
@@ -2385,16 +2390,26 @@ const SHELF_MEMORY = [
 ];
 function renderShelf(){
   const grid=$("sh-grid");
-  $("sh-count").textContent = shelf.length ? shelf.length+" kept" : "";
-  if(!shelf.length){ grid.innerHTML=""; $("sh-empty").style.display="block"; return; }
+  if(!shelf.length){ $("sh-count").textContent=""; grid.innerHTML=""; $("sh-empty").style.display="block"; return; }
   $("sh-empty").style.display="none";
-  const items=[...shelf].reverse();
-  grid.innerHTML = items.map((s,idx)=>{
-    const o=OBJECTS[s.i]; if(!o) return "";
+  /* group by object type: one tile per distinct kind, most-recently-seen first,
+     with a small ×N badge for kinds that have visited more than once */
+  const groups=new Map();
+  shelf.forEach(s=>{
+    const g=groups.get(s.i);
+    if(g){ g.n++; if(s.t>g.t) g.t=s.t; }
+    else groups.set(s.i, {i:s.i, t:s.t, n:1});
+  });
+  const list=[...groups.values()].sort((a,b)=>b.t-a.t);
+  $("sh-count").textContent = `${list.length} kind${list.length===1?"":"s"} · ${shelf.length} kept`;
+  grid.innerHTML = list.map((g,idx)=>{
+    const o=OBJECTS[g.i]; if(!o) return "";
     const delay=(idx*0.29%2.6).toFixed(2);
-    return `<div class="sh-item" data-i="${s.i}">`
+    const badge = g.n>1 ? `<span class="sh-badge">×${g.n}</span>` : "";
+    return `<div class="sh-item" data-i="${g.i}">`
       + `<svg viewBox="-20 -30 44 44" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
       + `<g class="sh-art obj-floaty" style="animation-delay:${delay}s">${o.svg}</g></svg>`
+      + badge
       + `</div>`;
   }).join("");
 }
