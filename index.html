@@ -72,10 +72,9 @@
   .icon-btn:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
 
   /* ── sitting: the world softens ── */
-  header,.statusline,.actions,.vibes,footer,#thought{transition:opacity 1.4s ease}
+  header,.statusline,.actions,.vibes,footer{transition:opacity 1.4s ease}
   body.sitting header, body.sitting .statusline, body.sitting .actions,
   body.sitting .vibes, body.sitting footer{opacity:.05;pointer-events:none}
-  body.sitting #thought{opacity:0 !important}
   body.sitting .stage{border-color:var(--ghost)}
   #sittimer{
     position:absolute;inset:0;
@@ -87,7 +86,6 @@
   }
   body.sitting #sittimer{opacity:1}
   #orbwrap{position:relative;z-index:1;transition:transform .5s ease, opacity .5s ease}
-  #speech{position:relative;z-index:1}
 
   /* ── stage ── */
   .stage{
@@ -267,35 +265,29 @@
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer{animation:none}
   }
 
+  /* ── one bubble, centered above Jord's head, for both musings (think) and
+     dialogue (say) — plus a quiet idle phrase when there's nothing to add ── */
   #thought{
-    position:absolute;top:8px;left:10px;
-    max-width:62%;
+    position:absolute;top:6px;left:50%;
+    max-width:min(80%,340px);
     background:var(--paper);
     border:1.5px solid var(--ink);
     border-radius:14px;
-    padding:9px 12px;
-    font-size:12px;text-align:left;
-    opacity:0;transform:translateY(6px) scale(.96);
+    padding:9px 13px;
+    font-size:12px;text-align:center;line-height:1.4;
+    opacity:0;transform:translateX(-50%) translateY(6px) scale(.96);
     transition:opacity .5s ease, transform .5s ease;
     pointer-events:none;z-index:3;
   }
-  #thought.show{opacity:1;transform:translateY(0) scale(1)}
+  #thought.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  #thought.idle{color:var(--dim)}
+  #thought.idle.show{opacity:.55}
   #thought::after,#thought::before{
     content:"";position:absolute;background:var(--paper);
-    border:1.5px solid var(--ink);border-radius:50%;
+    border:1.5px solid var(--ink);border-radius:50%;left:50%;
   }
-  #thought::after{width:9px;height:9px;right:-10px;bottom:-6px}
-  #thought::before{width:5px;height:5px;right:-19px;bottom:-14px}
-
-  #speech{
-    min-height:2.6em;
-    display:flex;align-items:center;justify-content:center;
-    padding:6px 6px 0;margin-top:2px;
-    border-top:1px dashed var(--faint);
-    font-size:13px;transition:opacity .6s ease;
-  }
-  #speech.quiet{opacity:.35}
-  body.sitting #speech{font-size:14px;border-top-color:var(--ghost)}
+  #thought::after{width:9px;height:9px;bottom:-6px;margin-left:-11px}
+  #thought::before{width:5px;height:5px;bottom:-13px;margin-left:2px}
 
   .statusline{
     padding:4px 4px 2px;text-align:center;
@@ -412,7 +404,7 @@
   #modal{display:none}
   #modal.open{display:block}
   .stage.mode-active ~ .actions,.stage.mode-active ~ .vibes{display:none}
-  .stage.mode-active #speech,.stage.mode-active .statusline{display:none}
+  .stage.mode-active .statusline{display:none}
   .exercise{
     padding:6px 4px 2px;text-align:center;display:flex;flex-direction:column;gap:7px;
     border-top:1px dashed var(--faint);margin-top:2px;
@@ -680,7 +672,6 @@
         </g>
       </svg>
     </div>
-    <div id="speech" class="quiet">…</div>
     <div class="statusline"><span class="label">jord is</span><span id="jordis">arriving…</span></div>
 
     <div id="modal" role="region" aria-label="Exercise">
@@ -1428,7 +1419,7 @@ const GOLDEN_FLOWER = `<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 
 
 /* ── dom ── */
 const $ = id => document.getElementById(id);
-const speech=$("speech"), jordis=$("jordis"), toast=$("toast"),
+const jordis=$("jordis"), toast=$("toast"),
       modal=$("modal"), exPhase=$("ex-phase"), exBody=$("ex-body"), exCount=$("ex-count"),
       exNext=$("ex-next"), exClose=$("ex-close"), lastEl=$("lastcheck"),
       notifBtn=$("b-notif"), notifState=$("notifstate"), intervalSel=$("interval"),
@@ -1556,14 +1547,36 @@ if(!reduceMotion){
   }, 4200);
 }
 
-/* ── thoughts ── */
-let thoughtTimer=null;
+/* ── the bubble: one space above Jord's head for musings (think), dialogue
+   (say), and — when nothing's going on — a quiet, comical waiting phrase ── */
+const WAITING = [
+  "…","hmm.","still here.","..!","being round.","mm.",
+  "contemplating nothing in particular.","just vibing, professionally.",
+  "standing by. roundly.","thinking about soup, possibly.",
+  "holding your spot in the universe.","idle, but present.",
+  "orbiting gently, as one does.","no thoughts. round head.",
+  "here. that's the whole update."
+];
+let bubbleTimer=null, idleTimer=null;
+function showBubble(text, hold, idle){
+  clearTimeout(bubbleTimer); clearTimeout(idleTimer);
+  thought.textContent=text;
+  thought.classList.toggle("idle", !!idle);
+  thought.classList.add("show");
+  if(idle){ idleTimer=setTimeout(goIdle, rand(16000,30000)); return; }
+  bubbleTimer=setTimeout(goIdle, hold);
+}
+function goIdle(){
+  clearTimeout(bubbleTimer); clearTimeout(idleTimer);
+  /* idle phrases only when Jord is genuinely idle — never mid-sit, mid-exercise,
+     or mid-anything-busy; otherwise just fade the bubble away */
+  thought.classList.remove("show");
+  if(sitting || busy || modal.classList.contains("open")) return;
+  idleTimer=setTimeout(()=>showBubble(pick(WAITING), 0, true), 520);
+}
 function think(text, hold){
   if(sitting) return;
-  thought.textContent=text;
-  thought.classList.add("show");
-  clearTimeout(thoughtTimer);
-  thoughtTimer=setTimeout(()=>thought.classList.remove("show"), hold || rand(14000,22000));
+  showBubble(text, hold || rand(14000,22000), false);
 }
 function scheduleThoughts(){
   setTimeout(()=>{
@@ -1866,13 +1879,11 @@ setInterval(()=>{
 
 setInterval(()=>{ calm=clamp(calm-1,5,100); store.set("calm",calm); if(!busy && !sitting) render(); }, 4*60*1000);
 
-/* ── speech + toast ── */
-let speechTimer=null;
+/* ── speech + toast ──
+   say() is the "significant dialogue" voice; it shares the one bubble with
+   think() so Jord only ever speaks from one place, centered above his head. */
 function say(text, hold=10000){
-  speech.textContent=text;
-  speech.classList.remove("quiet");
-  clearTimeout(speechTimer);
-  speechTimer=setTimeout(()=>{ speech.textContent="…"; speech.classList.add("quiet"); }, hold);
+  showBubble(text, hold, false);
 }
 let toastTimer=null;
 function showToast(text){
@@ -1908,9 +1919,9 @@ function startSit(){
   sittimer.textContent="2:00";
   const linesUsed = [...SIT_LINES].sort(()=>Math.random()-.5).slice(0,5);
   let li=0;
-  say(linesUsed[li++], 23000);
+  say(linesUsed[li++], 26000);
   sitLineTimer=setInterval(()=>{
-    if(li<linesUsed.length) say(linesUsed[li++], 23000);
+    if(li<linesUsed.length) say(linesUsed[li++], 26000);
   }, 24000);
   sitTick=setInterval(()=>{
     t--;
