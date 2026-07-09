@@ -351,6 +351,18 @@
   input[type=range]:focus-visible{outline:2px solid var(--leaf);outline-offset:4px}
   .scalelabels{font-size:10px;color:var(--dim);letter-spacing:.06em}
 
+  /* hot/cold tint on the vibe slider — blue toward the heavy end, warm toward the buzzing end */
+  #vibeslider::-webkit-slider-runnable-track,#vibeslider::-webkit-slider-thumb{transition:background .5s ease, border-color .5s ease}
+  #vibeslider.vibe-cold::-webkit-slider-runnable-track{background:var(--water)}
+  #vibeslider.vibe-cold::-webkit-slider-thumb{border-color:var(--water)}
+  #vibeslider.vibe-cold::-moz-range-track{background:var(--water)}
+  #vibeslider.vibe-cold::-moz-range-thumb{border-color:var(--water)}
+  #vibeslider.vibe-hot::-webkit-slider-runnable-track{background:var(--bloom)}
+  #vibeslider.vibe-hot::-webkit-slider-thumb{border-color:var(--bloom)}
+  #vibeslider.vibe-hot::-moz-range-track{background:var(--bloom)}
+  #vibeslider.vibe-hot::-moz-range-thumb{border-color:var(--bloom)}
+  #orbblush{transition:opacity .5s ease, fill .5s ease}
+
   select{
     font:inherit;font-size:12px;color:var(--ink);
     background:var(--paper);border:1.5px solid var(--ink);border-radius:8px;
@@ -566,6 +578,10 @@
             <path d="M 118 86 q 9 -4 18 0"/>
             <circle cx="94" cy="104" r="3"/>
           </g>
+
+          <!-- hot/cold blush: soft wash tinted by the vibe slider's extremes -->
+          <circle id="orbblush" cx="140" cy="150" r="78" fill="var(--water)" opacity="0"
+                  stroke="none" pointer-events="none"/>
 
           <g id="backface" stroke="var(--faint)" stroke-width="1.5">
             <path d="M 100 140 q 20 -12 44 -4"/>
@@ -1411,7 +1427,7 @@ const speech=$("speech"), jordis=$("jordis"), toast=$("toast"),
       modal=$("modal"), exPhase=$("ex-phase"), exBody=$("ex-body"), exCount=$("ex-count"),
       exNext=$("ex-next"), exClose=$("ex-close"), lastEl=$("lastcheck"),
       notifBtn=$("b-notif"), notifState=$("notifstate"), intervalSel=$("interval"),
-      thought=$("thought"), orb=$("jord"), orbbody=$("orbbody"),
+      thought=$("thought"), orb=$("jord"), orbbody=$("orbbody"), orbblush=$("orbblush"),
       faceflip=$("faceflip"), backface=$("backface"),
       armL=$("arm-l"), armR=$("arm-r"),
       floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
@@ -1945,6 +1961,17 @@ function updateVibeWord(v, force){
    themselves out a couple seconds after the slider settles */
 let vibeReactTimer=null;
 function reactToVibePreview(v){
+  /* persistent hot/cold tint — applied regardless of reduce-motion (it's colour, not motion).
+     slider goes blue toward the heavy end, warm toward the buzzing end; Jord's blush
+     opacity ramps quadratically from the centre so it's barely there mid-range. */
+  const cold = v < 50;
+  const dist = Math.abs(v-50)/50;
+  vibeslider.classList.toggle("vibe-cold", cold && v<=VIBE_BANDS[1].max);
+  vibeslider.classList.toggle("vibe-hot", !cold && v>=VIBE_BANDS[3].max+1);
+  if(orbblush){
+    orbblush.setAttribute("fill", cold ? "var(--water)" : "var(--bloom)");
+    orbblush.setAttribute("opacity", (dist*dist*0.24).toFixed(3));
+  }
   if(reduceMotion) return;
   clearTimeout(vibeReactTimer);
   orbbody.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
