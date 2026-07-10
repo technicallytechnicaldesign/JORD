@@ -1,25 +1,38 @@
 # JORD — Handover Doc
 
-## Next session — queued up, start here
+## Next session — nothing queued
 
-At **rev M**. The rev-L queue (tidy, chimes layer, percussion dynamics, swell
-macro, module-plan refresh) is all shipped — see the newest changelog entries
-and the Ambient-soundscape architecture note. Nothing is queued specifically
-for next time. Open threads if you want them, none urgent:
+At **rev N**. Nothing is queued for next time — this was a small
+keepsake-PDF-page round on top of a long series, and it's a natural stopping
+point. Open threads if a future session wants them, none urgent:
 
-- **None of rev M is ear-verified** (no audio out in this env). The chime
+- **Nothing this round is print-verified** — no browser/print access in this
+  env. The three page-1 additions (bigger portrait + arms + sometimes-held
+  item, the today's-shelf strip, the rare reflection line) are reasoned from
+  coordinates/layout only. The single most useful thing a human can do is a
+  real **Trends → Save as PDF** and eyeball page 1: does the taller portrait +
+  two compact strips + (conditional) rare line still fit on ONE sheet with the
+  wave coda, or does it push the wave onto a second page? And do the arms/hands
+  read right, does a held object land believably in the right hand, does it ever
+  collide with the left flora sprig?
+- **None of rev M is ear-verified** (no audio out in this env) — the chime
   types' character/tuning, the percussion dynamics range, and the swell's
-  depth/period feel are all reasoned from the Web Audio graph, not heard —
-  the single most useful thing a human can do is actually listen and tell us
-  if any of it sounds off (bell too clangy, temple bowl too quiet, swell too
-  deep/shallow, chimes too sparse/frequent).
+  depth/period feel are all reasoned from the Web Audio graph, not heard.
 - The **standalone soundscape module** (`SOUNDSCAPE_MODULE_PLAN.md`) is still
-  planning-only, now updated through rev M — extraction remains un-started and
-  deliberately so.
+  planning-only through rev M — extraction remains un-started and deliberately so.
 
 ---
 
-Last updated: 2026-07-10, after a **soundscape round (rev M)**: a tidy pass
+Last updated: 2026-07-11, after a **keepsake-PDF round (rev N)**: three
+additions to page 1 of the printed keepsake — a **today's-shelf strip** (a
+compact deduped-by-kind row of the objects that drifted in since the 5am reset,
+mirroring the existing garden strip; `.ksh-*` styling), a **rare-item
+reflection** (one quiet gold line from a new `RARE_NOTES` pool, shown only if
+`shelf.some(s=>s.rare)`; omitted otherwise so there's no empty gold box), and a
+**bigger Jord portrait** (`.ks-art` 118px→166px) that now has simple arms/hands
+and on ~1 reprint in 3 holds a random `OBJECTS` item. Node-verified (syntax +
+today-shelf filter/dedup simulation) but NOT print-verified. Prior: 2026-07-10,
+a **soundscape round (rev M)**: a tidy pass
 (deduped the averaged-trend chart overlay into one `avgOverlay()` helper; a
 dead-code sweep came up clean), a new **chimes/gongs/bowls layer** (slow,
 spacious, inharmonic sine-partial strikes — singing bowl / bell / temple bowl,
@@ -271,8 +284,23 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   siblings inside `#trends`'s `.tr-inner`, `display:none` on screen and shown
   only inside the `@media print` block.
   - **Page 1** — `#tr-keepsake` + `#tr-wave` share ONE sheet (no
-    `break-before` between them): the whimsical keepsake (header, face, sweet
-    stat, quote, capped 12-bloom mini garden strip, footer) then the wave coda.
+    `break-before` between them): the whimsical keepsake (header, a bigger Jord
+    **portrait** with arms/hands that sometimes holds an object, sweet stat,
+    quote, an optional gold **rare-item reflection**, a capped 12-bloom mini
+    **garden strip**, a capped 12-kind **today's-shelf strip**, footer) then the
+    wave coda. The portrait `art` string and both compact strips are built in
+    `populateKeepsake()`: the portrait `<svg viewBox="0 0 150 100">` draws the
+    face + arms (`#arm-l`/`#arm-r`-style curved stroke + hash-mark fingers,
+    attached at the lower sides of the r=33 face circle) and, on `Math.random()
+    <.33`, a `pick(OBJECTS).svg` wrapped in `translate(92,86) scale(0.38)` to sit
+    in the right hand; `.ks-art` CSS width is 166px. The **today's-shelf strip**
+    (`.ks-shelf`/`.ksh-head`/`.ksh-row`/`.ksh-none`) filters `shelf` to the
+    `gardenDayKey` day and dedupes by kind inline (same Map reduction as
+    `shelfTiles()`), capped at 12 kinds. The **rare reflection** (`.ks-rare`,
+    gold `var(--sun)`) renders only when `shelf.some(s=>s.rare)`. The mini
+    garden strip (page 1) is capped at 12 blooms; the whole thing is
+    **NOT print-verified** — the one-sheet fit of portrait+two strips+wave is
+    the main thing worth a real print check.
     The wave line uses `smoothPathRamp(pts, sAt)`: the last 24h stays genuinely
     jagged (low `sAt`), older-than-24h overshoots past normal Catmull-Rom
     smoothing (`sAt` up to ~1.6) for an exaggeratedly silky look, so "spiky day
@@ -549,6 +577,26 @@ Latest rounds (same day, later):
   chime character/tuning, the dynamics range and the swell depth/period all
   want a real listen.
 
+- Keepsake-PDF page-1 additions (rev N): three commits. (1) **Today's-shelf
+  strip** — a compact, deduped-by-kind row of the objects that drifted in since
+  the 5am reset (same `gardenDayKey` boundary the on-screen shelf's Today
+  section uses), capped at 12 kinds, mirroring the existing garden strip's
+  bespoke `.ksh-*` print styling (NOT the screen-only `.sh-grid` classes). (2)
+  **Rare-item reflection** — one quiet gold-tinted line from a new `RARE_NOTES`
+  pool, shown only if a rare (~6%) item was ever kept (`shelf.some(s=>s.rare)`),
+  a light `var(--sun)` nod to the app's rare=gold language; omitted entirely
+  otherwise so there's no empty gold box. (3) **Bigger portrait + arms +
+  sometimes-held item** — `.ks-art` grown 118px→166px, the portrait given
+  simple arms/hands (the main stage's `#arm-l`/`#arm-r` convention: a short
+  curved limb stroke + three hash-mark fingers) attached at the lower sides of
+  the face circle, and on `Math.random()<.33` a random `pick(OBJECTS).svg`
+  wrapped in `translate(92,86) scale(0.38)` held in the right hand (hands rest
+  empty the other ~2/3). Node-verified (syntax + a today-shelf filter/dedup
+  Node simulation confirming the 5am boundary and per-kind grouping) but NOT
+  print-verified — whether page 1 (taller portrait + garden strip + shelf strip
+  + optional rare line + wave coda) still fits ONE sheet, and whether the
+  arms/held-object read right on paper, want a real Trends→Save-as-PDF check.
+
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
 
@@ -584,6 +632,7 @@ For anything beyond a small tweak, the effective loop has been:
      Use judgment on "substantial" — a single small copy/number tweak
      doesn't need it, a real feature or a multi-part round does. Don't bump
      it more than once per round even if the round has several commits.
+     (Now at **rev N**.)
    - End with a clear summary: what shipped, commit hashes, anything skipped
      and why.
 4. **When the agent finishes, verify locally before reporting to the user:**
