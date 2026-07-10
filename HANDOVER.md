@@ -49,7 +49,8 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   `<path id="m-NAME">` eye/mouth variants toggled via `display:none`, registered
   in the `EYES`/`MOUTHS` arrays, set via `setEyes()`/`setMouth()`). Sky/background
   elements (`#night`, `#clouds`, `#t-water`, `#t-zen`, `#meteor`, `#visitor` for
-  the rare UFO) are siblings of `#orbbody`, not descendants — this separation
+  the rare UFO, `#weather` for the ambient rain/sun/overcast layer) are siblings
+  of `#orbbody`, not descendants — this separation
   matters: reactive animations (shake/deflate/blush/breathing) should target
   `#orbbody` specifically so they don't drag the whole sky along, which was a
   real bug fixed earlier in this project.
@@ -226,6 +227,10 @@ conversation:
 - **Real local weather integration** (rain streaks, sun glow) via geolocation +
   a weather API — breaks the "single file, no external dependencies" rule and
   needs a permission-prompt design decision. Needs the user's buy-in first.
+  Note: a **self-contained, decorative** version of this is now built (the
+  ambient `#weather` layer — see below). Only the *real-location* variant
+  (geolocation + external API) remains deferred; the whimsical randomized one is
+  shipped.
 - **Seasonal / date-aware object & flora sets** (snowflakes weighted in winter,
   a birthday-specific object, etc.) — needs input on where "the date that
   matters" comes from and how much date-personalization is wanted.
