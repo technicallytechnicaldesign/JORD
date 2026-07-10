@@ -3246,6 +3246,15 @@ const SHELF_MEMORY = [
   "a souvenir from a quiet minute.",
   "you were here when this came by."
 ];
+/* shown on the keepsake page only if a rare (~6%) visitor was ever kept — a
+   quiet word about scarcity/preciousness, in the same deadpan-whimsical voice */
+const RARE_NOTES = [
+  "a rare one found its way to you. those don't drift in for everyone.",
+  "something scarce came by, once — the odds were against it, and it happened anyway.",
+  "the gold ones keep their own schedule. one of them kept yours.",
+  "you caught a rare thing and kept it. small miracle, filed quietly.",
+  "rare visitors are shy. one decided you were worth the trip."
+];
 /* a subtle, deterministic per-instance hue nudge so repeated sightings of the
    same object type (e.g. the snowflake) aren't a perfect stamp every time */
 function objHue(t){
@@ -3925,12 +3934,19 @@ function populateKeepsake(){
   } else {
     shelfHtml = `<div class="ks-shelf"><div class="ksh-none">nothing drifted in yet today — the shelf's quiet.</div></div>`;
   }
+  /* a quiet reflection on rarity — only if a rare (~6%) item was EVER kept
+     (all-time, not just today). Light gold nod (var(--sun)); omitted entirely
+     when nothing rare has come by, so there's no awkward empty gold box. */
+  const rareHtml = shelf.some(s=>s.rare)
+    ? `<div class="ks-rare"><span class="ks-rare-mark">✦</span> ${pick(RARE_NOTES)}</div>`
+    : "";
   $("tr-keepsake").innerHTML =
       `<div class="ks-head">a keepsake from JORD</div>`
     + `<div class="ks-sub">${dateStr} · private · just for you</div>`
     + art
     + `<div class="ks-sweet">${sweet}</div>`
     + `<div class="ks-notes">${notes.map(n=>`<p>&ldquo;${n}&rdquo;</p>`).join("")}</div>`
+    + rareHtml
     + gardenHtml
     + shelfHtml
     + `<div class="ks-foot">orbit day ${streak} · kept, not scored</div>`;
