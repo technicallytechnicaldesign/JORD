@@ -2099,7 +2099,12 @@ function spawnFlora(){
     rot = a*180/Math.PI;
   } else {
     x = Math.random()<.5 ? rand(28,66) : rand(214,252);
-    y = rand(262,272);
+    /* was 262-272, almost entirely past the viewBox's bottom edge (264) --
+       same class of clipping bug fixed for spawnObject() a few rounds back,
+       missed here. Pulled up to sit near the water's edge with real
+       clearance from the frame's bottom (and the "jord is" status text
+       just below the stage, which has almost no buffer of its own). */
+    y = rand(230,248);
   }
   const golden = Math.random()<.03;
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
