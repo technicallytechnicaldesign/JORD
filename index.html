@@ -740,6 +740,22 @@
            max-width:340px;margin:2px auto 0;padding-bottom:2px}
   .ksg-row svg{width:22px;height:27px;display:block;overflow:visible}
   .ksg-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
+  /* today's shelf keepsakes — same bespoke compact-strip pattern as the garden
+     row above (a small uppercase label + a capped flex row of tiny SVGs + an
+     in-voice empty line), NOT the screen-only .sh-grid CSS which the print
+     media query never wires up. Deduped by object kind so repeat sightings
+     don't double up. */
+  .ks-shelf{margin-top:7px;text-align:center}
+  .ksh-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+  .ksh-row{display:flex;justify-content:center;align-items:flex-end;gap:3px;flex-wrap:wrap;
+           max-width:340px;margin:2px auto 0;padding-bottom:2px}
+  .ksh-row svg{width:26px;height:26px;display:block;overflow:visible}
+  .ksh-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
+  /* a quiet gold-tinted reflection, shown only if a rare item was ever kept —
+     a light nod to the app's "rare = gold" (var(--sun)) language, no box. */
+  .ks-rare{margin:6px auto 0;max-width:340px;font-size:11px;font-style:italic;
+           text-align:center;line-height:1.45;color:color-mix(in srgb,var(--sun) 68%,var(--ink))}
+  .ks-rare-mark{color:var(--sun);font-style:normal}
 
   /* ── the week, as a plain wave — now a quiet sub-section of the same sheet,
      introduced by a thin divider rather than its own full title/date block ── */
@@ -3883,6 +3899,32 @@ function populateKeepsake(){
   } else {
     gardenHtml = `<div class="ks-garden"><div class="ksg-none">no blooms yet today — the soil's just resting.</div></div>`;
   }
+  /* a compact strip of TODAY'S shelf keepsakes — the objects that drifted in
+     since the 5am reset (same gardenDayKey boundary the on-screen shelf's
+     "Today" section uses). Deduped by object kind exactly like shelfTiles()
+     (one tile per distinct kind, most-recent first), capped like the garden
+     strip so a busy day can't blow the one-page budget. Bespoke .ksh-* styling
+     (see CSS), NOT the screen-only .sh-grid classes. */
+  const KS_MAXSHELF=12;
+  const shKey=gardenDayKey(new Date());
+  const shToday=shelf.filter(s=>gardenDayKey(new Date(s.t))===shKey);
+  let shelfHtml;
+  if(shToday.length){
+    const groups=new Map();
+    shToday.forEach(s=>{ const g=groups.get(s.i); if(g){ g.n++; if(s.t>g.t) g.t=s.t; } else groups.set(s.i,{i:s.i,t:s.t,n:1}); });
+    const kinds=[...groups.values()].sort((a,b)=>b.t-a.t);
+    const tiles=kinds.slice(0,KS_MAXSHELF).map(g=>{
+      const o=OBJECTS[g.i]; if(!o) return "";
+      const hue=objHue(g.t);
+      const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
+      return `<svg viewBox="-20 -30 44 44" style="${filt}" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">${o.svg}</svg>`;
+    }).join("");
+    const nk=kinds.length;
+    shelfHtml = `<div class="ks-shelf"><div class="ksh-head">today's shelf · ${nk} kind${nk===1?"":"s"}${nk>KS_MAXSHELF?` (${KS_MAXSHELF} shown)`:""}</div>`
+      + `<div class="ksh-row">${tiles}</div></div>`;
+  } else {
+    shelfHtml = `<div class="ks-shelf"><div class="ksh-none">nothing drifted in yet today — the shelf's quiet.</div></div>`;
+  }
   $("tr-keepsake").innerHTML =
       `<div class="ks-head">a keepsake from JORD</div>`
     + `<div class="ks-sub">${dateStr} · private · just for you</div>`
@@ -3890,6 +3932,7 @@ function populateKeepsake(){
     + `<div class="ks-sweet">${sweet}</div>`
     + `<div class="ks-notes">${notes.map(n=>`<p>&ldquo;${n}&rdquo;</p>`).join("")}</div>`
     + gardenHtml
+    + shelfHtml
     + `<div class="ks-foot">orbit day ${streak} · kept, not scored</div>`;
   populateWave();
 }
