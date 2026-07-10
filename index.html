@@ -117,8 +117,13 @@
   #orbwrap svg{width:100%;max-width:400px;height:auto;display:block}
   svg *{vector-effect:non-scaling-stroke}
 
-  @keyframes bob{0%,100%{transform:translateY(0) rotate(-.6deg)}50%{transform:translateY(-5px) rotate(.6deg)}}
-  .bob{animation:bob 6s ease-in-out infinite}
+  /* lift/tilt/duration are custom properties so JS can nudge the float organically;
+     -5px is the floor (never less), JS raises it toward -12px on some cycles */
+  @keyframes bob{
+    0%,100%{transform:translateY(0) rotate(calc(-1 * var(--bob-tilt,.6deg)))}
+    50%{transform:translateY(var(--bob-lift,-5px)) rotate(var(--bob-tilt,.6deg))}
+  }
+  .bob{animation:bob var(--bob-dur,6s) ease-in-out infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
   @keyframes wiggle{0%,100%{transform:rotate(0)}30%{transform:rotate(-2.5deg)}70%{transform:rotate(2deg)}}
@@ -1641,6 +1646,19 @@ if(!reduceMotion){
       setTimeout(()=>{ if(!busy && !sitting) setEyes(prev); },150);
     }
   }, 4200);
+}
+
+/* ── organic float: periodically re-roll Jord's bob amplitude, tilt and tempo so
+   the idle drift never feels metronomic. -5px stays the floor; some cycles lift
+   as high as -12px. .bob is already in the reduced-motion disable list. ── */
+if(!reduceMotion){
+  const reflowt = ()=>{
+    orb.style.setProperty("--bob-lift", rand(-12,-5).toFixed(1)+"px");
+    orb.style.setProperty("--bob-tilt", rand(.45,.95).toFixed(2)+"deg");
+    orb.style.setProperty("--bob-dur", rand(5,8).toFixed(1)+"s");
+  };
+  reflowt();
+  (function nextFloat(){ setTimeout(()=>{ reflowt(); nextFloat(); }, rand(8000,20000)); })();
 }
 
 /* ── the bubble: one space above Jord's head for musings (think), dialogue
