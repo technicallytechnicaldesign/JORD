@@ -363,7 +363,9 @@
     padding:6px 11px;
     font-size:11px;text-align:center;line-height:1.35;
     box-shadow:0 1px 5px rgba(0,0,0,.05);
-    opacity:0;transform:translateX(-50%) translateY(calc(5px + var(--tb-y,0px))) scale(.96);
+    /* starts low, right around his head, before rising into its reading
+       height on entrance -- see .leaving below for the reverse trip */
+    opacity:0;transform:translateX(-50%) translateY(calc(34px + var(--tb-y,0px))) scale(.94);
     transition:opacity .5s ease, transform .5s ease;
     pointer-events:none;z-index:3;
   }
@@ -379,6 +381,16 @@
   /* bounce entrance: overshoots slightly then settles, instead of the plain
      ease -- only the transform's curve changes, opacity still fades plainly */
   #thought.tb-bounce{transition:opacity .5s ease, transform .6s cubic-bezier(.34,1.7,.64,1)}
+  /* a thought's natural end: it keeps rising past its reading height and
+     dissolves, rather than sinking back down to where it started -- drifting
+     away, not popping back into his head. Slower + ease-in for an unhurried
+     dissipation. Declared after .tb-bounce so this always wins the exit
+     timing even though tb-bounce can still be attached from the entrance. */
+  #thought.leaving{
+    opacity:0;
+    transform:translateX(-50%) translateY(calc(-16px + var(--tb-y,0px))) scale(1.03);
+    transition:opacity .85s ease-in, transform .85s ease-in;
+  }
   /* long-text variant: wider still and flatter, so a genuine paragraph reads as a
      calm banner spanning the stage rather than a cramped tall pill. Still capped
      at 75% -- length changes the shape, never how much of the stage it claims. */
@@ -1843,13 +1855,17 @@ const WAITING = [
   "orbiting gently, as one does.","no thoughts. round head.",
   "here. that's the whole update."
 ];
-let bubbleTimer=null, idleTimer=null, bubbleGen=0;
+let bubbleTimer=null, idleTimer=null, leaveTimer=null, bubbleGen=0;
 const TB_BORDERS = ["tb-soft","tb-ink","tb-flat","tb-dash"];
+const TB_LEAVE_MS = 850;   /* matches .leaving's transition duration in CSS */
 /* actually paints the bubble: fresh text + a freshly-rolled stylistic variant
    every time it (re)appears, so consecutive thoughts don't look identical —
    different border/radius, a small vertical jitter (some sit a touch higher
-   or lower), and sometimes a bouncy entrance instead of the plain fade. */
+   or lower), and sometimes a bouncy entrance instead of the plain fade. Rises
+   in from near his head each time (see #thought's base transform in CSS). */
 function renderBubble(text, hold, idle){
+  clearTimeout(leaveTimer);
+  thought.classList.remove("leaving");
   thought.textContent=text;
   thought.classList.toggle("idle", !!idle);
   /* long musings/dialogue (SIT_LINES, longer say() copy) get the flatter banner
@@ -1868,12 +1884,14 @@ function renderBubble(text, hold, idle){
 }
 /* public entry point. if the bubble is already up with DIFFERENT text, it
    fades out fully first and only then fades the new thought in — it should
-   never just snap-swap content while sitting there visible. */
+   never just snap-swap content while sitting there visible. (This interrupt
+   path is a plain quick fade, not the drifting .leaving exit below — that
+   one's reserved for a thought actually finishing its natural life.) */
 function showBubble(text, hold, idle){
-  clearTimeout(bubbleTimer); clearTimeout(idleTimer);
+  clearTimeout(bubbleTimer); clearTimeout(idleTimer); clearTimeout(leaveTimer);
   const gen = ++bubbleGen;
   if(thought.classList.contains("show") && thought.textContent!==text){
-    thought.classList.remove("show");
+    thought.classList.remove("show"); thought.classList.remove("leaving");
     setTimeout(()=>{
       if(gen!==bubbleGen) return;   /* a newer call already superseded this one */
       renderBubble(text, hold, idle);
@@ -1883,12 +1901,25 @@ function showBubble(text, hold, idle){
   renderBubble(text, hold, idle);
 }
 function goIdle(){
-  clearTimeout(bubbleTimer); clearTimeout(idleTimer);
-  /* idle phrases only when Jord is genuinely idle — never mid-sit, mid-exercise,
-     or mid-anything-busy; otherwise just fade the bubble away */
-  thought.classList.remove("show");
-  if(sitting || busy || napping || modal.classList.contains("open")) return;
-  idleTimer=setTimeout(()=>showBubble(pick(WAITING), 0, true), 520);
+  clearTimeout(bubbleTimer); clearTimeout(idleTimer); clearTimeout(leaveTimer);
+  const gen = ++bubbleGen;
+  const wasShowing = thought.classList.contains("show");
+  /* a thought running out its natural hold time drifts on up and dissolves
+     (.leaving) rather than sinking back down to where it started — only
+     applies here, the one true "it's just done" exit, not the quicker
+     interrupt-fade above. */
+  if(wasShowing){
+    thought.classList.remove("show");
+    thought.classList.add("leaving");
+  }
+  const proceed = ()=>{
+    if(gen!==bubbleGen) return;
+    thought.classList.remove("leaving");
+    if(sitting || busy || napping || modal.classList.contains("open")) return;
+    idleTimer=setTimeout(()=>showBubble(pick(WAITING), 0, true), 300);
+  };
+  if(wasShowing) leaveTimer=setTimeout(proceed, TB_LEAVE_MS);
+  else proceed();
 }
 function think(text, hold){
   if(sitting) return;
@@ -1957,9 +1988,10 @@ function spawnObject(){
   const left = Math.random()<.5;
   const x = left ? rand(34,62) : rand(218,246);
   /* tracks Jord's own position (his "items"), not the water's — shifted up
-     another 8 units alongside #jordlift's static -8px nudge, independent of
-     the water tier which stays put */
-  const y = rand(232,240);
+     another ~5% of the frame height (viewBox is 304 tall, so ~15 units) so
+     they consistently sit a bit higher, independent of the water tier which
+     stays put */
+  const y = rand(217,225);
   const huge = Math.random()<.08;
   const scale = huge ? rand(2.6,3.6) : rand(.5,1.8);
   const svgNS = "http://www.w3.org/2000/svg";
