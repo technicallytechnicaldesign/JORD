@@ -180,6 +180,22 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     correctness (envelopes reach ~0, sources stopped+disconnected, sane buffer
     length/filter ranges) but the actual *character/mix balance* of the three
     textures wants a real listen.
+  - **Volume + amplified vibey-end (rev L)** — two independent volume sliders:
+    `ambVolume`/`#snd-volume` scales `ambMaster.gain` directly (the true
+    overall level, since drone+notes+percussion all route through it), while
+    `ambPercVolume`/`#snd-perc-volume` is an additional per-hit multiplier
+    applied only in `playPercHit()`'s `peak` calc (a channel fader on top of
+    the master). Both default 100 so existing saved setups don't go quiet.
+    Variety's and Groove's high ends got a quadratic boost layered on top of
+    their original linear terms (e.g. `vari*(340+vari*560)` for filter
+    cutoff wander, was flat `vari*340`) so max settings genuinely roam/swing
+    much further while low/mid values are barely changed from before (the
+    quadratic term is small until past ~halfway) — max Variety now wanders
+    ~±900Hz with a 0.5s glide (was ~±340Hz/2.4s), max Groove hits ~150%
+    timing jitter with ~53%/~46% syncopation/drop chances. Groove above 0.6
+    also occasionally substitutes a different percussion type for one hit
+    (`PERC_TYPES`, up to 20% at groove=1) for real timbral variety, not just
+    timing wobble.
 - **PDF export** — Trends → "Save as PDF" uses the browser's native
   `window.print()`, and is now THREE printed pages, each populated at print
   time via a single chain off `populateKeepsake()` (→ `populateWave()` →
@@ -438,6 +454,16 @@ Latest rounds (same day, later):
   (syntax + every new store key read+written, every new DOM id present in both
   HTML and JS) but NOT ear-verified — no audio out in this env, so the texture
   character and mix balance want a real listen.
+
+- Volume sliders + amplified vibey-end (rev L): independent Volume and
+  Percussion-volume sliders (both default 100), plus a quadratic boost on
+  Variety's and Groove's high ends so max settings genuinely roam/swing much
+  further while low/mid feel is close to unchanged — see the sub-note under
+  the Ambient soundscape architecture section for the exact before/after
+  numbers. Groove above 0.6 can also swap in a different percussion texture
+  for one hit. Verified with a standalone Node calc of the amplified formulas
+  across the slider range, plus a headless DOM check of the new sliders'
+  persistence — not ear-verified (no audio out in this env).
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
