@@ -1046,7 +1046,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev G</span>
+    <span class="rev">rev H</span>
   </footer>
 </div>
 
@@ -1108,6 +1108,14 @@
       <span class="label">mission markers on charts</span>
       <input type="checkbox" id="missiontoggle" checked>
     </label>
+    <label class="row screen-only" style="cursor:pointer">
+      <span class="label">averaged trend line</span>
+      <input type="checkbox" id="avgtoggle">
+    </label>
+    <div class="tr-card screen-only">
+      <h3>Last hour · by the minute</h3>
+      <div id="tr-lasthour"></div>
+    </div>
     <div class="tr-card screen-only">
       <h3>Today · by hour</h3>
       <div id="tr-today"></div>
@@ -1243,6 +1251,7 @@ let pats = store.get("pats", 0);
 let vibes = store.get("vibes", []);
 let missions = store.get("missions", []);
 let showMissions = store.get("showMissions", true);
+let showAverage = store.get("showAverage", false);
 let nightModeOverride = store.get("nightModeOverride", "auto");
 let reminderTimer=null, busy=false, sitting=false, napping=false, currentTier=-1;
 let patTimes = [];
@@ -2680,6 +2689,36 @@ function midBand(Y,x1,x2){
        + `<text x="${x1+3}" y="${(yTop+9).toFixed(1)}" font-size="6.5" fill="var(--leaf)" font-family="inherit" opacity=".85">sweet spot</text>`;
 }
 
+function chartLastHour(){
+  const now=Date.now(), cutoff=now-3600000;
+  const recent=vibes.filter(e=>e.t>=cutoff).sort((a,b)=>a.t-b.t);
+  const pts=recent.map(e=>({m:(now-e.t)/60000, v:e.v}));   /* m = minutes ago, 0..60 */
+  const recentMissions=missions.filter(m=>m.t>=cutoff);
+  if(!pts.length && !(showMissions && recentMissions.length)) return `<div style="font-size:12px;color:var(--dim)">nothing in the last hour. the slider awaits.</div>`;
+  const X=m=>20+((60-m)/60)*280, Y=v=>8+(100-v)*0.7;   /* 60min-ago at left, now at right */
+  let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=midBand(Y,20,300);
+  svg+=`<line x1="20" y1="78" x2="300" y2="78" stroke="var(--faint)" stroke-width="1"/>`;
+  [60,45,30,15,0].forEach(m=>{
+    svg+=`<text x="${X(m)}" y="92" font-size="8" fill="var(--dim)" text-anchor="middle" font-family="inherit">${m===0?"now":"-"+m}</text>`;
+    svg+=`<line x1="${X(m)}" y1="76" x2="${X(m)}" y2="80" stroke="var(--faint)"/>`;
+  });
+  const sp=pts.map(p=>({x:X(p.m), y:Y(p.v)}));
+  if(pts.length>1){
+    svg+=`<polyline points="${sp.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
+    if(showAverage && pts.length>2) svg+=`<path d="${smoothPath(sp)}" fill="none" stroke="var(--leaf)" stroke-width="1.8" opacity=".5"/>`;
+  }
+  pts.forEach(p=>{ svg+=`<circle cx="${X(p.m)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
+  if(showMissions){
+    recentMissions.forEach(m=>{
+      const mago=(now-m.t)/60000;
+      svg+=`<text x="${X(mago)}" y="18" font-size="10" text-anchor="middle" font-family="inherit" class="mission-icon">${MISSION_ICON[m.type]||"•"}</text>`;
+    });
+  }
+  svg+=`</svg>`;
+  return svg;
+}
+
 function chartToday(){
   const today = dayKey(new Date());
   const pts = vibes.filter(e=>dayKey(new Date(e.t))===today)
@@ -2696,6 +2735,7 @@ function chartToday(){
   });
   if(pts.length>1){
     svg+=`<polyline points="${pts.map(p=>X(p.x)+","+Y(p.v)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
+    if(showAverage && pts.length>2) svg+=`<path d="${smoothPath(pts.map(p=>({x:X(p.x), y:Y(p.v)})))}" fill="none" stroke="var(--leaf)" stroke-width="1.8" opacity=".5"/>`;
   }
   pts.forEach(p=>{ svg+=`<circle cx="${X(p.x)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
@@ -2726,6 +2766,7 @@ function chartHistory(){
   const present = days.map((x,i)=>({...x,i})).filter(x=>x.avg!==null);
   if(present.length>1){
     svg+=`<polyline points="${present.map(p=>X(p.i)+","+Y(p.avg)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
+    if(showAverage && present.length>2) svg+=`<path d="${smoothPath(present.map(p=>({x:X(p.i), y:Y(p.avg)})))}" fill="none" stroke="var(--leaf)" stroke-width="1.8" opacity=".5"/>`;
   }
   present.forEach(p=>{ svg+=`<circle cx="${X(p.i)}" cy="${Y(p.avg)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
@@ -2774,6 +2815,7 @@ function trendStats(){
 }
 
 function renderCharts(){
+  $("tr-lasthour").innerHTML = chartLastHour();
   $("tr-today").innerHTML = chartToday();
   $("tr-hist").innerHTML = chartHistory();
 }
@@ -2794,6 +2836,12 @@ $("missiontoggle").checked = showMissions;
 $("missiontoggle").addEventListener("change", ()=>{
   showMissions = $("missiontoggle").checked;
   store.set("showMissions", showMissions);
+  renderCharts();
+});
+$("avgtoggle").checked = showAverage;
+$("avgtoggle").addEventListener("change", ()=>{
+  showAverage = $("avgtoggle").checked;
+  store.set("showAverage", showAverage);
   renderCharts();
 });
 
@@ -3557,7 +3605,9 @@ function populateWave(){
 function populateDataPage(){
   $("tr-data").innerHTML =
       `<div class="dp-head">JORD · the data</div>`
-    + `<div class="dp-sub">the same two lines you watch on the tracker — now holding still</div>`
+    + `<div class="dp-sub">the same lines you watch on the tracker — now holding still</div>`
+    + `<div class="dp-chart"><div class="dp-title">Last hour · by the minute</div>`
+    +   `<div class="dp-svg">${chartLastHour()}</div></div>`
     + `<div class="dp-chart"><div class="dp-title">Today · by hour</div>`
     +   `<div class="dp-svg">${chartToday()}</div></div>`
     + `<div class="dp-chart"><div class="dp-title">Last 14 days · daily average</div>`
