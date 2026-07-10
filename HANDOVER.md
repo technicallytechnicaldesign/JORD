@@ -239,6 +239,18 @@ Latest rounds (same day, later):
   animation that self-removes on animationend. ~38% arrival shortly after open +
   a 30% roll every 26s on a self-terminating interval; clickable for a deadpan
   line. No spawns under reduce-motion — see architecture notes above.
+- Thought bubble anchor switched from a fixed `top:9px` to `top:28%` (percentage
+  of `.stage`, tracking the SVG's own proportions) — several rounds of moving
+  Jord's head lower in the frame had left a fixed-px bubble drifting further
+  from him each time. All its transition timings slowed drastically per
+  request: entrance .5s→1.6s, the natural drift-away exit .85s→3s (bounce
+  entrance .6s→1.3s) — `TB_LEAVE_MS` updated to match the 3s exit, same class
+  of handoff bug fixed for the nap earlier (don't let JS swap content before
+  a slowed CSS transition has actually finished).
+- Keepsake shelf: added a "today" section (5am reset, same boundary as the
+  garden) above the existing all-time listing — `shelfTiles()` factors out
+  the shared group-by-kind-with-badge rendering so both sections reuse it
+  rather than duplicating the logic.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
