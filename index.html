@@ -1068,7 +1068,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev H</span>
+    <span class="rev">rev I</span>
   </footer>
 </div>
 
@@ -1981,11 +1981,11 @@ scheduleTurns();
 
 /* ── mood engine ── */
 const MOODS = {
-  delighted:[["sparkle","grin"],["happy","grin"],["happy","smile"],["wide","o"],["heart","grin"],["wink","smirk"]],
-  content:  [["open","smile"],["closed","smile"],["happy","smile"],["side","smile"],["wink","smile"]],
-  curious:  [["wide","o"],["side","hmm"],["open","o"],["chaos","wavy"]],
-  pensive:  [["squint","hmm"],["flat","flat"],["side","flat"],["closed","flat"]],
-  sleepy:   [["closed","smile"],["closed","flat"],["squint","flat"],["flat","hmm"],["closed","kiss"]],
+  delighted:[["sparkle","grin"],["happy","grin"],["happy","smile"],["wide","o"],["heart","grin"],["wink","smirk"],["uwu","grin"]],
+  content:  [["open","smile"],["closed","smile"],["happy","smile"],["side","smile"],["wink","smile"],["uwu","smile"]],
+  curious:  [["wide","o"],["side","hmm"],["open","o"],["chaos","wavy"],["lookleft","hmm"],["lookright","o"],["lookup","o"],["peer","hmm"],["peer","smirk"]],
+  pensive:  [["squint","hmm"],["flat","flat"],["side","flat"],["closed","flat"],["lookup","hmm"]],
+  sleepy:   [["closed","smile"],["closed","flat"],["squint","flat"],["flat","hmm"],["closed","kiss"],["uwu","smile"]],
   chaotic:  [["chaos","wavy"],["squint","wavy"],["wide","wavy"],["sparkle","o"],["heart","smirk"]]
 };
 function pickMood(){
@@ -2299,7 +2299,7 @@ function spawnObject(){
         "it likes you, I think.","good eye."
       ]), 8000);
     } else {
-      setEyes(pick(["happy","wink","sparkle"]));
+      setEyes(pick(["happy","wink","sparkle","uwu","peer"]));
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1400);
     }
   }
