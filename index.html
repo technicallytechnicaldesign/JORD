@@ -164,6 +164,15 @@
   .cloud2{animation:cloudDrift2 79s linear infinite 9s}
   .cloud3{animation:cloudDrift3 68s linear infinite 24s}
 
+  /* ── the moon tracks slowly across the night sky, arcing gently upward at
+     mid-passage — much slower and statelier than the clouds ── */
+  @keyframes moonDrift{
+    0%{transform:translate(-24px,20px)}
+    50%{transform:translate(104px,-10px)}
+    100%{transform:translate(210px,20px)}
+  }
+  #moon{animation:moonDrift 220s linear infinite}
+
   #arm-l,#arm-r{transition:transform .4s ease}
   @keyframes waveR{0%,100%{transform:translate(214.8px,172px) rotate(0)}18%{transform:translate(214.8px,172px) rotate(-115deg)}32%{transform:translate(214.8px,172px) rotate(-95deg)}46%{transform:translate(214.8px,172px) rotate(-120deg)}60%{transform:translate(214.8px,172px) rotate(-95deg)}74%{transform:translate(214.8px,172px) rotate(-112deg)}}
   @keyframes waveL{0%,100%{transform:translate(65.2px,172px) rotate(0)}18%{transform:translate(65.2px,172px) rotate(115deg)}32%{transform:translate(65.2px,172px) rotate(95deg)}46%{transform:translate(65.2px,172px) rotate(120deg)}60%{transform:translate(65.2px,172px) rotate(95deg)}74%{transform:translate(65.2px,172px) rotate(112deg)}}
@@ -283,7 +292,7 @@
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
     .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise,
-    .unit,.stage,.ard,
+    .unit,.stage,.ard,#moon,
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway{animation:none}
   }
 
@@ -592,7 +601,14 @@
            fill="none" stroke-linecap="round" stroke-linejoin="round">
 
         <g id="night" class="tier hidden" stroke="var(--ink)" stroke-width="1.5">
-          <path d="M 34 40 a 11 11 0 1 0 12 14 a 8.5 8.5 0 1 1 -12 -14 Z"/>
+          <!-- moon: a faint always-present disk + a phase-shaped lit face (path 'd'
+               computed from the real date in JS); the whole group drifts across the
+               sky. cx/cy 40/47 r 11 kept from the old crescent's footprint. -->
+          <g id="moon">
+            <circle cx="40" cy="47" r="11" stroke="var(--faint)" stroke-width="1"/>
+            <path id="moon-lit" d="M 40 36 A 11 11 0 0 1 40 58 A 8.5 11 0 0 0 40 36 Z"
+                  fill="var(--sun)" fill-opacity=".14"/>
+          </g>
           <path class="twinkling" d="M 250 36 v 8 M 246 40 h 8" stroke="var(--sun)"/>
           <path class="twinkling soft" style="animation-delay:1.6s" d="M 226 66 v 6 M 223 69 h 6" stroke="var(--sun)"/>
           <path class="twinkling sharp" style="animation-delay:.8s" d="M 70 30 v 7 M 66.5 33.5 h 7" stroke="var(--sun)"/>
@@ -1553,6 +1569,28 @@ function applyTheme(){
 }
 applyTheme();
 setInterval(applyTheme, 5*60*1000);
+
+/* ── moon phase: real, deterministic, offline. Days since a known new-moon epoch
+   (2000-01-06 18:14 UTC) modulo the synodic month give a phase 0..1 (0 new, .5
+   full). The lit face is the region between the outer limb and the terminator
+   ellipse — a crescent when thin, gibbous when fat, a full disk at full moon. ── */
+function moonPhaseFrac(date){
+  const synodic=29.530588853, epoch=Date.UTC(2000,0,6,18,14,0);
+  let p=(((date.getTime()-epoch)/86400000)%synodic)/synodic;
+  return p<0 ? p+1 : p;
+}
+function moonPath(cx,cy,r,p){
+  const mag=r*Math.cos(p*2*Math.PI);         /* signed terminator half-width */
+  const outer=p<0.5 ? 1 : 0;                  /* waxing lights the right limb */
+  const inner=mag>0 ? outer : (outer===1?0:1);
+  const t=(cy-r).toFixed(1), b=(cy+r).toFixed(1);
+  return `M ${cx} ${t} A ${r} ${r} 0 0 ${outer} ${cx} ${b}`
+       + ` A ${Math.abs(mag).toFixed(2)} ${r} 0 0 ${inner} ${cx} ${t} Z`;
+}
+(function drawMoon(){
+  const el=$("moon-lit"); if(!el) return;
+  el.setAttribute("d", moonPath(40,47,11, moonPhaseFrac(new Date())));
+})();
 
 function setEyes(name){ EYES.forEach(e=>{ $("e-"+e).style.display = e===name ? "" : "none"; }); }
 function setMouth(name){ MOUTHS.forEach(m=>{ $("m-"+m).style.display = m===name ? "" : "none"; }); }
