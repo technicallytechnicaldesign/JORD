@@ -766,7 +766,7 @@
   #tr-gardenpage{display:none}
   .gp-head{font-size:15px;letter-spacing:.14em;text-align:center;font-weight:600;text-transform:uppercase}
   .gp-sub{font-size:11px;letter-spacing:.06em;color:var(--dim);text-align:center;margin-top:4px}
-  .gp-field{position:relative;width:100%;max-width:460px;height:420px;margin:16px auto 0}
+  .gp-field{position:relative;width:100%;max-width:460px;height:620px;margin:16px auto 0}
   .gp-flower{position:absolute;transform-origin:50% 100%}
   .gp-flower svg{width:48px;height:auto;display:block;overflow:visible}
   .gp-visitor{position:absolute}
@@ -779,7 +779,13 @@
   .gp-foot{font-size:9px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:14px;text-transform:uppercase}
 
   @media print{
-    body{padding:0}
+    /* body is display:flex;justify-content:center on screen (to center .unit) --
+       that flex context was never reset for print, and flex items shrink-wrap
+       by default, so #trends could end up narrower than the page and centered
+       within the WRONG box instead of the actual paper width. Reset to a plain
+       block so #trends spans the full page and .tr-inner's own margin:0 auto
+       centers correctly against real page width, not a flex-shrunk one. */
+    body{padding:0;display:block}
     .unit,#toast,#modal,#thought,#settings,#shelf,#sound,#garden{display:none !important}
     #trends{display:block !important;position:static;overflow:visible;padding:0}
     #trends .screen-only{display:none !important}
