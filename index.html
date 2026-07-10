@@ -605,9 +605,18 @@
   .ks-sub{font-size:11px;letter-spacing:.08em;color:var(--dim);text-align:center;margin-top:4px}
   .ks-art{display:block;margin:8px auto 4px;width:118px;height:auto}
   .ks-sweet{font-size:12px;line-height:1.5;text-align:center;max-width:340px;margin:4px auto 0}
-  .ks-notes{margin-top:8px}
-  .ks-notes p{font-size:11.5px;font-style:italic;text-align:center;color:var(--ink);margin:5px auto;max-width:340px;line-height:1.45}
-  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:10px;text-transform:uppercase}
+  .ks-notes{margin-top:6px}
+  .ks-notes p{font-size:11.5px;font-style:italic;text-align:center;color:var(--ink);margin:4px auto;max-width:340px;line-height:1.45}
+  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:7px;text-transform:uppercase}
+  /* a compact strip of today's actual garden at the foot of the sheet — a
+     little row of blooms, not a second full meadow. Kept to a fixed modest
+     height (capped bloom count) so it never blows the one-page budget. */
+  .ks-garden{margin-top:7px;text-align:center}
+  .ksg-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+  .ksg-row{display:flex;justify-content:center;align-items:flex-end;gap:1px;
+           max-width:340px;margin:2px auto 0;padding-bottom:2px}
+  .ksg-row svg{width:22px;height:27px;display:block;overflow:visible}
+  .ksg-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
 
   /* ── the week, as a plain wave — now a quiet sub-section of the same sheet,
      introduced by a thin divider rather than its own full title/date block ── */
@@ -3078,12 +3087,40 @@ function populateKeepsake(){
     + `<g transform="translate(122,82) scale(1.5)">${pick(FLORA)}</g>`
     + `<g transform="translate(20,86) scale(1.15)">${pick(FLORA)}</g>`
     + `</svg>`;
+  /* a compact strip of TODAY'S live garden — same building blocks as
+     renderGarden() (FLORA/GOLDEN_FLOWER, gseed for a stable per-bloom scatter,
+     objHue for the gentle colour drift) but shrunk to a single capped row so
+     it stays a little garden strip, not a second full panel. Seeded off
+     (g.t||0)+idx+1 like the on-screen garden, so a reprint looks identical. */
+  const KS_MAXBLOOM=12;
+  let gardenHtml;
+  if(garden.length){
+    const shown=garden.slice(0,KS_MAXBLOOM);
+    const blooms=shown.map((g,idx)=>{
+      const seed=(g.t||0)+idx+1;
+      const rot=((gseed(seed*2.3+5)-0.5)*22).toFixed(1);  /* ±11deg lean */
+      const scale=(0.8+gseed(seed*3.1+7)*0.4).toFixed(2); /* .80..1.20 */
+      const hue=objHue(seed);
+      const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
+      const artf=g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length];
+      return `<svg viewBox="-14 -26 28 34" style="transform:rotate(${rot}deg) scale(${scale});transform-origin:50% 100%;${filt}" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+        + artf
+        + `<text x="0" y="6" text-anchor="middle" font-size="6" fill="var(--dim)" stroke="none" font-family="inherit">${g.sym||"·"}</text>`
+        + `</svg>`;
+    }).join("");
+    const n=garden.length;
+    gardenHtml = `<div class="ks-garden"><div class="ksg-head">today's garden · ${n} bloom${n===1?"":"s"}${n>KS_MAXBLOOM?` (${KS_MAXBLOOM} shown)`:""}</div>`
+      + `<div class="ksg-row">${blooms}</div></div>`;
+  } else {
+    gardenHtml = `<div class="ks-garden"><div class="ksg-none">no blooms yet today — the soil's just resting.</div></div>`;
+  }
   $("tr-keepsake").innerHTML =
       `<div class="ks-head">a keepsake from JORD</div>`
     + `<div class="ks-sub">${dateStr} · private · just for you</div>`
     + art
     + `<div class="ks-sweet">${sweet}</div>`
     + `<div class="ks-notes">${notes.map(n=>`<p>&ldquo;${n}&rdquo;</p>`).join("")}</div>`
+    + gardenHtml
     + `<div class="ks-foot">orbit day ${streak} · kept, not scored</div>`;
   populateWave();
 }
