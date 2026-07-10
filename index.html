@@ -2811,6 +2811,11 @@ function midBand(Y,x1,x2){
   return `<rect x="${x1}" y="${yTop.toFixed(1)}" width="${x2-x1}" height="${(yBot-yTop).toFixed(1)}" fill="var(--leaf)" opacity=".12"/>`
        + `<text x="${x1+3}" y="${(yTop+9).toFixed(1)}" font-size="6.5" fill="var(--leaf)" font-family="inherit" opacity=".85">sweet spot</text>`;
 }
+/* the dashed half-opacity smoothed line the "averaged trend" toggle overlays --
+   identical across all three vibe charts, so it lives here once */
+function avgOverlay(points){
+  return `<path d="${averagePath(points)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
+}
 
 function chartLastHour(){
   const now=Date.now(), cutoff=now-3600000;
@@ -2829,7 +2834,7 @@ function chartLastHour(){
   const sp=pts.map(p=>({x:X(p.m), y:Y(p.v)}));
   if(pts.length>1){
     svg+=`<polyline points="${sp.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
-    if(showAverage && pts.length>2) svg+=`<path d="${averagePath(sp)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
+    if(showAverage && pts.length>2) svg+=avgOverlay(sp);
   }
   pts.forEach(p=>{ svg+=`<circle cx="${X(p.m)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
@@ -2858,7 +2863,7 @@ function chartToday(){
   });
   if(pts.length>1){
     svg+=`<polyline points="${pts.map(p=>X(p.x)+","+Y(p.v)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
-    if(showAverage && pts.length>2) svg+=`<path d="${averagePath(pts.map(p=>({x:X(p.x), y:Y(p.v)})))}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
+    if(showAverage && pts.length>2) svg+=avgOverlay(pts.map(p=>({x:X(p.x), y:Y(p.v)})));
   }
   pts.forEach(p=>{ svg+=`<circle cx="${X(p.x)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
@@ -2889,7 +2894,7 @@ function chartHistory(){
   const present = days.map((x,i)=>({...x,i})).filter(x=>x.avg!==null);
   if(present.length>1){
     svg+=`<polyline points="${present.map(p=>X(p.i)+","+Y(p.avg)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
-    if(showAverage && present.length>2) svg+=`<path d="${averagePath(present.map(p=>({x:X(p.i), y:Y(p.avg)})))}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
+    if(showAverage && present.length>2) svg+=avgOverlay(present.map(p=>({x:X(p.i), y:Y(p.avg)})));
   }
   present.forEach(p=>{ svg+=`<circle cx="${X(p.i)}" cy="${Y(p.avg)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
