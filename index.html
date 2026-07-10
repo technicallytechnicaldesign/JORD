@@ -320,6 +320,16 @@
   }
   .obj-boing{animation:objBoing .62s ease-in-out}
 
+  /* ── rare visitor (roughly 1-in-16 spawn): a soft gold glow behind it and a
+     few twinkling 4-point stars, so a rare one reads as special on the main
+     stage. The glow circle / sparkle stars carry a static gold opacity in their
+     markup, so under reduce-motion (animations frozen below) they still show as
+     a distinct gold marker rather than vanishing. ── */
+  @keyframes objRareGlow{0%,100%{opacity:.10;transform:scale(.9)}50%{opacity:.30;transform:scale(1.18)}}
+  .obj-rare-glow{transform-box:fill-box;transform-origin:center;animation:objRareGlow 2.8s ease-in-out infinite}
+  @keyframes objSparkle{0%,100%{opacity:.25;transform:scale(.45)}50%{opacity:1;transform:scale(1)}}
+  .obj-sparkle{transform-box:fill-box;transform-origin:center;animation:objSparkle 1.9s ease-in-out infinite}
+
   .mini-say{
     opacity:0;transform:translateY(4px);
     transition:opacity .5s ease, transform .5s ease;
@@ -331,7 +341,7 @@
 
   @media (prefers-reduced-motion:reduce){
     .bob,#surface,.rippling,.fluttering,.twinkling,.wiggling,
-    .obj-floaty,.obj-shimmer,.obj-boing,
+    .obj-floaty,.obj-shimmer,.obj-boing,.obj-rare-glow,.obj-sparkle,
     #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
@@ -2090,9 +2100,14 @@ function spawnObject(){
   objectPresent=true;
   const oi = Math.floor(Math.random()*OBJECTS.length);
   const o = OBJECTS[oi];
+  /* rare visitor: ~6% of spawns (between the golden bloom's 3-5% and the "huge"
+     8% — rare enough to feel like a find, common enough to actually see). Gets a
+     gold glow + sparkles here, and its own section on the keepsake shelf. Old
+     shelf entries predate this field; missing == falsy == not rare, no migration. */
+  const rare = Math.random()<.06;
   /* passive keepsake shelf: quietly log every visitor */
   const spawnT=Date.now();
-  shelf.push({i:oi, react:o.react, t:spawnT});
+  shelf.push({i:oi, react:o.react, t:spawnT, rare});
   if(shelf.length>240) shelf=shelf.slice(-240);
   store.set("shelf", shelf);
   const left = Math.random()<.5;
@@ -2132,7 +2147,29 @@ function spawnObject(){
   const spawnHue=objHue(spawnT);
   if(spawnHue) lifeWrap.style.filter=`hue-rotate(${spawnHue}deg)`;
   lifeWrap.innerHTML = o.svg;
+  /* rare visitors get a gold glow (behind the art) + a scatter of twinkling
+     4-point stars (in front). Both live on scaleWrap, NOT lifeWrap, so the
+     object's per-instance hue-rotate leaves the gold untouched. Each star is a
+     positioning <g> wrapping an animating <g> so the CSS scale/opacity doesn't
+     clobber its translate (the usual SVG transform-vs-animation gotcha). */
+  if(rare){
+    const glow = document.createElementNS(svgNS,"circle");
+    glow.setAttribute("class","obj-rare-glow");
+    glow.setAttribute("cx","0"); glow.setAttribute("cy","-14"); glow.setAttribute("r","22");
+    glow.setAttribute("fill","var(--sun)"); glow.setAttribute("stroke","none");
+    glow.setAttribute("opacity",".16");
+    scaleWrap.appendChild(glow);
+  }
   scaleWrap.appendChild(lifeWrap);
+  if(rare){
+    const star="M 0 -5 L 1.3 -1.3 5 0 1.3 1.3 0 5 -1.3 1.3 -5 0 -1.3 -1.3 Z";
+    const spots=[[-16,-30,0],[15,-31,.55],[18,-8,1.05],[-18,-2,.5],[2,-36,.85]];
+    const sp = document.createElementNS(svgNS,"g");
+    sp.innerHTML = spots.map(([sx,sy,d])=>
+      `<g transform="translate(${sx},${sy})"><g class="obj-sparkle" style="animation-delay:${d}s">`
+      + `<path d="${star}" fill="var(--sun)" stroke="none"/></g></g>`).join("");
+    scaleWrap.appendChild(sp);
+  }
   /* generous invisible hit target — the line-art itself is too thin to reliably
      click; child of scaleWrap so it scales with the object */
   const hit = document.createElementNS(svgNS,"circle");
