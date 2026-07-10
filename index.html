@@ -1424,7 +1424,17 @@ const ACCEPT_LINES = [
   "Today's version of me is the only one on shift. Good enough.",
   "I don't have to like it to stop fighting it.",
   "Mistakes logged. Lesson filed. Case closed. Walk on.",
-  "I release the argument with what already happened."
+  "I release the argument with what already happened.",
+  "This isn't approval. It's just admitting what's already true.",
+  "The weather in here doesn't need my permission to change either.",
+  "I can put the thing down without pretending it wasn't heavy.",
+  "Not everything unfinished is a failure. Some of it is just still going.",
+  "I stop rehearsing the version where it went differently.",
+  "This counts as handling it — quietly, without a parade.",
+  "I don't have to solve it to stop bracing against it.",
+  "Whatever this is, it's allowed to just be the thing that's happening.",
+  "I put down the clipboard. No score for this one.",
+  "Some days the win is just not arguing with the day."
 ];
 const ENJOY_LINES = [
   "Mission: find one thing within arm's reach that is quietly excellent. Appreciate it for 20 seconds.",
@@ -1436,7 +1446,15 @@ const ENJOY_LINES = [
   "Mission: find something that smells good. Deploy nose.",
   "Mission: stretch like a creature that has just woken up. Sound effects encouraged.",
   "Mission: look at one photo that makes you smile. Linger.",
-  "Mission: warm beverage protocol. Both hands on the cup. That's it. That's the protocol."
+  "Mission: warm beverage protocol. Both hands on the cup. That's it. That's the protocol.",
+  "Mission: notice one color you like today. Just clock it. No further action required.",
+  "Mission: do the small thing you've been putting off for no reason. Two minutes, tops.",
+  "Mission: say one nice thing about yourself out loud. Yes, out loud. Weird is fine.",
+  "Mission: sit somewhere with better light than your usual spot. Report back on the vibe.",
+  "Mission: touch something with a genuinely good texture. Editorial review required.",
+  "Mission: laugh at one thing on purpose, even if it's not that funny. Momentum counts.",
+  "Mission: reread a message that made you happy. Let it land twice.",
+  "Mission: give your shoulders somewhere to be that isn't up by your ears."
 ];
 const GROUND_STEPS = [
   ["5 · SEE","Name five things you can see.\nOrdinary things count. Especially ordinary things."],
@@ -1810,7 +1828,11 @@ function spawnObject(){
   store.set("shelf", shelf);
   const left = Math.random()<.5;
   const x = left ? rand(34,62) : rand(218,246);
-  const y = rand(264,272);
+  /* shifted up 24 units to match the water tier's move (cy 272 -> 248) —
+     keeps objects reading as "near the water" while clearing the frame's
+     bottom edge (viewBox bottom is y=264; the old 264-272 band was already
+     past it and getting clipped) */
+  const y = rand(240,248);
   const huge = Math.random()<.08;
   const scale = huge ? rand(2.6,3.6) : rand(.5,1.8);
   const svgNS = "http://www.w3.org/2000/svg";
