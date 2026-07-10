@@ -1,6 +1,9 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-10, after adding a **last-hour vibe chart** and an
+Last updated: 2026-07-10, after adding **5 new expressive eye variants**
+(look-left/right/up, a lowered-lid "peer", and a cute "uwu") wired into the
+mood system (footer bumped to **rev I** — see the newest changelog entry).
+Prior same day: a **last-hour vibe chart** and an
 **averaged trend-line toggle** across all three charts + PDF (footer bumped to
 **rev H** — see the newest changelog entry). Prior same day: a **Rare** section to the keepsake shelf
 (objects now roll a ~6% "rare" flag on spawn, get a gold glow + sparkles on the
@@ -336,6 +339,23 @@ Latest rounds (same day, later):
   overlay emission, empty-state) but NOT browser/print-verified — worth a real
   look at how the half-opacity smoothed line reads over the jagged one and
   whether three charts still paginate cleanly on print page 2.
+
+- Expressive eyes expansion (rev I): 5 new `e-*` variants added as siblings in
+  `#face` and registered in `EYES` — `lookleft`/`lookright`/`lookup` (r=8
+  sockets like `e-open`, pupils shifted ±5 in cx, or -4.5 in cy for up — a
+  harder, more obvious glance than the subtle +4.5 `e-side`), `peer` (a
+  lowered-lid suspicious side-glance: a flat-ish upper lid + shallow lower
+  curve forming a slot with pupils peeking up under it, slightly asymmetric
+  L/R — distinct from `squint`'s symmetric pupil-less almond), and `uwu` (two
+  rounder/wider upward arcs w/ `stroke-linecap:round`, cuter than `e-happy`'s
+  arcs). Wired into `MOODS`: `uwu`→delighted/content/sleepy, the direction
+  eyes + `peer`→curious (with `lookup`→pensive), and `uwu`/`peer` added to the
+  poke-acknowledgement pool in `ackJord()`. Node-verified that every `EYES`
+  entry ↔ `id="e-*"` element matches both ways and all MOODS eye refs resolve,
+  but NOT browser-verified — the pupil-in-socket placement for the direction
+  eyes and the peer slot/uwu arc shapes are reasoned from coordinates only, so
+  worth a real look that pupils land inside the rims and uwu reads distinctly
+  from happy.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
