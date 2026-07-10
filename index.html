@@ -2728,7 +2728,7 @@ function chartLastHour(){
   const sp=pts.map(p=>({x:X(p.m), y:Y(p.v)}));
   if(pts.length>1){
     svg+=`<polyline points="${sp.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
-    if(showAverage && pts.length>2) svg+=`<path d="${smoothPath(sp)}" fill="none" stroke="var(--leaf)" stroke-width="1.8" opacity=".5"/>`;
+    if(showAverage && pts.length>2) svg+=`<path d="${smoothPath(sp)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
   }
   pts.forEach(p=>{ svg+=`<circle cx="${X(p.m)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
@@ -2757,7 +2757,7 @@ function chartToday(){
   });
   if(pts.length>1){
     svg+=`<polyline points="${pts.map(p=>X(p.x)+","+Y(p.v)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
-    if(showAverage && pts.length>2) svg+=`<path d="${smoothPath(pts.map(p=>({x:X(p.x), y:Y(p.v)})))}" fill="none" stroke="var(--leaf)" stroke-width="1.8" opacity=".5"/>`;
+    if(showAverage && pts.length>2) svg+=`<path d="${smoothPath(pts.map(p=>({x:X(p.x), y:Y(p.v)})))}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
   }
   pts.forEach(p=>{ svg+=`<circle cx="${X(p.x)}" cy="${Y(p.v)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
@@ -2788,7 +2788,7 @@ function chartHistory(){
   const present = days.map((x,i)=>({...x,i})).filter(x=>x.avg!==null);
   if(present.length>1){
     svg+=`<polyline points="${present.map(p=>X(p.i)+","+Y(p.avg)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
-    if(showAverage && present.length>2) svg+=`<path d="${smoothPath(present.map(p=>({x:X(p.i), y:Y(p.avg)})))}" fill="none" stroke="var(--leaf)" stroke-width="1.8" opacity=".5"/>`;
+    if(showAverage && present.length>2) svg+=`<path d="${smoothPath(present.map(p=>({x:X(p.i), y:Y(p.avg)})))}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
   }
   present.forEach(p=>{ svg+=`<circle cx="${X(p.i)}" cy="${Y(p.avg)}" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>`; });
   if(showMissions){
