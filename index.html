@@ -120,8 +120,8 @@
   /* lift/tilt/duration are custom properties so JS can nudge the float organically;
      -5px is the floor (never less), JS raises it toward -12px on some cycles */
   @keyframes bob{
-    0%,100%{transform:translateY(0) rotate(calc(-1 * var(--bob-tilt,.6deg)))}
-    50%{transform:translateY(var(--bob-lift,-5px)) rotate(var(--bob-tilt,.6deg))}
+    0%,100%{transform:translateY(0) rotate(calc(-1 * var(--bob-tilt,.8deg)))}
+    50%{transform:translateY(var(--bob-lift,-9px)) rotate(var(--bob-tilt,.8deg))}
   }
   .bob{animation:bob var(--bob-dur,6s) ease-in-out infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
@@ -1699,13 +1699,14 @@ if(!reduceMotion){
 }
 
 /* ── organic float: periodically re-roll Jord's bob amplitude, tilt and tempo so
-   the idle drift never feels metronomic. -5px stays the floor; some cycles lift
-   as high as -12px. .bob is already in the reduced-motion disable list. ── */
+   the idle drift never feels metronomic. -9px is the new floor (raised from -5px
+   — the first pass read as too subtle); some cycles lift as high as -22px.
+   .bob is already in the reduced-motion disable list. ── */
 if(!reduceMotion){
   const reflowt = ()=>{
-    orb.style.setProperty("--bob-lift", rand(-12,-5).toFixed(1)+"px");
-    orb.style.setProperty("--bob-tilt", rand(.45,.95).toFixed(2)+"deg");
-    orb.style.setProperty("--bob-dur", rand(5,8).toFixed(1)+"s");
+    orb.style.setProperty("--bob-lift", rand(-22,-9).toFixed(1)+"px");
+    orb.style.setProperty("--bob-tilt", rand(.6,1.3).toFixed(2)+"deg");
+    orb.style.setProperty("--bob-dur", rand(4.5,7).toFixed(1)+"s");
   };
   reflowt();
   (function nextFloat(){ setTimeout(()=>{ reflowt(); nextFloat(); }, rand(8000,20000)); })();
@@ -3012,6 +3013,16 @@ $("orbwrap").addEventListener("click", ()=>{
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+    /* when a new SW takes control of an already-open tab (skipWaiting +
+       clients.claim already fire on activate), reload once so the page's
+       running JS actually catches up instead of sitting a version behind
+       until someone manually refreshes or fully closes the PWA */
+    let swRefreshed = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (swRefreshed) return;
+      swRefreshed = true;
+      window.location.reload();
     });
   }
 </script>
