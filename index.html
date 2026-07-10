@@ -350,6 +350,7 @@
     #t-water.water-wild .rippling,#t-water.water-wild .wave-line,#t-water.water-calm .rippling,
     .rain-streak,#w-sun .sun-glow,#w-sun .sun-rays,
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway,
+    .sh-rare-item,.sh-sparkle,
     .gv,.gv-flap,.gv-swing{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
@@ -603,6 +604,29 @@
      glance, not the full showcase the all-time grid below is */
   #sh-today-grid{grid-template-columns:repeat(6,1fr);gap:5px}
   #sh-today-grid .sh-badge{font-size:8px;bottom:1px;right:2px}
+  /* rare section: same small, dense 6-col grid as today, but every tile wears a
+     gold border + corner sparkle so browsing it feels different from the calmer
+     grids above/below. The gold border is static (meaningful marker), the glow
+     pulse + sparkle twinkle are the animated flourish. */
+  #sh-rare-grid{grid-template-columns:repeat(6,1fr);gap:5px}
+  #sh-rare-grid .sh-badge{font-size:8px;bottom:1px;right:2px}
+  #sh-rare-grid:empty{display:none}
+  .sh-rare-item{
+    border-color:var(--sun);
+    box-shadow:2px 2px 0 color-mix(in srgb,var(--sun) 45%,var(--faint));
+    animation:shRarePulse 3s ease-in-out infinite;
+  }
+  .sh-rare-item:hover{box-shadow:3px 3px 0 var(--sun)}
+  @keyframes shRarePulse{
+    0%,100%{box-shadow:2px 2px 0 color-mix(in srgb,var(--sun) 45%,var(--faint))}
+    50%{box-shadow:2px 2px 0 color-mix(in srgb,var(--sun) 45%,var(--faint)), 0 0 7px color-mix(in srgb,var(--sun) 65%,transparent)}
+  }
+  .sh-sparkle{
+    position:absolute;top:1px;left:3px;font-size:9px;line-height:1;
+    color:var(--sun);pointer-events:none;
+    animation:shSparkleTw 1.9s ease-in-out infinite;
+  }
+  @keyframes shSparkleTw{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
   .sh-item{
     border:1.5px solid var(--ink);border-radius:10px;background:var(--panel);
     aspect-ratio:1;display:flex;align-items:center;justify-content:center;
@@ -1121,6 +1145,11 @@
       <div class="sh-section-label">today <span class="label" id="sh-today-count"></span></div>
       <div id="sh-today-empty" class="sh-mini-empty">nothing today (yet) — it resets at 5am.</div>
       <div id="sh-today-grid" class="sh-grid"></div>
+    </div>
+    <div id="sh-rare-wrap">
+      <div class="sh-section-label">rare <span class="label" id="sh-rare-count"></span></div>
+      <div id="sh-rare-empty" class="sh-mini-empty">nothing rare yet. some things only drift by once in a long while — Jord's keeping an eye out.</div>
+      <div id="sh-rare-grid" class="sh-grid"></div>
     </div>
     <div class="sh-section-label" id="sh-all-label">all time</div>
     <div id="sh-grid" class="sh-grid"></div>
@@ -2998,7 +3027,8 @@ function objHue(t){
 /* group a list of shelf sightings by object type -- one tile per distinct
    kind, most-recently-seen first, with a small ×N badge for kinds seen more
    than once in that list. Shared by both the today and all-time sections. */
-function shelfTiles(items){
+function shelfTiles(items, opts){
+  const rare = !!(opts && opts.rare);
   const groups=new Map();
   items.forEach(s=>{
     const g=groups.get(s.i);
@@ -3012,23 +3042,29 @@ function shelfTiles(items){
     const hue=objHue(g.t);
     const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
     const badge = g.n>1 ? `<span class="sh-badge">×${g.n}</span>` : "";
-    return `<div class="sh-item" data-i="${g.i}">`
+    /* rare tiles carry a gold border + twinkling corner sparkle (see CSS) so
+       the Rare section browses differently from the calmer today/all-time grids */
+    const cls = rare ? "sh-item sh-rare-item" : "sh-item";
+    const spark = rare ? `<span class="sh-sparkle">✦</span>` : "";
+    return `<div class="${cls}" data-i="${g.i}">`
       + `<svg viewBox="-20 -30 44 44" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
       + `<g class="sh-art obj-floaty" style="animation-delay:${delay}s;${filt}">${o.svg}</g></svg>`
-      + badge
+      + badge + spark
       + `</div>`;
   }).join("")};
 }
 function renderShelf(){
   const grid=$("sh-grid"), todayWrap=$("sh-today-wrap"), todayGrid=$("sh-today-grid"),
-        todayEmpty=$("sh-today-empty"), todayCount=$("sh-today-count"), allLabel=$("sh-all-label");
+        todayEmpty=$("sh-today-empty"), todayCount=$("sh-today-count"), allLabel=$("sh-all-label"),
+        rareWrap=$("sh-rare-wrap"), rareGrid=$("sh-rare-grid"),
+        rareEmpty=$("sh-rare-empty"), rareCount=$("sh-rare-count");
   if(!shelf.length){
     $("sh-count").textContent=""; grid.innerHTML=""; $("sh-empty").style.display="block";
-    todayWrap.style.display="none"; allLabel.style.display="none";
+    todayWrap.style.display="none"; rareWrap.style.display="none"; allLabel.style.display="none";
     return;
   }
   $("sh-empty").style.display="none";
-  todayWrap.style.display=""; allLabel.style.display="";
+  todayWrap.style.display=""; rareWrap.style.display=""; allLabel.style.display="";
 
   /* today resets at 5am, same boundary as the garden -- so you can see
      everything Jord's ever kept, but also just what showed up today */
@@ -3038,6 +3074,14 @@ function renderShelf(){
   todayGrid.innerHTML=todayT.html;
   todayEmpty.style.display = todays.length ? "none" : "block";
   todayCount.textContent = todays.length ? `${todayT.kinds} kind${todayT.kinds===1?"":"s"} · ${todays.length} today` : "";
+
+  /* rare: the small set of visitors that rolled the ~6% rare flag when they
+     came by. Old entries lack the field (undefined -> falsy -> not rare). */
+  const rares=shelf.filter(s=>s.rare);
+  const rareT=shelfTiles(rares, {rare:true});
+  rareGrid.innerHTML=rareT.html;
+  rareEmpty.style.display = rares.length ? "none" : "block";
+  rareCount.textContent = rares.length ? `${rareT.kinds} kind${rareT.kinds===1?"":"s"} · ${rares.length} kept` : "";
 
   const allT=shelfTiles(shelf);
   grid.innerHTML=allT.html;
@@ -3075,6 +3119,7 @@ function shelfItemClick(e){
 }
 $("sh-grid").addEventListener("click", shelfItemClick);
 $("sh-today-grid").addEventListener("click", shelfItemClick);
+$("sh-rare-grid").addEventListener("click", shelfItemClick);
 $("b-shelf").addEventListener("click", ()=>{ renderShelf(); shelfPanel.classList.add("open"); });
 $("sh-close").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
 $("sh-close-top").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
