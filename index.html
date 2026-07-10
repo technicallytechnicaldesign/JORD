@@ -976,6 +976,28 @@
               <path d="M 117 140 c -3 -4 -9 -1 -8 4 c 1 4 5 6 8 8 c 3 -2 7 -4 8 -8 c 1 -5 -5 -8 -8 -4 Z"/>
               <path d="M 163 140 c -3 -4 -9 -1 -8 4 c 1 4 5 6 8 8 c 3 -2 7 -4 8 -8 c 1 -5 -5 -8 -8 -4 Z"/>
             </g>
+            <g id="e-lookleft" stroke-width="2" style="display:none">
+              <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="112" cy="145" r="3"/><circle cx="158" cy="145" r="3"/></g>
+            </g>
+            <g id="e-lookright" stroke-width="2" style="display:none">
+              <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="122" cy="145" r="3"/><circle cx="168" cy="145" r="3"/></g>
+            </g>
+            <g id="e-lookup" stroke-width="2" style="display:none">
+              <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="117" cy="139.5" r="3"/><circle cx="163" cy="139.5" r="3"/></g>
+            </g>
+            <g id="e-peer" stroke-width="2.2" style="display:none">
+              <path d="M 108 141 Q 117 139 126 141"/>
+              <path d="M 109 141 Q 117 146 125 141"/>
+              <path d="M 154 140 Q 163 138 172 140"/>
+              <path d="M 155 140 Q 163 146 171 140"/>
+              <g fill="var(--ink)" stroke="none"><circle cx="119" cy="142" r="2.6"/><circle cx="165" cy="141" r="2.6"/></g>
+            </g>
+            <g id="e-uwu" stroke-width="2.8" stroke-linecap="round" style="display:none">
+              <path d="M 107 147 Q 117 135 127 147"/><path d="M 153 147 Q 163 135 173 147"/>
+            </g>
 
             <path id="m-smile" d="M 128 168 Q 140 178 152 168" stroke-width="2.5"/>
             <path id="m-grin"  d="M 124 166 Q 140 182 156 166" stroke-width="2.5" style="display:none"/>
@@ -1861,7 +1883,7 @@ const jordis=$("jordis"), toast=$("toast"),
       trends=$("trends"), settings=$("settings"),
       shelfPanel=$("shelf"), soundPanel=$("sound"), gardenPanel=$("garden");
 
-const EYES = ["open","happy","closed","wide","squint","side","sparkle","flat","chaos","wink","heart"];
+const EYES = ["open","happy","closed","wide","squint","side","sparkle","flat","chaos","wink","heart","lookleft","lookright","lookup","peer","uwu"];
 const MOUTHS = ["smile","grin","o","flat","wavy","hmm","smirk","kiss"];
 const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
