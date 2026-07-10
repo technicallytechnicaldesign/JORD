@@ -1283,6 +1283,9 @@
       <h3>Groove</h3>
       <input type="range" id="snd-perc-groove" min="0" max="100" value="35" aria-label="Groove">
       <div class="row scalelabels"><span>steady</span><span>vibey</span></div>
+      <h3>Dynamics</h3>
+      <input type="range" id="snd-perc-dynamics" min="0" max="100" value="50" aria-label="Dynamics">
+      <div class="row scalelabels"><span>even</span><span>soft &amp; loud</span></div>
     </div>
     <div class="tr-card">
       <h3>Chimes</h3>
@@ -1303,7 +1306,7 @@
     </div>
     <div class="tr-card">
       <h3>About</h3>
-      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. There's a slower chimes layer too — singing bowls, bells and a deep temple bowl that swell and ring out on their own unhurried clock, sparse and never on a grid. It pauses itself when you leave the tab.</div>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. Dynamics decides how far the hits swing between soft and loud — even at one end, ghost-quiet to nearly double at the other. There's a slower chimes layer too — singing bowls, bells and a deep temple bowl that swell and ring out on their own unhurried clock, sparse and never on a grid. It pauses itself when you leave the tab.</div>
     </div>
     <div class="tr-btns">
       <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -3502,6 +3505,7 @@ let ambPercOn = store.get("ambPercOn", false);
 let ambPercType = store.get("ambPercType","brushes");
 let ambPercGroove = clamp(store.get("ambPercGroove",35),0,100);
 let ambPercVolume = clamp(store.get("ambPercVolume",100),0,100);
+let ambPercDynamics = clamp(store.get("ambPercDynamics",50),0,100);
 let ambChimeOn = store.get("ambChimeOn", false);
 let ambChimeType = store.get("ambChimeType","bowl");
 let ambChimeVolume = clamp(store.get("ambChimeVolume",100),0,100);
@@ -3630,7 +3634,7 @@ function schedulePercHit(){
 }
 function playPercHit(typeOverride){
   if(!actx || actx.state!=="running" || !ambNoiseBuf || !ambMaster) return;
-  const now=actx.currentTime, type=typeOverride||ambPercType, groove=ambPercGroove/100;
+  const now=actx.currentTime, type=typeOverride||ambPercType, dyn=ambPercDynamics/100;
   const src=actx.createBufferSource(); src.buffer=ambNoiseBuf;
   const filt=actx.createBiquadFilter();
   const g=actx.createGain(); g.gain.value=0;
@@ -3645,9 +3649,12 @@ function playPercHit(typeOverride){
     filt.type="bandpass"; filt.frequency.value=4200; filt.Q.value=0.7;
     peak=0.28; dur=0.14;
   }
-  /* humanise the velocity as groove rises -- quadratic boost, same reasoning
-     as the timing jitter above (was capped at a gentle +-18%) */
-  peak *= 1 + (Math.random()*2-1)*(0.18*groove + 0.4*groove*groove);
+  /* dynamics is a dedicated control for how far each hit's loudness swings from
+     the type's centre peak, independent of groove (which now governs timing
+     only). low = fairly even hits; high = some near-ghost, some nearly double --
+     the wide swing is the point, so soft and loud hits sit side by side. A hit
+     that swings negative is clamped to 0 below (an occasional ghosted rest). */
+  peak *= 1 + (Math.random()*2-1)*(0.12 + dyn*0.88);
   peak *= ambPercVolume/100;
   peak = clamp(peak, 0, 0.6);
   /* route straight to master (not through the drone's dark lowpass) so the transient keeps its bite */
@@ -3740,6 +3747,7 @@ $("snd-perc-toggle").checked=ambPercOn;
 $("snd-perc-type").value=ambPercType;
 $("snd-perc-volume").value=ambPercVolume;
 $("snd-perc-groove").value=ambPercGroove;
+$("snd-perc-dynamics").value=ambPercDynamics;
 $("snd-chime-toggle").checked=ambChimeOn;
 $("snd-chime-type").value=ambChimeType;
 $("snd-chime-volume").value=ambChimeVolume;
@@ -3760,6 +3768,7 @@ $("snd-timbre").addEventListener("change", e=>{ ambTimbre=e.target.value; store.
 $("snd-perc-toggle").addEventListener("change", e=>{ ambPercOn=e.target.checked; store.set("ambPercOn",ambPercOn); if(actx) schedulePercHit(); });
 $("snd-perc-type").addEventListener("change", e=>{ ambPercType=e.target.value; store.set("ambPercType",ambPercType); });
 $("snd-perc-groove").addEventListener("input", e=>{ ambPercGroove=clamp(+e.target.value,0,100); store.set("ambPercGroove",ambPercGroove); if(actx) schedulePercHit(); });
+$("snd-perc-dynamics").addEventListener("input", e=>{ ambPercDynamics=clamp(+e.target.value,0,100); store.set("ambPercDynamics",ambPercDynamics); });
 $("snd-chime-toggle").addEventListener("change", e=>{ ambChimeOn=e.target.checked; store.set("ambChimeOn",ambChimeOn); if(actx) scheduleChimeStrike(); });
 $("snd-chime-type").addEventListener("change", e=>{ ambChimeType=e.target.value; store.set("ambChimeType",ambChimeType); });
 $("snd-chime-volume").addEventListener("input", e=>{ ambChimeVolume=clamp(+e.target.value,0,100); store.set("ambChimeVolume",ambChimeVolume); });
