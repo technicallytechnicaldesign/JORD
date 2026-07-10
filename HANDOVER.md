@@ -1,6 +1,8 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-10, after adding a **Rare** section to the keepsake shelf
+Last updated: 2026-07-10, after adding a **last-hour vibe chart** and an
+**averaged trend-line toggle** across all three charts + PDF (footer bumped to
+**rev H** — see the newest changelog entry). Prior same day: a **Rare** section to the keepsake shelf
 (objects now roll a ~6% "rare" flag on spawn, get a gold glow + sparkles on the
 main stage, and collect into their own gold-bordered/twinkling shelf grid — see
 the newest changelog entry; footer bumped to **rev G**). Prior same day:
@@ -151,10 +153,12 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     smoothing (`sAt` up to ~1.6) for an exaggeratedly silky look, so "spiky day
     → smooth week" reads as one continuous but clearly-contrasted line.
   - **Page 2 "JORD · the data"** (`#tr-data`, `break-before:page`) — the SAME
-    two charts as the on-screen Trends view, titled "Today · by hour" and
-    "Last 14 days · daily average". `populateDataPage()` reuses
-    `chartToday()`/`chartHistory()` verbatim (they already return complete
-    self-contained `<svg>` strings off current `vibes`/`missions`).
+    charts as the on-screen Trends view, titled "Last hour · by the minute",
+    "Today · by hour" and "Last 14 days · daily average". `populateDataPage()`
+    reuses `chartLastHour()`/`chartToday()`/`chartHistory()` verbatim (they
+    return complete self-contained `<svg>` strings off current
+    `vibes`/`missions`, and honour the `showMissions`/`showAverage` flags at
+    print time automatically).
   - **Page 3 "JORD · the garden, right now"** (`#tr-gardenpage`,
     `break-before:page`) — a full static scatter of the WHOLE live `garden`
     (not the capped page-1 strip), rebuilt with renderGarden()'s exact `gseed`
@@ -315,6 +319,23 @@ Latest rounds (same day, later):
   tile classes, old-entry fallthrough) but NOT browser-verified — the glow/
   sparkle *feel* and the sparkle-star placement relative to varying object scales
   are the things worth a real look.
+
+- Last-hour chart + averaged trend-line toggle (rev H): new `chartLastHour()`
+  filters `vibes` to the last 60 min and plots them on a minute-resolution
+  x-axis (ticks at `-60/-45/-30/-15/now`, 60-min-ago pinned left at x=20, now
+  right at x=300 via `X=m=>20+((60-m)/60)*280`), reusing `midBand()`, the leaf
+  stroke, panel/ink dots and mission markers like the other two charts. It's
+  first in the on-screen Trends order (most zoomed-in/recent) and a third
+  `.dp-chart` on PDF page 2. New "averaged trend line" checkbox (`#avgtoggle`,
+  `showAverage` persisted via `store`, **default off**) overlays a
+  `smoothPath()` (Catmull-Rom) line at `opacity=".5"` / same leaf stroke on top
+  of the raw polyline in ALL THREE vibe charts (`chartLastHour`/`chartToday`/
+  `chartHistory`) whenever there are >2 points — guarded the same as the raw
+  line. Because the overlay lives inside the shared chart functions, the PDF
+  path picks it up for free. Structurally node-sanity-checked (axis mapping,
+  overlay emission, empty-state) but NOT browser/print-verified — worth a real
+  look at how the half-opacity smoothed line reads over the jagged one and
+  whether three charts still paginate cleanly on print page 2.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
