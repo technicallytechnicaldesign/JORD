@@ -352,11 +352,13 @@
      stage. --tb-y is a small per-appearance vertical jitter (some appearances
      sit a touch higher or lower) set fresh by JS each time it (re)appears. ── */
   #thought{
-    /* percentage top (not a fixed px) so this tracks the SVG's own proportions
-       as it scales -- 28% sits just above his head (body top is ~37% down the
-       viewBox); a fixed px value drifted further from him every time the sky
-       above his head grew across earlier rounds */
-    position:absolute;top:28%;left:50%;
+    /* top is itself the rise channel (a real % of .stage's height, not a
+       fixed px guess), so entrance distance stays proportional at any size.
+       Hidden/start state sits at 43% -- 20 points below the 23% rest position
+       (5 points higher than the previous 28%) -- and transitions up to rest
+       over a slow, deliberate 3s. --tb-y is a small independent per-appearance
+       jitter layered on via transform, on top of this bigger rise. */
+    position:absolute;top:43%;left:50%;
     max-width:min(75%,380px);
     /* translucent paper + a soft blur so it settles into the scene rather than
        sitting on top of it as opaque UI chrome (solid-paper fallback first for
@@ -368,14 +370,11 @@
     padding:6px 11px;
     font-size:11px;text-align:center;line-height:1.35;
     box-shadow:0 1px 5px rgba(0,0,0,.05);
-    /* starts low, right around his head, before rising into its reading
-       height on entrance -- see .leaving below for the reverse trip. Much
-       slower now (was .5s) -- a slow, unhurried rise, not a pop-in. */
-    opacity:0;transform:translateX(-50%) translateY(calc(34px + var(--tb-y,0px))) scale(.94);
-    transition:opacity 1.6s ease, transform 1.6s ease;
+    opacity:0;transform:translateX(-50%) translateY(var(--tb-y,0px)) scale(.94);
+    transition:top 3s ease, opacity 3s ease, transform 3s ease;
     pointer-events:none;z-index:3;
   }
-  #thought.show{opacity:.9;transform:translateX(-50%) translateY(var(--tb-y,0px)) scale(1)}
+  #thought.show{top:23%;opacity:.9;transform:translateX(-50%) translateY(var(--tb-y,0px)) scale(1)}
   /* ── stylised border variants — JS picks a fresh one each time the bubble
      (re)appears, so consecutive thoughts don't all look identical. border/
      radius live here instead of the base rule since one of these four is
@@ -385,19 +384,19 @@
   #thought.tb-flat{border:1px solid var(--faint);border-radius:6px}
   #thought.tb-dash{border:1.3px dashed var(--dim);border-radius:12px}
   /* bounce entrance: overshoots slightly then settles, instead of the plain
-     ease -- only the transform's curve changes, opacity still fades plainly.
-     Slowed to match the calmer baseline (was .6s). */
-  #thought.tb-bounce{transition:opacity 1.6s ease, transform 1.3s cubic-bezier(.34,1.7,.64,1)}
-  /* a thought's natural end: it keeps rising past its reading height and
-     dissolves, rather than sinking back down to where it started -- drifting
-     away, not popping back into his head. Much slower now (was .85s) for a
-     genuinely unhurried dissipation. Declared after .tb-bounce so this always
-     wins the exit timing even though tb-bounce can still be attached from
-     the entrance. */
+     calm rise -- quicker and livelier than the 3s default, a genuine
+     variant rather than just a curve tweak. */
+  #thought.tb-bounce{transition:top 1.3s cubic-bezier(.34,1.7,.64,1), opacity 1.3s ease, transform 1.3s cubic-bezier(.34,1.7,.64,1)}
+  /* a thought's natural end: it keeps rising past its reading height (past
+     23% up to 17%) and dissolves, rather than sinking back down to where it
+     started -- drifting away, not popping back into his head. Slow ease-in
+     for a genuinely unhurried dissipation. Declared after .tb-bounce so this
+     always wins the exit timing even though tb-bounce can still be attached
+     from the entrance. */
   #thought.leaving{
-    opacity:0;
-    transform:translateX(-50%) translateY(calc(-16px + var(--tb-y,0px))) scale(1.03);
-    transition:opacity 3s ease-in, transform 3s ease-in;
+    top:17%;opacity:0;
+    transform:translateX(-50%) translateY(var(--tb-y,0px)) scale(1.03);
+    transition:top 3s ease-in, opacity 3s ease-in, transform 3s ease-in;
   }
   /* long-text variant: wider still and flatter, so a genuine paragraph reads as a
      calm banner spanning the stage rather than a cramped tall pill. Still capped
@@ -586,6 +585,10 @@
   #sh-today-wrap .sh-section-label{margin-top:2px}
   .sh-mini-empty{font-size:11px;color:var(--dim);padding:6px 2px 4px}
   #sh-today-grid:empty{display:none}
+  /* today's tiles are a much smaller, denser 6-column grid -- a quick daily
+     glance, not the full showcase the all-time grid below is */
+  #sh-today-grid{grid-template-columns:repeat(6,1fr);gap:5px}
+  #sh-today-grid .sh-badge{font-size:8px;bottom:1px;right:2px}
   .sh-item{
     border:1.5px solid var(--ink);border-radius:10px;background:var(--panel);
     aspect-ratio:1;display:flex;align-items:center;justify-content:center;
