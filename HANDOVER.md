@@ -65,12 +65,22 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   (`vibeWordFadeTimer`) — this is deliberately decoupled from the slider's own
   persistent tint.
 - **Garden** (`#garden` panel, `❀` header icon) — the anti-shelf: one flower
-  plants per calendar day, but only when you actually *do* an activity
-  (`plantGardenToday()` is called from `logMission(type)`, not from vibe-logging —
-  that was a real bug once, see caveats). Flowers scatter/overlap chaotically
-  (deterministic per-entry hash via `gseed()`, not a tidy grid like the shelf),
-  each paired with a small symbol from `MISSION_ICON` for whichever activity
-  triggered it.
+  plants per *activity* (`plantGarden(type)`, called from `logMission(type)`,
+  not from vibe-logging — that was a real bug once, see caveats), and the whole
+  garden clears out fresh at 5am (`gardenDayKey()` shifts the clock back 5h
+  before taking a calendar day, so anything before 5am still counts as
+  yesterday's growth — checked both on planting and on opening the panel via
+  `resetGardenIfNewDay()`). Flowers scatter/overlap chaotically (deterministic
+  per-entry hash via `gseed()`, not a tidy grid like the shelf), each paired
+  with a small symbol from `MISSION_ICON` for whichever activity triggered it.
+- **Weather** (`#weather`, sibling of `#orbbody` like the other sky layers) —
+  purely decorative, no geolocation/network: `WEATHER_STATES` (clear/sun/rain/
+  overcast, weighted toward clear) picked via `weatherRoll(bucket)` where
+  `bucket = Math.floor(Date.now()/(3*3600*1000))`, hashed through `gseed()` so
+  the pick is stable within a 3h window and re-derives identically on reload
+  with nothing persisted. `render()` re-checks the bucket periodically. `sun`
+  is suppressed at night (falls back to `clear`) so the moon/stars own the
+  dark; rain/overcast show day or night.
 - **`think()`/`say()`** are called from dozens of places throughout the file.
   They've been unified to render through one bubble (`#thought`, now centered
   above Jord's head, not the old top-left corner placement) with a random idle
@@ -147,6 +157,22 @@ Latest rounds (same day, later):
   doing an activity (`logMission()`)
 - `sw.js` fixed from stale-while-revalidate to network-first for `index.html`,
   since that staleness was making shipped/working features look broken
+- Added a `controllerchange` listener that reloads once when a new SW takes
+  over, so an already-open tab actually adopts fresh code instead of sitting
+  a version behind until manually refreshed
+- Idle bounce floor raised (-5px → -9px, ceiling -12px → -22px — the first
+  pass read as too subtle) and rescoped to a new `#jordbob` wrapper around
+  just `#orbbody`, since it used to animate the whole outer `<svg>` and drag
+  the sky/moon/water/stars along with Jord
+- Garden reworked again: one bloom per *activity* (not per day), whole thing
+  resets at 5am (`gardenDayKey()`) — see architecture notes above
+- Visiting objects (`spawnObject()`) were spawning at y=264-272 while the
+  frame's bottom edge is y=264 (a leftover from the viewBox crop — the water
+  tier moved but objects weren't adjusted to match) and getting clipped;
+  shifted to y=240-248, the same 24-unit offset the water moved
+- Accept/Enjoy line pools doubled (10 → 20 each)
+- Ambient weather layer added (clear/sun/rain/overcast, random per 3h window)
+  — see architecture notes above
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
