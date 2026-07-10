@@ -726,35 +726,36 @@
   #tr-keepsake{display:none}
   .ks-head{font-size:15px;letter-spacing:.14em;text-align:center;font-weight:600}
   .ks-sub{font-size:11px;letter-spacing:.08em;color:var(--dim);text-align:center;margin-top:4px}
-  .ks-art{display:block;margin:8px auto 4px;width:166px;height:auto}
-  .ks-sweet{font-size:12px;line-height:1.5;text-align:center;max-width:340px;margin:4px auto 0}
-  .ks-notes{margin-top:6px}
-  .ks-notes p{font-size:11.5px;font-style:italic;text-align:center;color:var(--ink);margin:4px auto;max-width:340px;line-height:1.45}
-  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:7px;text-transform:uppercase}
+  .ks-art{display:block;margin:6px auto 3px;width:150px;height:auto}
+  .ks-sweet{font-size:12px;line-height:1.5;text-align:center;max-width:340px;margin:3px auto 0}
+  .ks-notes{margin-top:5px}
+  .ks-notes p{font-size:11.5px;font-style:italic;text-align:center;color:var(--ink);margin:3px auto;max-width:340px;line-height:1.4}
+  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:6px;text-transform:uppercase}
   /* a compact strip of today's actual garden at the foot of the sheet — a
      little row of blooms, not a second full meadow. Kept to a fixed modest
      height (capped bloom count) so it never blows the one-page budget. */
-  .ks-garden{margin-top:7px;text-align:center}
+  .ks-garden{margin-top:5px;text-align:center}
   .ksg-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
   .ksg-row{display:flex;justify-content:center;align-items:flex-end;gap:1px;
-           max-width:340px;margin:2px auto 0;padding-bottom:2px}
+           max-width:340px;margin:1px auto 0;padding-bottom:1px}
   .ksg-row svg{width:22px;height:27px;display:block;overflow:visible}
   .ksg-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
   /* today's shelf keepsakes — same bespoke compact-strip pattern as the garden
      row above (a small uppercase label + a capped flex row of tiny SVGs + an
      in-voice empty line), NOT the screen-only .sh-grid CSS which the print
      media query never wires up. Deduped by object kind so repeat sightings
-     don't double up. */
-  .ks-shelf{margin-top:7px;text-align:center}
+     don't double up. Kept tight (see the file header on this section) since
+     it's the third compact strip sharing page 1's one-page budget. */
+  .ks-shelf{margin-top:5px;text-align:center}
   .ksh-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
   .ksh-row{display:flex;justify-content:center;align-items:flex-end;gap:3px;flex-wrap:wrap;
-           max-width:340px;margin:2px auto 0;padding-bottom:2px}
-  .ksh-row svg{width:26px;height:26px;display:block;overflow:visible}
+           max-width:340px;margin:1px auto 0;padding-bottom:1px}
+  .ksh-row svg{width:24px;height:24px;display:block;overflow:visible}
   .ksh-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
   /* a quiet gold-tinted reflection, shown only if a rare item was ever kept —
      a light nod to the app's "rare = gold" (var(--sun)) language, no box. */
-  .ks-rare{margin:6px auto 0;max-width:340px;font-size:11px;font-style:italic;
-           text-align:center;line-height:1.45;color:color-mix(in srgb,var(--sun) 68%,var(--ink))}
+  .ks-rare{margin:4px auto 0;max-width:340px;font-size:11px;font-style:italic;
+           text-align:center;line-height:1.4;color:color-mix(in srgb,var(--sun) 68%,var(--ink))}
   .ks-rare-mark{color:var(--sun);font-style:normal}
 
   /* ── the week, as a plain wave — now a quiet sub-section of the same sheet,
@@ -808,9 +809,9 @@
     .tr-btns{display:none}
     .tr-card{break-inside:avoid;box-shadow:none}
     /* one cohesive sheet: keepsake up top, the wave as a divider-led coda below */
-    #tr-keepsake{display:block !important;break-inside:avoid;padding:16px 10px 4px}
-    #tr-wave{display:block !important;break-inside:avoid;padding:8px 10px 10px;
-             margin-top:8px;border-top:1px solid var(--faint)}
+    #tr-keepsake{display:block !important;break-inside:avoid;padding:12px 10px 3px}
+    #tr-wave{display:block !important;break-inside:avoid;padding:6px 10px 8px;
+             margin-top:6px;border-top:1px solid var(--faint)}
     /* each new sheet starts fresh: page 2 = the data, page 3 = the garden */
     #tr-data{display:block !important;break-before:page;break-inside:avoid;padding:24px 10px 10px}
     #tr-gardenpage{display:block !important;break-before:page;break-inside:avoid;padding:24px 10px 10px}
