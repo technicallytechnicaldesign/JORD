@@ -184,6 +184,26 @@
   }
   #moon{animation:moonDrift 220s linear infinite}
 
+  /* ── ambient weather (decorative, re-rolled every 3h) — layers WITH the
+     day/night + calm tiers rather than replacing them. #weather sits behind Jord
+     in the sky, so nothing here ever washes over his face. ── */
+  #w-rain,#w-sun{display:none}
+  #weather.weather-rain #w-rain{display:block}
+  #weather.weather-sun  #w-sun{display:block}
+  #w-veil{transition:opacity 1.6s ease}
+  #weather.weather-overcast #w-veil{opacity:.16}
+  @keyframes rainFall{
+    0%{transform:translate(4px,-24px);opacity:0}
+    14%{opacity:var(--rop,.55)}
+    86%{opacity:var(--rop,.55)}
+    100%{transform:translate(-8px,92px);opacity:0}
+  }
+  .rain-streak{animation:rainFall 1.4s linear infinite}
+  @keyframes sunGlow{0%,100%{opacity:.12;transform:scale(.96)}50%{opacity:.26;transform:scale(1.06)}}
+  #w-sun .sun-glow{transform-origin:232px 34px;animation:sunGlow 6.5s ease-in-out infinite}
+  @keyframes sunSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  #w-sun .sun-rays{transform-origin:232px 34px;animation:sunSpin 90s linear infinite}
+
   #arm-l,#arm-r{transition:transform .4s ease}
   @keyframes waveR{0%,100%{transform:translate(214.8px,172px) rotate(0)}18%{transform:translate(214.8px,172px) rotate(-115deg)}32%{transform:translate(214.8px,172px) rotate(-95deg)}46%{transform:translate(214.8px,172px) rotate(-120deg)}60%{transform:translate(214.8px,172px) rotate(-95deg)}74%{transform:translate(214.8px,172px) rotate(-112deg)}}
   @keyframes waveL{0%,100%{transform:translate(65.2px,172px) rotate(0)}18%{transform:translate(65.2px,172px) rotate(115deg)}32%{transform:translate(65.2px,172px) rotate(95deg)}46%{transform:translate(65.2px,172px) rotate(120deg)}60%{transform:translate(65.2px,172px) rotate(95deg)}74%{transform:translate(65.2px,172px) rotate(112deg)}}
@@ -305,6 +325,7 @@
     .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise,
     .unit,.stage,.ard,#moon,
     #t-water.water-wild .rippling,#t-water.water-wild .wave-line,#t-water.water-calm .rippling,
+    .rain-streak,#w-sun .sun-glow,#w-sun .sun-rays,
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway{animation:none}
   }
 
@@ -645,6 +666,47 @@
             <ellipse cx="0" cy="0" rx="11" ry="5"/>
             <ellipse cx="-8" cy="2" rx="6.5" ry="3.4"/>
             <ellipse cx="8" cy="2" rx="6.5" ry="3.4"/>
+          </g>
+        </g>
+
+        <!-- ── ambient weather: a decorative, randomized sky mood re-rolled every
+             3 hours (deterministic per 3h bucket — NOT real weather, no geolocation,
+             no network). A sibling of #orbbody so it stays in the sky layer and never
+             rides Jord's own reactive animations. Visibility is driven by classes on
+             #weather set from applyWeather(). ── -->
+        <g id="weather">
+          <!-- overcast: a soft grey veil behind Jord that mutes the whole sky -->
+          <rect id="w-veil" x="0" y="-40" width="280" height="304" fill="var(--dim)" opacity="0" stroke="none"/>
+          <!-- sun: a warm pulsing glow + slowly turning rays — daytime only -->
+          <g id="w-sun" stroke="none">
+            <circle class="sun-glow" cx="232" cy="34" r="30" fill="var(--sun)" opacity=".16"/>
+            <g class="sun-rays" stroke="var(--sun)" stroke-width="1.5" stroke-linecap="round">
+              <line x1="232" y1="8"  x2="232" y2="0"/>
+              <line x1="232" y1="60" x2="232" y2="68"/>
+              <line x1="206" y1="34" x2="198" y2="34"/>
+              <line x1="258" y1="34" x2="266" y2="34"/>
+              <line x1="214" y1="16" x2="208" y2="10"/>
+              <line x1="250" y1="16" x2="256" y2="10"/>
+              <line x1="214" y1="52" x2="208" y2="58"/>
+              <line x1="250" y1="52" x2="256" y2="58"/>
+            </g>
+            <circle class="sun-core" cx="232" cy="34" r="13" fill="var(--sun)" fill-opacity=".22" stroke="var(--sun)" stroke-width="1.5"/>
+          </g>
+          <!-- rain: staggered diagonal streaks drifting down through the sky. Each
+               has its own delay/duration/peak-opacity so they read as scattered
+               drops rather than one repeated line; base opacity doubles as the
+               reduced-motion static fallback. -->
+          <g id="w-rain" stroke="var(--water)" stroke-width="1.4" stroke-linecap="round">
+            <line class="rain-streak" x1="30"  y1="-14" x2="26.5"  y2="-1" opacity=".5"  style="--rop:.5;animation-delay:0s;animation-duration:1.35s"/>
+            <line class="rain-streak" x1="54"  y1="-6"  x2="50.5"  y2="8"  opacity=".6"  style="--rop:.6;animation-delay:.5s;animation-duration:1.5s"/>
+            <line class="rain-streak" x1="76"  y1="-18" x2="72.5"  y2="-5" opacity=".45" style="--rop:.45;animation-delay:.9s;animation-duration:1.25s"/>
+            <line class="rain-streak" x1="100" y1="-9"  x2="96.5"  y2="5"  opacity=".55" style="--rop:.55;animation-delay:.2s;animation-duration:1.55s"/>
+            <line class="rain-streak" x1="126" y1="-15" x2="122.5" y2="-2" opacity=".5"  style="--rop:.5;animation-delay:1.1s;animation-duration:1.4s"/>
+            <line class="rain-streak" x1="150" y1="-4"  x2="146.5" y2="10" opacity=".6"  style="--rop:.6;animation-delay:.7s;animation-duration:1.3s"/>
+            <line class="rain-streak" x1="176" y1="-16" x2="172.5" y2="-3" opacity=".5"  style="--rop:.5;animation-delay:.35s;animation-duration:1.6s"/>
+            <line class="rain-streak" x1="200" y1="-8"  x2="196.5" y2="6"  opacity=".55" style="--rop:.55;animation-delay:1s;animation-duration:1.35s"/>
+            <line class="rain-streak" x1="226" y1="-13" x2="222.5" y2="0"  opacity=".5"  style="--rop:.5;animation-delay:.6s;animation-duration:1.45s"/>
+            <line class="rain-streak" x1="250" y1="-6"  x2="246.5" y2="8"  opacity=".6"  style="--rop:.6;animation-delay:.15s;animation-duration:1.5s"/>
           </g>
         </g>
 
@@ -2059,6 +2121,7 @@ function render(){
   $("t-water").classList.toggle("hidden", t<2);
   $("t-zen").classList.toggle("hidden", t<3);
   $("night").classList.toggle("hidden", !isNight());
+  applyWeather();
   if(t!==currentTier){
     currentTier=t;
     jordis.textContent = (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[t]);
@@ -2070,6 +2133,50 @@ setInterval(()=>{
 }, 7*60*1000);
 
 setInterval(()=>{ calm=clamp(calm-1,5,100); store.set("calm",calm); if(!busy && !sitting) render(); }, 4*60*1000);
+
+/* ── ambient weather ──────────────────────────────────────────────────────
+   A decorative sky mood, NOT real weather: no geolocation, no network, nothing
+   stored. A fresh state is rolled every 3 hours from a deterministic hash of the
+   3-hour bucket index, so it's stable within each window and re-derives
+   identically across reloads. "sun" only reads in daylight, so a sun roll at
+   night quietly falls back to clear (the stars/moon keep the night to
+   themselves). Weighted toward calm/clear skies; rain and overcast are rarer. */
+const WEATHER_STATES = ["clear","clear","sun","sun","rain","overcast"];
+const WEATHER_MURMUR = {
+  rain: ["it's raining. somewhere. here, apparently.",
+         "soft rain. good for the soul, less so for the socks.",
+         "rain today. the sky's just having a little moment."],
+  sun:  ["the sun found us. how nice.",
+         "a bit of sun. don't spend all of it doom-scrolling.",
+         "warmth. genuinely underrated, that."],
+  overcast: ["grey out. cozy, if you squint at it right.",
+             "overcast. the sky's thinking something over too.",
+             "clouds all the way down. no complaints, honestly."]
+};
+let weatherState = null;
+function weatherRoll(bucket){ return WEATHER_STATES[Math.floor(gseed(bucket)*WEATHER_STATES.length)]; }
+function applyWeather(){
+  const bucket = Math.floor(Date.now()/(3*3600*1000));
+  let w = weatherRoll(bucket);
+  if(w==="sun" && isNight()) w="clear";   /* no sun after dark */
+  const el = $("weather");
+  el.classList.toggle("weather-rain", w==="rain");
+  el.classList.toggle("weather-sun",  w==="sun");
+  el.classList.toggle("weather-overcast", w==="overcast");
+  weatherState = w;
+}
+applyWeather();
+/* slow re-check so the sky flips at 3-hour boundaries (and when day turns to
+   night) even while idle; murmur once, quietly, when it changes to something
+   worth noticing and Jord's otherwise free. */
+setInterval(()=>{
+  const prev = weatherState;
+  applyWeather();
+  if(weatherState!==prev && weatherState!=="clear" && !busy && !sitting
+     && !modal.classList.contains("open") && Math.random()<.55){
+    think(pick(WEATHER_MURMUR[weatherState]), 7000);
+  }
+}, 3*60*1000);
 
 /* ── speech + toast ──
    say() is the "significant dialogue" voice; it shares the one bubble with
