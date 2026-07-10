@@ -2,57 +2,31 @@
 
 ## Next session — queued up, start here
 
-Written ~1.3h before pickup, at **rev L**. Do these in order. Be creative on
-execution, keep reports short — the user wants punchy summaries, not
-blow-by-blow.
+At **rev M**. The rev-L queue (tidy, chimes layer, percussion dynamics, swell
+macro, module-plan refresh) is all shipped — see the newest changelog entries
+and the Ambient-soundscape architecture note. Nothing is queued specifically
+for next time. Open threads if you want them, none urgent:
 
-1. **General tidy pass.** The file is ~4,050 lines / 221KB now, grown fast
-   across many rounds. Look for: dead code (check `orb`-style unused-variable
-   leftovers), duplicated logic that could share a helper (several chart
-   functions / several spawn functions have near-identical shapes), comments
-   that restate the obvious vs. ones that actually explain a non-obvious
-   constraint (keep the latter, cut the former), and any leftover TODO-shaped
-   loose ends. Annotate clearly but with **no fluff** — a comment should earn
-   its place by explaining a *why*, not restate a *what*. Don't restructure
-   architecture, just clean what's there.
-2. **Add a chimes/gongs/meditation-bell layer.** Same shape as the percussion
-   layer added at rev K (own sub-toggle, own type `<select>`, own volume
-   slider) — see "Ambient soundscape" in the architecture notes below for the
-   exact pattern (`ambPercOn`/`schedulePercHit`/`playPercHit` etc.). This is a
-   slower, more spacious layer than percussion: think singing-bowl/gong swells
-   and occasional soft chime strikes, not a rhythmic pulse. Offer a few
-   distinct types (e.g. a bowl/gong swell, a small bell tap, a deeper temple
-   bowl) synthesized the same way percussion's noise-burst textures are (or
-   oscillator-based with a long resonant decay — gongs/bowls are usually
-   inharmonic partials over a fundamental, worth a couple of detuned
-   oscillators per strike rather than pure noise).
-3. **Make percussion more varied still.** Add a dynamics/velocity-range
-   control — some hits noticeably soft, some noticeably louder, not just the
-   existing groove-driven ±velocity jitter (`playPercHit()`'s
-   `0.18*groove + 0.4*groove*groove` term) which is fairly narrow. Consider a
-   dedicated slider (or fold it into Groove — your call) that widens the
-   peak-gain range hit-to-hit.
-4. **Add an overall rise-and-fall ("swell") slider for the whole soundscape.**
-   A new macro control, independent of Volume: does the mix stay one steady
-   tone, or does it breathe — gradually louder, gradually softer, in slow
-   waves? The slider should control (a) whether swelling happens at all vs.
-   flat/steady, and (b) roughly how far apart the waves are (period) — with a
-   random jitter/buffer on top of that period so it's not a metronomic pulse
-   (same spirit as Groove's jitter, applied to a much slower macro-gain cycle
-   instead of individual hit timing). Likely implemented as a slow
-   `setTargetAtTime`/scheduled ramp on `ambMaster.gain` (or a dedicated gain
-   node ahead of it) layered under whatever `ambVolume` is currently set to,
-   not replacing it.
-5. **Write a standalone-module project plan** for eventually splitting the
-   whole ambient soundscape engine out of `index.html` into its own file/
-   project, for reuse beyond JORD. **Planning only — do not actually extract
-   the code.** A first draft already exists at `SOUNDSCAPE_MODULE_PLAN.md` in
-   the repo root (written alongside this handoff) — read it, refine/expand it
-   with whatever's been added in steps 2-4 above, don't start from scratch.
+- **None of rev M is ear-verified** (no audio out in this env). The chime
+  types' character/tuning, the percussion dynamics range, and the swell's
+  depth/period feel are all reasoned from the Web Audio graph, not heard —
+  the single most useful thing a human can do is actually listen and tell us
+  if any of it sounds off (bell too clangy, temple bowl too quiet, swell too
+  deep/shallow, chimes too sparse/frequent).
+- The **standalone soundscape module** (`SOUNDSCAPE_MODULE_PLAN.md`) is still
+  planning-only, now updated through rev M — extraction remains un-started and
+  deliberately so.
 
 ---
 
-Last updated: 2026-07-10, after adding an **optional percussion layer** to the
+Last updated: 2026-07-10, after a **soundscape round (rev M)**: a tidy pass
+(deduped the averaged-trend chart overlay into one `avgOverlay()` helper; a
+dead-code sweep came up clean), a new **chimes/gongs/bowls layer** (slow,
+spacious, inharmonic sine-partial strikes — singing bowl / bell / temple bowl,
+own sub-toggle + type + volume), a dedicated **percussion Dynamics** slider
+(soft-vs-loud hit range, split out from Groove which is now timing-only), and a
+**Swell** macro (the whole mix breathes louder/softer in slow randomized waves
+via a downstream `ambSwellGain` node). Prior: an **optional percussion layer** to the
 ambient soundscape — a third generative layer (off by default, own sub-toggle)
 with three synthesised textures (brushes/taps/drops) and a **Groove** slider that
 loosens the timing from metronome-steady to loose/syncopated (footer bumped to
@@ -250,6 +224,45 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     also occasionally substitutes a different percussion type for one hit
     (`PERC_TYPES`, up to 20% at groove=1) for real timbral variety, not just
     timing wobble.
+  - **Percussion Dynamics + chimes layer + Swell macro (rev M)** — three
+    additions this round:
+    - **Percussion Dynamics** (`ambPercDynamics`, `#snd-perc-dynamics`,
+      default 50): a dedicated per-hit loudness-range control. Groove is now
+      timing-only; the velocity swing moved here. `playPercHit()` scales
+      `peak *= 1 + (rand*2-1)*(0.12 + dyn*0.88)`, so 0 = fairly even (±12%),
+      100 = ±100% (some hits clamp to a silent ghost, some ~double). The
+      type-specific base peaks stay the centre of the swing.
+    - **Chimes/gongs/bowls** (`ambChimeOn`/`#snd-chime-toggle`,
+      `ambChimeType`/`#snd-chime-type`, `ambChimeVolume`/`#snd-chime-volume`;
+      `scheduleChimeStrike()` / `playChimeStrike()`, timer `ambChimeTimer`,
+      `CHIME_TYPES`): a FOURTH generative layer, same opt-in/independent shape
+      as percussion (guards on `ambientOn && ambChimeOn && actx`, toggle
+      re-arms live). Deliberately slow — `scheduleChimeStrike` waits
+      `(24 - dens*10) * rand(0.5,1.8)` s (~7s..~44s), never a grid. Each strike
+      is a few **detuned sine partials at non-integer ratios** (inharmonic like
+      real bowls/gongs; the ±6-cent detune gives the shimmer/beating), summed
+      into one gain, keyed to the drone's pentatonic root, routed straight to
+      `ambMaster`. Three types: **bowl** (oct×2, partials [1,1.48,2.03], slow
+      0.25-0.7s swell-in, 6-11s decay), **bell** (oct×4, [1,2.0,2.76,3.01],
+      8ms attack, 2.6-4.4s decay — brighter/quicker), **temple** (oct×1,
+      [1,1.5,2.01], deep, 8-14s). Envelope swells in then exp-decays to ~0;
+      every node disconnected once all partials `onended` (no leaks).
+    - **Swell** (`ambSwell`/`#snd-swell`, default **0 = flat**;
+      `scheduleSwell()`, node `ambSwellGain`, timer `ambSwellTimer`, state
+      `swellUp`): a macro rise/fall on the WHOLE mix. `ambSwellGain` is spliced
+      `ambMaster → ambSwellGain → destination` so it multiplies everything
+      *downstream* of `ambEvolve()`'s per-4s `ambMaster.gain` writes — the two
+      never touch the same AudioParam (this was the key design constraint).
+      `scheduleSwell()` re-arms each half-wave, linear-ramping between peak
+      **1** (pinned — never louder than Volume, so no clip) and trough
+      `1 - sw*0.7` (down to 0.3 at full). One slider scales depth AND pace:
+      full-cycle period `(90 - sw*50)` s with a `rand(0.6,1.4)` buffer on each
+      half-wave (~24s..~108s span). `ambSwell 0` early-returns (eases to unity,
+      stops cycling) so it costs nothing when off. Audio-only, so
+      `prefers-reduced-motion` (visual) doesn't apply.
+    - All rev-M additions node-verified (syntax + every new store key
+      read+written, every new DOM id present in HTML and referenced in JS) but
+      **NOT ear-verified** — no audio out in this env.
 - **PDF export** — Trends → "Save as PDF" uses the browser's native
   `window.print()`, and is now THREE printed pages, each populated at print
   time via a single chain off `populateKeepsake()` (→ `populateWave()` →
@@ -518,6 +531,23 @@ Latest rounds (same day, later):
   for one hit. Verified with a standalone Node calc of the amplified formulas
   across the slider range, plus a headless DOM check of the new sliders'
   persistence — not ear-verified (no audio out in this env).
+
+- Tidy + chimes layer + percussion Dynamics + Swell macro (rev M): four
+  commits. (1) **Tidy** — folded the identical dashed averaged-trend `<path>`
+  string, repeated verbatim across `chartLastHour`/`chartToday`/`chartHistory`,
+  into one `avgOverlay(points)` helper; a const/let/var and function dead-code
+  sweep came up clean (nothing orphaned to remove). (2) **Chimes/gongs/bowls**
+  — a fourth generative layer (singing bowl / bell / temple bowl), slow and
+  spacious, inharmonic detuned-sine-partial strikes; own sub-toggle/type/volume,
+  same lifecycle as percussion. (3) **Percussion Dynamics** slider — soft-vs-loud
+  per-hit range, split out of Groove (now timing-only). (4) **Swell** macro — the
+  whole mix breathes louder/softer in slow randomized waves via a downstream
+  `ambSwellGain` multiplier node, default off (flat). See the rev-M sub-note
+  under the Ambient-soundscape architecture section for the full graph/synthesis/
+  timing-math breakdown. Node-verified (syntax + store-key read/write + DOM-id
+  presence both ways) but NOT ear-verified — no audio out in this env, so the
+  chime character/tuning, the dynamics range and the swell depth/period all
+  want a real listen.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.

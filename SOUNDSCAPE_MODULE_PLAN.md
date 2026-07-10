@@ -6,40 +6,64 @@ extraction so whoever picks it up doesn't start cold.
 
 ## Why
 
-The generative ambient engine (drone voices, plucked notes, percussion, and
-whatever chimes/gongs/swell get added next) is a self-contained enough idea —
+The generative ambient engine (drone voices, plucked notes, percussion,
+chimes/gongs/bowls, and a swell macro) is a self-contained enough idea —
 "a small reactive Web Audio ambience generator" — that it could be useful
 outside JORD. Splitting it into its own file/project would let it be
 versioned, tested, and reused independently, without dragging the rest of the
 app along.
 
-## Current shape (as of rev L)
+## Current shape (as of rev M)
 
 All inline in `index.html`'s single big IIFE, no separation from the rest of
 the app's state:
 
 - **Persisted controls** (each a plain var backed by `store.get`/`store.set`):
-  `ambientOn`, `ambVolume`, `ambWarmth`, `ambDensity`, `ambVariety`,
-  `ambTimbre`, `ambPercOn`, `ambPercType`, `ambPercGroove`, `ambPercVolume`.
+  `ambientOn`, `ambVolume`, `ambSwell`, `ambWarmth`, `ambDensity`,
+  `ambVariety`, `ambTimbre`, `ambPercOn`, `ambPercType`, `ambPercGroove`,
+  `ambPercVolume`, `ambPercDynamics`, `ambChimeOn`, `ambChimeType`,
+  `ambChimeVolume`.
 - **Web Audio graph state**: `actx` (the `AudioContext`), `ambVoices` (4
-  continuous drone oscillators → `ambFilter` → `ambMaster` → destination),
-  `ambNoiseBuf` (one shared noise buffer reused per percussion hit).
+  continuous drone oscillators → `ambFilter` → `ambMaster` → `ambSwellGain` →
+  destination), `ambNoiseBuf` (one shared noise buffer reused per percussion
+  hit). `ambSwellGain` (rev M) is a downstream multiplier the swell macro
+  animates; percussion and chimes both route straight into `ambMaster` (not
+  through `ambFilter`) so their transients/shimmer keep their bite.
 - **Lifecycle**: `startAmbient()` / `stopAmbient()` build and tear down the
   graph.
-- **Three parallel generative systems**, same shape each: a `scheduleX()` that
+- **Four parallel generative systems**, same shape each: a `scheduleX()` that
   re-arms itself via `setTimeout` with some randomized wait, and a `playX()`
   that does one-shot synthesis for that event.
   - `ambEvolve()` — not one-shot, a periodic (`setInterval`, 4s) reactive
-    parameter updater for the drone (filter cutoff, voice gains, detune).
+    parameter updater for the drone (filter cutoff, voice gains, detune). Note
+    it sets `ambMaster.gain` every tick, which is why the swell macro had to
+    live on a *separate* node (`ambSwellGain`) rather than share that param.
   - `scheduleAmbNote()` / `playAmbNote()` — generative plucked notes on a
     pentatonic scale.
   - `schedulePercHit()` / `playPercHit()` — generative percussion (added
-    rev K, widened rev L).
+    rev K, widened rev L, dynamics split out rev M). `schedulePercHit`
+    owns timing/groove; `playPercHit` owns per-hit synthesis + the
+    `ambPercDynamics` velocity swing.
+  - `scheduleChimeStrike()` / `playChimeStrike()` — generative chimes/gongs/
+    bowls (added rev M). Slow and spacious (tens of seconds between strikes,
+    wide random buffer, never a grid). Three inharmonic types (bowl/bell/
+    temple) built from a few detuned sine partials at non-integer ratios,
+    keyed to the drone's pentatonic root, long swell-in/decay-out envelopes.
+- **A macro (non-generative) control** (rev M): `scheduleSwell()` re-arms each
+  half-wave and linear-ramps `ambSwellGain.gain` between a peak (1) and a
+  trough (`1 - ambSwell/100*0.7`), scaling both depth and period from the one
+  `ambSwell` slider, with a random buffer on the half-wave length. `ambSwell 0`
+  = dead flat (early-returns without cycling). This is the one piece that is
+  neither drone nor one-shot-generative — a slow gain automation over the
+  whole mix.
 - **Reactivity inputs** — the engine reaches directly into JORD-specific
   globals: `tierOf(calm)`, `isDarkHours()`, `+vibeslider.value`,
   `objectPresent`. This is the main thing coupling it to the rest of the app.
-- **UI**: the `#sound` panel, one `.tr-card` per control, wired via direct
-  `$("snd-...")` DOM lookups and `store.set` calls in each listener.
+- **UI**: the `#sound` panel, one `.tr-card` per control (Volume, Swell,
+  Warmth, Density, Timbre, Variety, a Percussion card bundling toggle/type/
+  volume/groove/dynamics, and a Chimes card bundling toggle/type/volume),
+  wired via direct `$("snd-...")` DOM lookups and `store.set` calls in each
+  listener.
 
 ## Proposed module boundary
 
