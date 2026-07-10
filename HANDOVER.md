@@ -118,12 +118,36 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   icon, not buried in Settings). Includes a "variety" control that scales how
   much the generative engine wanders.
 - **PDF export** — Trends → "Save as PDF" uses the browser's native
-  `window.print()`. `#tr-keepsake` + `#tr-wave` now render on ONE printed page
-  (no `break-before:page` anymore) — tightened copy, infographic-leaning. The
-  wave line uses `smoothPathRamp(pts, sAt)`: the last 24h stays genuinely
-  jagged (low `sAt`), older-than-24h overshoots past normal Catmull-Rom
-  smoothing (`sAt` up to ~1.6) for an exaggeratedly silky look, so "spiky day →
-  smooth week" reads as one continuous but clearly-contrasted line.
+  `window.print()`, and is now THREE printed pages, each populated at print
+  time via a single chain off `populateKeepsake()` (→ `populateWave()` →
+  `populateDataPage()` → `populateGardenPage()`), so the `tr-print` click
+  handler still only calls `populateKeepsake()`. All the print containers are
+  siblings inside `#trends`'s `.tr-inner`, `display:none` on screen and shown
+  only inside the `@media print` block.
+  - **Page 1** — `#tr-keepsake` + `#tr-wave` share ONE sheet (no
+    `break-before` between them): the whimsical keepsake (header, face, sweet
+    stat, quote, capped 12-bloom mini garden strip, footer) then the wave coda.
+    The wave line uses `smoothPathRamp(pts, sAt)`: the last 24h stays genuinely
+    jagged (low `sAt`), older-than-24h overshoots past normal Catmull-Rom
+    smoothing (`sAt` up to ~1.6) for an exaggeratedly silky look, so "spiky day
+    → smooth week" reads as one continuous but clearly-contrasted line.
+  - **Page 2 "JORD · the data"** (`#tr-data`, `break-before:page`) — the SAME
+    two charts as the on-screen Trends view, titled "Today · by hour" and
+    "Last 14 days · daily average". `populateDataPage()` reuses
+    `chartToday()`/`chartHistory()` verbatim (they already return complete
+    self-contained `<svg>` strings off current `vibes`/`missions`).
+  - **Page 3 "JORD · the garden, right now"** (`#tr-gardenpage`,
+    `break-before:page`) — a full static scatter of the WHOLE live `garden`
+    (not the capped page-1 strip), rebuilt with renderGarden()'s exact `gseed`
+    formula so it's recognisably the same meadow, plus a fixed handful of
+    static visitors (`populateGardenPage()` hard-codes 4 — two butterflies, a
+    ladybug, a dangling spider — at deterministic left/top % so reprints match,
+    reusing `BUTTERFLY_SVG`/`LADYBUG_SVG`/`SPIDER_SVG`). Field is
+    `.gp-field` (position:relative, fixed 420px height, max-width 460px) so the
+    absolute % positions land sensibly on paper. Empty garden shows a light
+    in-voice line AND still keeps the visitors for company. Nothing animates —
+    it's paper. NOT print-preview-verified (no print access in this env) —
+    worth a real 3-page print/pagination check.
 - **Dark mode** — auto 5pm–5am, with a manual override (auto/always-on/always-off)
   in Settings.
 - **`prefers-reduced-motion`** — there's a `reduceMotion` const and a
@@ -251,6 +275,14 @@ Latest rounds (same day, later):
   garden) above the existing all-time listing — `shelfTiles()` factors out
   the shared group-by-kind-with-badge rendering so both sections reuse it
   rather than duplicating the logic.
+- PDF export grown from one page to three (see the PDF architecture note
+  above for the full breakdown): page 1 unchanged (keepsake + wave), new
+  page 2 "JORD · the data" reprints the two live tracker charts via
+  `populateDataPage()`, new page 3 "JORD · the garden, right now" statically
+  renders the whole live garden (renderGarden's exact `gseed` scatter) with
+  4 fixed-position static visitors via `populateGardenPage()`. Each new page
+  gets its own sheet via `break-before:page`; both chain off
+  `populateKeepsake()`. Not print-preview-verified.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
