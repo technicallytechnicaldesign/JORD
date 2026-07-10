@@ -123,7 +123,7 @@
     0%,100%{transform:translateY(0) rotate(calc(-1 * var(--bob-tilt,.8deg)))}
     50%{transform:translateY(var(--bob-lift,-9px)) rotate(var(--bob-tilt,.8deg))}
   }
-  .bob{animation:bob var(--bob-dur,6s) ease-in-out infinite}
+  .bob{transform-origin:140px 150px;animation:bob var(--bob-dur,6s) ease-in-out infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
   @keyframes wiggle{0%,100%{transform:rotate(0)}30%{transform:rotate(-2.5deg)}70%{transform:rotate(2deg)}}
@@ -609,7 +609,7 @@
     <div id="thought" role="status"></div>
     <div id="sittimer">2:00</div>
     <div id="orbwrap">
-      <svg id="jord" class="bob" viewBox="0 -40 280 304" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+      <svg id="jord" viewBox="0 -40 280 304" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
            fill="none" stroke-linecap="round" stroke-linejoin="round">
 
         <g id="night" class="tier hidden" stroke="var(--ink)" stroke-width="1.5">
@@ -654,6 +654,7 @@
           <path class="wave-line" d="M 86 248 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0" opacity=".6"/>
         </g>
 
+        <g id="jordbob" class="bob">
         <g id="orbbody">
           <g id="arm-l" transform="translate(65.2,172)" stroke="var(--ink)" stroke-width="2">
             <path d="M 0 0 q -13 5 -17 17"/>
@@ -753,6 +754,7 @@
             <path id="m-kiss"  d="M 140 172 q -3 -2 0 -4 q 3 2 0 4 Z" stroke-width="2" style="display:none"/>
           </g>
           </g>
+        </g>
         </g>
 
         <g id="flora"></g>
@@ -914,7 +916,7 @@
       <h2>JORD · GARDEN</h2>
       <span class="label" id="gd-count"></span>
     </div>
-    <div id="gd-empty">the garden's bare for now.<br>do one small thing with JORD — breathe, ground, accept, enjoy, sit — and something takes root. one bloom a day, no rushing it.</div>
+    <div id="gd-empty">the garden's bare for now.<br>breathe, ground, accept, enjoy, sit — every one plants something new. fresh growth only: it all clears out at 5am.</div>
     <div id="gd-field"></div>
     <div class="tr-btns">
       <button id="gd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -998,9 +1000,9 @@ function logMission(type){
   missions.push({t:Date.now(), type});
   if(missions.length>1000) missions=missions.slice(-1000);
   store.set("missions", missions);
-  /* one bloom per day, planted when you actually *do* something —
-     called after the push so the flower's symbol matches this very mission */
-  if(typeof plantGardenToday==="function" && plantGardenToday()){
+  /* one bloom per activity, planted when you actually *do* something —
+     the whole garden resets fresh at 5am, so a busy day fills right up */
+  if(typeof plantGarden==="function" && plantGarden(type)){
     setTimeout(()=>think(pick([
       "something just grew. quietly. because you showed up.",
       "planted one for today. it'll keep growing while you do.",
@@ -2667,17 +2669,27 @@ const GARDEN_LINES = [
   "you were here. that's why it's here.",
   "the wild kind. it prefers no rows."
 ];
-/* one bloom per calendar day, seeded from the day's most recent mission (or a
-   small neutral mark if none) — mirrors the streak/shelf-cap patterns */
-function plantGardenToday(){
-  const key=dayKey(new Date());
-  if(garden.some(g=>dayKey(new Date(g.t))===key)) return false;
+/* the garden's "day" turns over at 5am, not midnight — shift the clock back
+   5h before taking a calendar day, so anything before 5am still counts as
+   the previous day's growth (same trick as a lot of "daily reset" apps use) */
+function gardenDayKey(d){ return dayKey(new Date(d.getTime()-5*3600*1000)); }
+function resetGardenIfNewDay(){
+  const key=gardenDayKey(new Date());
+  if(store.get("gardenDay",null)!==key){
+    garden=[];
+    store.set("gardenDay", key);
+    store.set("garden", garden);
+  }
+}
+resetGardenIfNewDay();
+/* one bloom per *activity*, not per day — the garden fills up over a busy
+   day and resets clean at 5am. symbol is just that activity's own icon. */
+function plantGarden(type){
+  resetGardenIfNewDay();
   const golden=Math.random()<.05;
-  const today=missions.filter(m=>dayKey(new Date(m.t))===key).sort((a,b)=>a.t-b.t);
-  const last=today.length?today[today.length-1]:null;
-  const sym=last ? (MISSION_ICON[last.type]||"·") : pick(["·","˚","∘","‧"]);
+  const sym=MISSION_ICON[type]||"·";
   garden.push({t:Date.now(), i:Math.floor(Math.random()*FLORA.length), golden, sym});
-  if(garden.length>240) garden=garden.slice(-240);
+  if(garden.length>150) garden=garden.slice(-150);
   store.set("garden", garden);
   return true;
 }
@@ -2687,7 +2699,7 @@ function renderGarden(){
   const field=$("gd-field");
   if(!garden.length){ $("gd-count").textContent=""; field.innerHTML=""; $("gd-empty").style.display="block"; return; }
   $("gd-empty").style.display="none";
-  $("gd-count").textContent = `${garden.length} bloom${garden.length===1?"":"s"} · one a day`;
+  $("gd-count").textContent = `${garden.length} bloom${garden.length===1?"":"s"} today · resets at 5am`;
   field.innerHTML = garden.map((g,idx)=>{
     const seed=(g.t||0)+idx+1;
     const rx=(6+gseed(seed*0.9)*86).toFixed(1);        /* 6%..92% across */
@@ -2724,7 +2736,7 @@ $("gd-field").addEventListener("click", (e)=>{
     setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2400);
   }
 });
-$("b-garden").addEventListener("click", ()=>{ renderGarden(); gardenPanel.classList.add("open"); });
+$("b-garden").addEventListener("click", ()=>{ resetGardenIfNewDay(); renderGarden(); gardenPanel.classList.add("open"); });
 $("gd-close").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
 gardenPanel.addEventListener("click", (e)=>{ if(e.target===gardenPanel) gardenPanel.classList.remove("open"); });
 
