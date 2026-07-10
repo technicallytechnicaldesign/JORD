@@ -1,8 +1,11 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-10, after adding **5 new expressive eye variants**
+Last updated: 2026-07-10, after adding **ambient sky flyers** — occasional
+butterflies (reusing `BUTTERFLY_SVG`) and the odd distant bird drifting through
+the upper sky, biased toward the top-left (footer bumped to **rev J** — see the
+newest changelog entry). Prior same day: **5 new expressive eye variants**
 (look-left/right/up, a lowered-lid "peer", and a cute "uwu") wired into the
-mood system (footer bumped to **rev I** — see the newest changelog entry).
+mood system (footer bumped to **rev I** — see the changelog).
 Prior same day: a **last-hour vibe chart** and an
 **averaged trend-line toggle** across all three charts + PDF (footer bumped to
 **rev H** — see the newest changelog entry). Prior same day: a **Rare** section to the keepsake shelf
@@ -356,6 +359,38 @@ Latest rounds (same day, later):
   eyes and the peer slot/uwu arc shapes are reasoned from coordinates only, so
   worth a real look that pupils land inside the rims and uwu reads distinctly
   from happy.
+
+- Ambient sky flyers (rev J): occasional gentle life for the empty upper-left
+  sky the moon/sun/clouds leave bare — butterflies (art reused **verbatim** from
+  `BUTTERFLY_SVG`, outer `<svg>` wrapper stripped at runtime via `SKY_BUTTERFLY`
+  so it drops straight into `#jord`'s coordinate space) plus a smaller distant
+  `SKY_BIRD` (a two-arc gull with a `.skybird-flap` scaleY flap), weighted
+  `["fly","fly","fly","bird"]`. `spawnSkyFlyer()` appends a `<g class="skyfly">`
+  to `#visitor` (the same sibling-of-`#orbbody` sky layer the UFO uses, so
+  reactive body animations never drag them). Structure: outer `<g>` carries a
+  static `transform="translate(startX,startY)"` start position; an inner `move`
+  `<g>` runs the garden's **existing** `gvFlit`+`gvFade` keyframes (relative
+  translate + fade, driven by per-instance `--dx/--dy/--wob` in px≈user-units,
+  same trick the UFO uses) so it composes on top of the start; innermost a
+  `<g transform="scale(...)">` sizes the art, and butterfly wings flutter via
+  `.skyfly .gv-flap`→`gvFlutter` (reused). Removed on a `setTimeout` matching the
+  flight (`dur*1000+400`) with a `skyFlyerCount` decrement — no leaked nodes;
+  capped at 2 on screen. Cadence is **steady ambient**, not the rare UFO: a 20s
+  `setInterval` with a 45% roll (guarded on `!busy && !sitting &&
+  !modal.open && skyFlyerCount<2`) plus one seeded ~4s after load. Top-left
+  bias: ~65% of spawns start in the left half (`startX` left `rand(4,112)` vs
+  right `rand(150,252)`); `startY -15..48` keeps them in the upper sky clear
+  above Jord's head, with a gentle local `dx`/`dy` wander + wobble (edge-nudge
+  so they don't drift off-frame) rather than an edge-to-edge crossing — the
+  fade in/out means they materialise mid-drift and dissolve. Per-instance
+  `objHue` hue-rotate on butterflies for colour variety (birds left plain ink).
+  Clickable for a deadpan line reusing `VISITOR_LINES` via `think()`.
+  Reduce-motion: **no spawn at all** (pure ornament, same call as the garden
+  visitors); `.skyfly`/`.skyfly .gv-flap`/`.skybird-flap` still added to the
+  disable list for safety. Node-verified (syntax + wiring/cleanup regex checks)
+  but NOT browser-verified — the flight-path feel, whether the top-band `startY`
+  never clips the viewBox top (`y=-40`) at a wobble peak, and whether the bird
+  reads as a bird are the things worth a real look.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
