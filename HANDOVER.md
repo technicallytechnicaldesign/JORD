@@ -1,9 +1,12 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-10, after adding occasional garden visitors (butterfly/
-ladybug/spider drifting through the `#garden` panel — see the newest changelog
-entry). Prior same day: a "slow, fady, floaty ghost" motion pass and a
-keepsake-PDF mini-garden strip. Prior:
+Last updated: 2026-07-10, after adding a **Rare** section to the keepsake shelf
+(objects now roll a ~6% "rare" flag on spawn, get a gold glow + sparkles on the
+main stage, and collect into their own gold-bordered/twinkling shelf grid — see
+the newest changelog entry; footer bumped to **rev G**). Prior same day:
+occasional garden visitors (butterfly/ladybug/spider drifting through the
+`#garden` panel), a "slow, fady, floaty ghost" motion pass and a keepsake-PDF
+mini-garden strip. Prior:
 2026-07-09 (night), after several more rounds on top of the redesign
 below: cheek blush, fading vibe-word tint, a slimmer/more-blended thought bubble,
 a one-page infographic-style PDF with a spiky→smooth wave, header/viewBox layout
@@ -111,7 +114,23 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   clobber the base scale. Objects are clickable (spin/launch/bob), get subtle
   per-instance `hue-rotate` color variation, and every spawn is passively logged
   to the **keepsake shelf** (`shelf` array, `#shelf` panel, deduped by type with
-  a `×N` badge).
+  a `×N` badge). Each spawn also rolls a **`rare`** flag (`Math.random()<.06`,
+  ~6% — deliberately between the golden bloom's 3-5% and the "huge" 8%) recorded
+  on its shelf entry (`{i,react,t,rare}`; old entries lack the field, `undefined`
+  == not rare). A rare visitor gets a pulsing gold glow circle behind it plus a
+  scatter of twinkling 4-point `.obj-sparkle` stars — both on `scaleWrap` (NOT
+  `lifeWrap`, so the per-instance hue-rotate leaves the gold true), each star
+  nesting a positioning `<g>` inside an animating `<g>` to avoid the SVG
+  transform-vs-CSS-animation clobber. Both carry a static gold opacity so
+  reduce-motion (which freezes `.obj-rare-glow`/`.obj-sparkle`) still shows a
+  distinct gold marker.
+- **Keepsake shelf sections** — the `#shelf` panel has THREE stacked sections,
+  all sharing `shelfTiles(items, opts)` (group-by-kind + `×N` badge): **Today**
+  (`sh-today-*`, 5am reset via `gardenDayKey`), **Rare** (`sh-rare-*`, small
+  6-col grid fed by `shelf.filter(s=>s.rare)`; `shelfTiles(...,{rare:true})`
+  stamps each tile `.sh-rare-item` = static gold border + `shRarePulse` glow, and
+  appends a `.sh-sparkle` `✦` corner twinkle), then **All time** (`sh-grid`, the
+  full catch-all). All three grids delegate clicks to the shared `shelfItemClick`.
 - **Ambient soundscape** — opt-in, Web Audio only (no audio files), reactive to
   live app state (vibe band, calm tier, day/night, whether an object is
   visiting). Settings live on their own `#sound` page (reachable via a header
@@ -283,6 +302,19 @@ Latest rounds (same day, later):
   4 fixed-position static visitors via `populateGardenPage()`. Each new page
   gets its own sheet via `break-before:page`; both chain off
   `populateKeepsake()`. Not print-preview-verified.
+- Rare shelf section + special animations (rev G): objects roll a ~6% `rare`
+  flag at spawn (`spawnObject()`), recorded on the shelf entry. Live on the main
+  stage a rare visitor wears a pulsing gold glow + twinkling 4-point stars (new
+  `.obj-rare-glow`/`.obj-sparkle` classes on `scaleWrap`, gold untouched by the
+  object's hue-rotate; static gold opacity so reduce-motion keeps the marker). A
+  new **Rare** section sits between Today and All time on the `#shelf` panel — a
+  small 6-col grid of `shelf.filter(s=>s.rare)` where each tile gets a gold
+  border + `✦` corner sparkle via the new `shelfTiles(items,{rare})` option.
+  Reduce-motion keeps the gold border/`✦` static (meaningful state) and only
+  drops the pulse/twinkle. Structurally sanity-checked in Node (6% rate, filter,
+  tile classes, old-entry fallthrough) but NOT browser-verified — the glow/
+  sparkle *feel* and the sparkle-star placement relative to varying object scales
+  are the things worth a real look.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
