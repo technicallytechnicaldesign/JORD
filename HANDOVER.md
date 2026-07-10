@@ -7,14 +7,18 @@ changes, a new Garden page, and a service-worker caching fix. This doc exists so
 fresh Claude Code session (after a context clear) can pick up exactly where things
 left off without re-deriving everything.
 
-**In flight:** a one-time cloud routine (`trig_01Sj3XQ6zPdgMKrJTRc4AS2s`, via
-`RemoteTrigger`) is scheduled for 2026-07-09T23:00:00Z (1am Europe/Copenhagen) to
-work unattended overnight on: a wider/top-bar thought bubble for long text, a
-loading-moment flourish, a floatier/randomized Jord bounce, a moon phase + sky-drift
-animation, and multiple water tier states (wild/calm). If you're picking this repo
-up fresh, check `git log` for commits after "Fix garden appearing broken" to see
-whether it landed, and check the routine's status at
-https://claude.ai/code/routines/trig_01Sj3XQ6zPdgMKrJTRc4AS2s if not.
+**Cloud routine confirmed unreliable a second time:** the one-time
+`trig_01Sj3XQ6zPdgMKrJTRc4AS2s` routine (thought bubble width, loading flourish,
+Jord bounce, moon phase/drift, water states) fired on schedule
+(`last_fired_at: 2026-07-09T23:00:16Z`, `ended_reason: run_once_fired`) but
+produced zero commits — same silent-failure shape as the first attempt noted
+below, now confirmed twice. `persist_session:false` on the trigger means there's
+no transcript to inspect after the fact either. **Do not rely on this path for
+unattended work again** — if the user wants something done at a specific future
+clock time with nobody present to babysit it, say so plainly and treat the local
+`Agent` path as the only trustworthy option, even though it can't itself wait for
+a clock time (it has to be kicked off when someone's around to start it). The
+five items above still need doing as of this writing.
 
 ## What this is
 
@@ -189,9 +193,12 @@ For anything beyond a small tweak, the effective loop has been:
    tried a second time on 2026-07-09 specifically because the user was going
    to sleep and asked for work to happen at a specific future clock time
    (something a local `Agent` call can't do — it runs to completion now, it
-   doesn't sleep-then-run). Check the changelog/"in flight" note above for
-   whether that second attempt actually landed commits; update this note with
-   the outcome once known either way.
+   doesn't sleep-then-run). **Confirmed failed again** — it fired on schedule
+   but landed zero commits, with no session transcript retained to diagnose
+   why. Two-for-two failures now. Treat this path as effectively non-functional
+   for this project until something changes; the honest answer for "do X while
+   I'm asleep" is that it currently can't be done unattended — say so instead
+   of quietly re-trying the same mechanism.
 
 ## Known caveats
 
