@@ -339,7 +339,8 @@
     .unit,.stage,.ard,#moon,
     #t-water.water-wild .rippling,#t-water.water-wild .wave-line,#t-water.water-calm .rippling,
     .rain-streak,#w-sun .sun-glow,#w-sun .sun-rays,
-    .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway{animation:none}
+    .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway,
+    .gv,.gv-flap,.gv-swing{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
     #jordbob.napping{transition:none}
@@ -599,7 +600,8 @@
 
   /* ── garden: the anti-shelf — a wild, overlapping meadow, no grid ── */
   #gd-empty{font-size:12px;color:var(--dim);text-align:center;padding:30px 8px;line-height:1.8}
-  #gd-field{position:relative;min-height:66vh;margin:8px 0 2px}
+  #gd-stage{position:relative;margin:8px 0 2px}
+  #gd-field{position:relative;min-height:66vh}
   .gd-flower{position:absolute;transform-origin:50% 100%;cursor:pointer}
   .gd-flower svg{width:56px;height:auto;display:block;overflow:visible}
   .gd-sway{transform-origin:50% 100%;animation:gdSway 6.5s ease-in-out infinite}
@@ -617,6 +619,35 @@
     opacity:0;transition:opacity .35s ease;box-shadow:0 1px 5px rgba(0,0,0,.05);
   }
   .gd-word.show{opacity:.95}
+
+  /* ── garden visitors: occasional ambient creatures drifting over the meadow.
+     Its own layer, a sibling of #gd-field, so renderGarden()'s wholesale
+     innerHTML rewrite of the flowers never touches (or leaks) them. ── */
+  #gd-visitors{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:5}
+  .gv{position:absolute;pointer-events:auto;cursor:pointer;will-change:transform,opacity}
+  .gv svg{display:block;overflow:visible}
+  /* travel across the field with a gentle sine-ish vertical wander; --dx/--dy
+     (px) and --wob (px) are set per-instance by JS */
+  @keyframes gvFlit{
+    0%{transform:translate(0,0)}
+    25%{transform:translate(calc(var(--dx)*.25), calc(var(--dy)*.25 - var(--wob)))}
+    50%{transform:translate(calc(var(--dx)*.5),  calc(var(--dy)*.5  + var(--wob)))}
+    75%{transform:translate(calc(var(--dx)*.75), calc(var(--dy)*.75 - var(--wob)))}
+    100%{transform:translate(var(--dx), var(--dy))}
+  }
+  @keyframes gvFade{0%{opacity:0}9%{opacity:1}86%{opacity:1}100%{opacity:0}}
+  /* butterfly: wings flap by pinching horizontally about the body */
+  .gv-fly svg{width:26px;height:auto}
+  .gv-fly .gv-flap{transform-box:fill-box;transform-origin:center;animation:gvFlutter .34s ease-in-out infinite}
+  @keyframes gvFlutter{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.32)}}
+  /* ladybug trundling along near the ground */
+  .gv-bug svg{width:18px;height:auto}
+  /* spider dangling from a thread that lowers in and retracts back up */
+  .gv-spider{top:0;transform-origin:top center}
+  .gv-spider svg{width:22px;height:auto}
+  .gv-spider .gv-swing{transform-box:fill-box;transform-origin:top center;animation:gvSway 3.4s ease-in-out infinite}
+  @keyframes gvSway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+  @keyframes gvDangle{0%{transform:scaleY(.18);opacity:0}11%{transform:scaleY(1);opacity:1}83%{transform:scaleY(1);opacity:1}100%{transform:scaleY(.18);opacity:0}}
 
   /* ── keepsake print sheet (screen-hidden, print-only) — keepsake + wave now
      share ONE page, so both halves are kept deliberately compact ── */
@@ -1034,7 +1065,10 @@
       <button id="gd-close-top" class="icon-btn" aria-label="Back to Jord" title="Back to Jord">✕</button>
     </div>
     <div id="gd-empty">the garden's bare for now.<br>breathe, ground, accept, enjoy, sit — every one plants something new. fresh growth only: it all clears out at 5am.</div>
-    <div id="gd-field"></div>
+    <div id="gd-stage">
+      <div id="gd-field"></div>
+      <div id="gd-visitors" aria-hidden="true"></div>
+    </div>
     <div class="tr-btns">
       <button id="gd-close" class="small primary" style="flex:1">Back to Jord</button>
     </div>
@@ -1683,6 +1717,23 @@ const FLORA = [
   `<g stroke="var(--water)" stroke-width="1.6"><path d="M 0 0 v -12" stroke="var(--ink)"/><path d="M -3.5 -12 q 3.5 -7 7 0 q -3.5 5 -7 0 Z"/></g>`
 ];
 const GOLDEN_FLOWER = `<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 v -11" stroke="var(--ink)"/><circle cx="0" cy="-16" r="2.8"/><circle cx="-4.8" cy="-13.5" r="2.8"/><circle cx="4.8" cy="-13.5" r="2.8"/><circle cx="-3" cy="-20" r="2.8"/><circle cx="3" cy="-20" r="2.8"/><circle cx="0" cy="-16" r="1.2" fill="var(--sun)"/></g>`;
+
+/* ── garden visitors: line-art creatures, same stroke-based house style as the
+   flora. Wings/legs are minimal on purpose. Soft palette fill + a per-instance
+   hue-rotate (via objHue) so no two land quite the same colour. ── */
+const BUTTERFLY_SVG = `<svg viewBox="-14 -12 28 24" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g class="gv-flap" stroke="var(--ink)" stroke-width="1.2" fill="var(--bloom)" fill-opacity=".4"><path d="M0 -3 Q -12 -11 -10 -3 Q -7 -1 0 -1 Z"/><path d="M0 0 Q -9 3 -8 8 Q -4 6 0 2 Z"/><path d="M0 -3 Q 12 -11 10 -3 Q 7 -1 0 -1 Z"/><path d="M0 0 Q 9 3 8 8 Q 4 6 0 2 Z"/></g><path d="M0 -6 V6" stroke="var(--ink)" stroke-width="1.4"/><path d="M0 -6 Q -2 -9 -4 -10 M0 -6 Q 2 -9 4 -10" stroke="var(--ink)" stroke-width="1"/></svg>`;
+const LADYBUG_SVG = `<svg viewBox="-11 -9 22 18" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g stroke="var(--ink)" stroke-width="1"><path d="M-6 -5 L -9 -8 M -7 0 L -10 0 M -6 5 L -9 8 M 6 -5 L 9 -8 M 7 0 L 10 0 M 6 5 L 9 8"/></g><ellipse cx="0" cy="0" rx="6.5" ry="6" fill="var(--bloom)" stroke="var(--ink)" stroke-width="1.2"/><path d="M0 -6 V6" stroke="var(--ink)" stroke-width="1"/><circle cx="0" cy="-6.5" r="2.4" fill="var(--ink)" stroke="none"/><g fill="var(--ink)" stroke="none"><circle cx="-3" cy="-1.5" r="1.1"/><circle cx="3" cy="-1.5" r="1.1"/><circle cx="-2.6" cy="2.6" r="1.1"/><circle cx="2.6" cy="2.6" r="1.1"/></g></svg>`;
+const SPIDER_SVG = `<svg viewBox="-12 0 24 116" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g class="gv-swing"><line x1="0" y1="0" x2="0" y2="99" stroke="var(--dim)" stroke-width="1"/><g transform="translate(0 105)" stroke="var(--ink)" stroke-width="1.2"><path d="M-2 -3 Q -8 -7 -11 -3 M-2 -1 Q -9 -1 -12 3 M-2 1 Q -9 3 -11 8 M-2 3 Q -7 7 -9 11"/><path d="M2 -3 Q 8 -7 11 -3 M2 -1 Q 9 -1 12 3 M2 1 Q 9 3 11 8 M2 3 Q 7 7 9 11"/><ellipse cx="0" cy="1" rx="4" ry="5" fill="var(--ink)"/><circle cx="0" cy="-4.5" r="2.4" fill="var(--ink)"/><circle cx="-1" cy="-5" r=".6" fill="var(--paper)" stroke="none"/><circle cx="1" cy="-5" r=".6" fill="var(--paper)" stroke="none"/></g></g></svg>`;
+const VISITOR_LINES = [
+  "just passing through.",
+  "it landed, considered you, moved on.",
+  "a visitor. no agenda.",
+  "small wings, long commute.",
+  "it won't stay. that's alright.",
+  "brief, like most good things.",
+  "it waved. I think that was a wave.",
+  "no ticket, no fuss. just dropped in."
+];
 
 /* ── dom ── */
 const $ = id => document.getElementById(id);
@@ -2987,7 +3038,92 @@ $("gd-field").addEventListener("click", (e)=>{
     setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2400);
   }
 });
-$("b-garden").addEventListener("click", ()=>{ resetGardenIfNewDay(); renderGarden(); gardenPanel.classList.add("open"); });
+/* ── garden visitors ──────────────────────────────────────────────────────
+   Occasional creatures drift through the meadow while the panel's open. They
+   live in #gd-visitors (a sibling of #gd-field), never inside the flowers'
+   innerHTML, so a re-render can't wipe them or leave dangling nodes. Each one
+   runs a finite CSS animation and removes itself on animationend — nothing to
+   leak. Under reduce-motion we simply don't spawn them (pure ornament). */
+let gdVisitorTimer=null;
+/* butterflies weighted highest; the odd ladybug or dangling spider */
+const GV_KINDS=["fly","fly","fly","bug","spider"];
+function spawnGardenVisitor(kind){
+  if(reduceMotion) return;
+  const layer=$("gd-visitors");
+  if(!layer || !gardenPanel.classList.contains("open")) return;
+  const W=layer.clientWidth||300, H=layer.clientHeight||400;
+  kind = kind || pick(GV_KINDS);
+  const el=document.createElement("div");
+  el.className="gv gv-"+kind;
+  el.setAttribute("aria-hidden","true");
+  const hue=objHue(Math.floor(Math.random()*9999));
+  if(hue) el.style.filter=`hue-rotate(${hue}deg)`;
+  let dur;
+  if(kind==="spider"){
+    el.innerHTML=SPIDER_SVG;
+    el.style.left=(12+Math.random()*64)+"%";
+    el.style.top="0";
+    dur=13+Math.random()*6;
+    el.style.animation=`gvDangle ${dur}s ease-in-out forwards`;
+  } else if(kind==="bug"){
+    el.innerHTML=LADYBUG_SVG;
+    const dir=Math.random()<.5?1:-1;
+    el.style.left=(dir>0 ? 4+Math.random()*14 : 82-Math.random()*14)+"%";
+    el.style.top=(78+Math.random()*10)+"%";
+    el.style.setProperty("--dx",(dir*W*(0.5+Math.random()*0.35)).toFixed(0)+"px");
+    el.style.setProperty("--dy","0px");
+    el.style.setProperty("--wob","4px");
+    dur=16+Math.random()*8;
+    el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
+  } else {
+    el.innerHTML=BUTTERFLY_SVG;
+    const dir=Math.random()<.5?1:-1;
+    el.style.left=(dir>0 ? 6+Math.random()*24 : 70-Math.random()*24)+"%";
+    el.style.top=(14+Math.random()*54)+"%";
+    el.style.setProperty("--dx",(dir*W*(0.4+Math.random()*0.4)).toFixed(0)+"px");
+    el.style.setProperty("--dy",((Math.random()-0.5)*H*0.4).toFixed(0)+"px");
+    el.style.setProperty("--wob",(10+Math.random()*10).toFixed(0)+"px");
+    dur=15+Math.random()*7;
+    el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
+  }
+  el.addEventListener("click", gvPoke);
+  /* the drift/dangle animation is finite; flutter/sway loops never end, so the
+     first animationend here is always the lifecycle one — clean self-removal */
+  el.addEventListener("animationend",(e)=>{ if(e.target===el) el.remove(); });
+  layer.appendChild(el);
+}
+function gvPoke(e){
+  e.stopPropagation();
+  const el=e.currentTarget, layer=$("gd-visitors");
+  if(!layer) return;
+  layer.querySelectorAll(".gv-word").forEach(w=>w.remove());
+  const w=document.createElement("div");
+  w.className="gd-word gv-word";
+  w.textContent=pick(VISITOR_LINES);
+  const lr=layer.getBoundingClientRect(), er=el.getBoundingClientRect();
+  w.style.left=(((er.left+er.width/2)-lr.left)/lr.width*100)+"%";
+  w.style.top=Math.max(6,((er.top-lr.top)/lr.height*100))+"%";
+  layer.appendChild(w);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add("show")));
+  setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2200);
+}
+function startGardenVisitors(){
+  if(gdVisitorTimer){ clearInterval(gdVisitorTimer); gdVisitorTimer=null; }
+  const layer=$("gd-visitors"); if(layer) layer.innerHTML="";  /* fresh each open */
+  if(reduceMotion) return;
+  /* a chance of one arriving shortly after the panel opens */
+  if(Math.random()<.38){
+    setTimeout(()=>{ if(gardenPanel.classList.contains("open")) spawnGardenVisitor(); }, 1200+Math.random()*2600);
+  }
+  /* then, while it stays open, an occasional drop-in — self-terminating: the
+     tick clears its own interval once the panel's no longer open, so no close
+     path has to remember to stop it */
+  gdVisitorTimer=setInterval(()=>{
+    if(!gardenPanel.classList.contains("open")){ clearInterval(gdVisitorTimer); gdVisitorTimer=null; return; }
+    if(Math.random()<.3) spawnGardenVisitor();
+  }, 26000);
+}
+$("b-garden").addEventListener("click", ()=>{ resetGardenIfNewDay(); renderGarden(); gardenPanel.classList.add("open"); startGardenVisitors(); });
 $("gd-close").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
 $("gd-close-top").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
 gardenPanel.addEventListener("click", (e)=>{ if(e.target===gardenPanel) gardenPanel.classList.remove("open"); });
