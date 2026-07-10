@@ -2,9 +2,15 @@
 
 ## Next session — nothing queued
 
-At **rev O**. Nothing is queued for next time. Open threads if a future
+At **rev P**. Nothing is queued for next time. Open threads if a future
 session wants them, none urgent:
 
+- **Rolling charts (rev P) are logic-verified via seeded data, not visually**
+  — the "Today" chart is now `chartLast24h()`, a genuine rolling 24h window
+  (same "now pinned at the right edge" shape as `chartLastHour()`), not the
+  old calendar-day one. Confirmed with a seeded-data test that a point 23h
+  old shows and one 25h old doesn't, but nobody's looked at the actual chart
+  rendering.
 - **Nothing PDF-related is print-verified** — no browser/print access in this
   env. Page 1 was deliberately loosened this round (rev O: portrait 150→220px,
   margins opened up throughout, no longer fighting for a strict one-sheet
@@ -26,7 +32,13 @@ session wants them, none urgent:
 
 ---
 
-Last updated: 2026-07-11, after a **garden-reset + PDF-spacing round (rev O)**:
+Last updated: 2026-07-11, after making the **"Today" chart rolling (rev P)**:
+`chartToday()` (renamed `chartLast24h()`) used to filter by calendar day, so
+"now" only sat at the chart's right edge late in the evening. Rewritten to
+match `chartLastHour()`'s pattern — filter by the last 24h of timestamps,
+"now" always pinned right — across both the on-screen tracker and PDF page 2
+(heading now "Last 24 hours · by hour" in both places). Prior: a
+**garden-reset + PDF-spacing round (rev O)**:
 a new Settings option "Garden resets" (5am default / weekly / at 50 flowers —
 `gardenResetMode`, `checkGardenReset()`, replaces the old day-only
 `resetGardenIfNewDay()`), a 200-flower hard cap (was 150), and page 1 of the
@@ -630,6 +642,13 @@ Latest rounds (same day, later):
   simulation: count-mode reaching 50 and resetting, weekly mode not wiping an
   existing garden on first switch, and the 200 cap actually capping. Not
   visually verified — nobody's seen the new Settings row in a real browser.
+
+- Rolling "Today" chart (rev P): `chartToday()` → `chartLast24h()`, now a
+  genuine rolling last-24-hours window (mirrors `chartLastHour()`'s "now
+  pinned right" shape) instead of calendar-day-bound — on-screen tracker and
+  PDF page 2 both updated, heading now "Last 24 hours · by hour" in both
+  places. Verified with seeded data crossing a calendar-day boundary (23h-old
+  point included, 25h-old excluded).
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
