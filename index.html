@@ -726,36 +726,38 @@
   #tr-keepsake{display:none}
   .ks-head{font-size:15px;letter-spacing:.14em;text-align:center;font-weight:600}
   .ks-sub{font-size:11px;letter-spacing:.08em;color:var(--dim);text-align:center;margin-top:4px}
-  .ks-art{display:block;margin:6px auto 3px;width:150px;height:auto}
-  .ks-sweet{font-size:12px;line-height:1.5;text-align:center;max-width:340px;margin:3px auto 0}
-  .ks-notes{margin-top:5px}
-  .ks-notes p{font-size:11.5px;font-style:italic;text-align:center;color:var(--ink);margin:3px auto;max-width:340px;line-height:1.4}
-  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:6px;text-transform:uppercase}
+  /* Jord's the focal point of this page, and the page is allowed to breathe --
+     bigger portrait, generous margins throughout. This may push the wave coda
+     onto its own page now (no longer fighting for a strict one-sheet budget),
+     which is the intended trade-off. */
+  .ks-art{display:block;margin:22px auto 14px;width:220px;height:auto}
+  .ks-sweet{font-size:12px;line-height:1.6;text-align:center;max-width:340px;margin:10px auto 0}
+  .ks-notes{margin-top:12px}
+  .ks-notes p{font-size:11.5px;font-style:italic;text-align:center;color:var(--ink);margin:8px auto;max-width:340px;line-height:1.5}
+  .ks-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:16px;text-transform:uppercase}
   /* a compact strip of today's actual garden at the foot of the sheet — a
-     little row of blooms, not a second full meadow. Kept to a fixed modest
-     height (capped bloom count) so it never blows the one-page budget. */
-  .ks-garden{margin-top:5px;text-align:center}
+     little row of blooms, not a second full meadow. */
+  .ks-garden{margin-top:14px;text-align:center}
   .ksg-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
-  .ksg-row{display:flex;justify-content:center;align-items:flex-end;gap:1px;
-           max-width:340px;margin:1px auto 0;padding-bottom:1px}
+  .ksg-row{display:flex;justify-content:center;align-items:flex-end;gap:2px;
+           max-width:340px;margin:4px auto 0;padding-bottom:2px}
   .ksg-row svg{width:22px;height:27px;display:block;overflow:visible}
   .ksg-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
   /* today's shelf keepsakes — same bespoke compact-strip pattern as the garden
      row above (a small uppercase label + a capped flex row of tiny SVGs + an
      in-voice empty line), NOT the screen-only .sh-grid CSS which the print
      media query never wires up. Deduped by object kind so repeat sightings
-     don't double up. Kept tight (see the file header on this section) since
-     it's the third compact strip sharing page 1's one-page budget. */
-  .ks-shelf{margin-top:5px;text-align:center}
+     don't double up. */
+  .ks-shelf{margin-top:14px;text-align:center}
   .ksh-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
-  .ksh-row{display:flex;justify-content:center;align-items:flex-end;gap:3px;flex-wrap:wrap;
-           max-width:340px;margin:1px auto 0;padding-bottom:1px}
+  .ksh-row{display:flex;justify-content:center;align-items:flex-end;gap:4px;flex-wrap:wrap;
+           max-width:340px;margin:4px auto 0;padding-bottom:2px}
   .ksh-row svg{width:24px;height:24px;display:block;overflow:visible}
   .ksh-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:2px}
   /* a quiet gold-tinted reflection, shown only if a rare item was ever kept —
      a light nod to the app's "rare = gold" (var(--sun)) language, no box. */
-  .ks-rare{margin:4px auto 0;max-width:340px;font-size:11px;font-style:italic;
-           text-align:center;line-height:1.4;color:color-mix(in srgb,var(--sun) 68%,var(--ink))}
+  .ks-rare{margin:10px auto 0;max-width:340px;font-size:11px;font-style:italic;
+           text-align:center;line-height:1.5;color:color-mix(in srgb,var(--sun) 68%,var(--ink))}
   .ks-rare-mark{color:var(--sun);font-style:normal}
 
   /* ── the week, as a plain wave — now a quiet sub-section of the same sheet,
@@ -808,10 +810,12 @@
     #trends .screen-only{display:none !important}
     .tr-btns{display:none}
     .tr-card{break-inside:avoid;box-shadow:none}
-    /* one cohesive sheet: keepsake up top, the wave as a divider-led coda below */
-    #tr-keepsake{display:block !important;break-inside:avoid;padding:12px 10px 3px}
-    #tr-wave{display:block !important;break-inside:avoid;padding:6px 10px 8px;
-             margin-top:6px;border-top:1px solid var(--faint)}
+    /* keepsake up top, the wave as a divider-led coda below -- given real
+       room to breathe now rather than fighting for a strict one-sheet fit;
+       if that pushes the wave onto its own page, that's fine */
+    #tr-keepsake{display:block !important;break-inside:avoid;padding:30px 16px 14px}
+    #tr-wave{display:block !important;break-inside:avoid;padding:16px 16px 16px;
+             margin-top:18px;border-top:1px solid var(--faint)}
     /* each new sheet starts fresh: page 2 = the data, page 3 = the garden */
     #tr-data{display:block !important;break-before:page;break-inside:avoid;padding:24px 10px 10px}
     #tr-gardenpage{display:block !important;break-before:page;break-inside:avoid;padding:24px 10px 10px}
@@ -1131,6 +1135,14 @@
         <option value="60" selected>every 60 min</option>
         <option value="90">every 90 min</option>
         <option value="120">every 2 h</option>
+      </select>
+    </div>
+    <div class="row">
+      <span class="label">Garden resets</span>
+      <select id="gardenreset" aria-label="Garden reset schedule">
+        <option value="5am">5am — default</option>
+        <option value="weekly">once a week — for slow growers</option>
+        <option value="count">at 50 flowers</option>
       </select>
     </div>
     <div class="row">
@@ -3374,11 +3386,30 @@ const GARDEN_LINES = [
   "you were here. that's why it's here.",
   "the wild kind. it prefers no rows."
 ];
-/* the garden's "day" turns over at 5am, not midnight — shift the clock back
-   5h before taking a calendar day, so anything before 5am still counts as
-   the previous day's growth (same trick as a lot of "daily reset" apps use) */
+/* the garden's default "day" turns over at 5am, not midnight — shift the
+   clock back 5h before taking a calendar day, so anything before 5am still
+   counts as the previous day's growth (same trick as a lot of "daily reset"
+   apps use). Reset schedule is user-choosable (Settings > Garden resets):
+   5am (default), weekly (for slower growers), or once it hits 50 blooms. */
 function gardenDayKey(d){ return dayKey(new Date(d.getTime()-5*3600*1000)); }
-function resetGardenIfNewDay(){
+let gardenResetMode = store.get("gardenResetMode","5am");   /* "5am" | "weekly" | "count" */
+function checkGardenReset(){
+  if(gardenResetMode==="count"){
+    if(garden.length>=50){ garden=[]; store.set("garden", garden); }
+    return;
+  }
+  if(gardenResetMode==="weekly"){
+    /* if there's no clock started yet (first time in this mode), start it
+       now rather than resetting immediately -- switching modes shouldn't
+       wipe an existing garden out of nowhere */
+    let last=store.get("gardenResetAt", null);
+    if(last===null){ last=Date.now(); store.set("gardenResetAt", last); }
+    if(Date.now()-last >= 7*24*3600*1000){
+      garden=[]; store.set("garden", garden);
+      store.set("gardenResetAt", Date.now());
+    }
+    return;
+  }
   const key=gardenDayKey(new Date());
   if(store.get("gardenDay",null)!==key){
     garden=[];
@@ -3386,15 +3417,28 @@ function resetGardenIfNewDay(){
     store.set("garden", garden);
   }
 }
-resetGardenIfNewDay();
-/* one bloom per *activity*, not per day — the garden fills up over a busy
-   day and resets clean at 5am. symbol is just that activity's own icon. */
+checkGardenReset();
+const gardenResetSel=$("gardenreset");
+gardenResetSel.value=gardenResetMode;
+gardenResetSel.addEventListener("change", ()=>{
+  gardenResetMode=gardenResetSel.value;
+  store.set("gardenResetMode", gardenResetMode);
+  /* start the relevant clock fresh on switching modes, without wiping the
+     garden that's already there */
+  if(gardenResetMode==="weekly" && store.get("gardenResetAt",null)===null) store.set("gardenResetAt", Date.now());
+  if(gardenResetMode==="5am" && store.get("gardenDay",null)===null) store.set("gardenDay", gardenDayKey(new Date()));
+});
+/* one bloom per *activity*, not per day — the garden fills up as you go and
+   resets on whichever schedule is chosen above. symbol is just that
+   activity's own icon. Hard-capped at 200 regardless of reset mode, as a
+   backstop (the "at 50 flowers" mode never gets close, but 5am/weekly could
+   in a very active stretch). */
 function plantGarden(type){
-  resetGardenIfNewDay();
+  checkGardenReset();
   const golden=Math.random()<.05;
   const sym=MISSION_ICON[type]||"·";
   garden.push({t:Date.now(), i:Math.floor(Math.random()*FLORA.length), golden, sym});
-  if(garden.length>150) garden=garden.slice(-150);
+  if(garden.length>200) garden=garden.slice(-200);
   store.set("garden", garden);
   return true;
 }
@@ -3526,7 +3570,7 @@ function startGardenVisitors(){
     if(Math.random()<.3) spawnGardenVisitor();
   }, 26000);
 }
-$("b-garden").addEventListener("click", ()=>{ resetGardenIfNewDay(); renderGarden(); gardenPanel.classList.add("open"); startGardenVisitors(); });
+$("b-garden").addEventListener("click", ()=>{ checkGardenReset(); renderGarden(); gardenPanel.classList.add("open"); startGardenVisitors(); });
 $("gd-close").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
 $("gd-close-top").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
 gardenPanel.addEventListener("click", (e)=>{ if(e.target===gardenPanel) gardenPanel.classList.remove("open"); });
