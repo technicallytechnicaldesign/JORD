@@ -298,6 +298,19 @@
   }
   .ufo-beam{animation:ufoBeam 11s ease-in-out forwards}
 
+  /* ── main-stage sky flyers: occasional ambient creatures (reused butterfly
+     art + the odd distant bird) that drift through the upper sky, biased toward
+     the top-left. They live in #visitor (sibling of #orbbody) so reactive body
+     animations never drag them along. Motion/fade reuse the garden's gvFlit /
+     gvFade / gvFlutter keyframes (defined further down) driven by per-instance
+     --dx/--dy/--wob; the outer <g> carries a static start position so gvFlit's
+     relative translate composes on top of it. Not spawned under reduce-motion
+     (pure ornament); classes are still in the disable list below for safety. ── */
+  .skyfly{cursor:pointer;will-change:transform,opacity}
+  .skyfly .gv-flap{transform-box:fill-box;transform-origin:center;animation:gvFlutter .34s ease-in-out infinite}
+  @keyframes skyBirdFlap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.5) translateY(-.4px)}}
+  .skybird-flap{transform-box:fill-box;transform-origin:center;animation:skyBirdFlap .9s ease-in-out infinite}
+
   .sprite{transition:opacity 1.8s ease, transform 1.2s ease}
   .sprite.in{opacity:1}
   .sprite.out{opacity:0}
@@ -351,7 +364,8 @@
     .rain-streak,#w-sun .sun-glow,#w-sun .sun-rays,
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway,
     .sh-rare-item,.sh-sparkle,
-    .gv,.gv-flap,.gv-swing{animation:none}
+    .gv,.gv-flap,.gv-swing,
+    .skyfly,.skyfly .gv-flap,.skybird-flap{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
     #jordbob.napping{transition:none}
@@ -1068,7 +1082,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev I</span>
+    <span class="rev">rev J</span>
   </footer>
 </div>
 
@@ -2424,6 +2438,68 @@ function scheduleUFO(){
   }, rand(25,50)*60*1000);
 }
 scheduleUFO();
+
+/* ── main-stage sky flyers ──────────────────────────────────────────────────
+   Occasional gentle life drifting through the upper sky, biased toward the
+   top-left (the corner the moon/sun/clouds leave comparatively empty). Butterfly
+   art is reused verbatim from BUTTERFLY_SVG (outer <svg> wrapper stripped so it
+   drops straight into #jord's coordinate space); a smaller distant bird flaps
+   past too, weighted lower. Elements are appended to #visitor (a sibling of
+   #orbbody like every other sky decoration), animated by the garden's existing
+   gvFlit/gvFade/gvFlutter keyframes, and removed on a timeout matching the
+   flight — no leaked nodes. Steady ambient cadence (unlike the rare UFO), capped
+   at 2 on screen. Under reduce-motion nothing spawns (pure ornament). */
+const SKY_BUTTERFLY = BUTTERFLY_SVG.replace(/^<svg[^>]*>/,"").replace(/<\/svg>\s*$/,"");
+const SKY_BIRD = `<g class="skybird-flap" stroke="var(--ink)" stroke-width="1.4" fill="none" stroke-linecap="round"><path d="M -7 0 Q -3.5 -5 0 -0.6 Q 3.5 -5 7 0"/></g>`;
+const SKY_KINDS = ["fly","fly","fly","bird"];
+let skyFlyerCount = 0;
+function spawnSkyFlyer(kind){
+  if(reduceMotion) return;
+  const layer = $("visitor");
+  if(!layer || skyFlyerCount >= 2) return;
+  kind = kind || pick(SKY_KINDS);
+  const leftHome = Math.random() < .65;                 /* ~65% dwell top-left */
+  let startX = leftHome ? rand(4,112) : rand(150,252);
+  const startY = -15 + Math.random()*63;                /* upper sky band ~ -15..48, clear above Jord's head */
+  /* a gentle local wander rather than an edge-to-edge crossing; the fade in/out
+     means it materialises mid-drift and dissolves, so it needn't leave frame */
+  let dx = (Math.random()<.5?-1:1) * rand(38,106);
+  if(startX + dx < 2)   dx = Math.abs(dx);              /* nudge back in if hugging an edge */
+  if(startX + dx > 274) dx = -Math.abs(dx);
+  const dy  = Math.round((Math.random()-.5)*28);
+  const wob = kind==="bird" ? rand(4,9) : rand(6,13);
+  const dur = kind==="bird" ? rand(15,22) : rand(17,27);
+  const scl = kind==="bird" ? (0.85+Math.random()*0.45) : (0.6+Math.random()*0.3);
+
+  const flyer = document.createElementNS("http://www.w3.org/2000/svg","g");
+  flyer.setAttribute("class","skyfly skyfly-"+kind);
+  flyer.setAttribute("transform",`translate(${startX.toFixed(1)},${startY.toFixed(1)})`);
+  const hue = objHue(Math.floor(Math.random()*9999));
+  if(hue && kind!=="bird") flyer.style.filter=`hue-rotate(${hue}deg)`;
+
+  const move = document.createElementNS("http://www.w3.org/2000/svg","g");
+  move.style.setProperty("--dx", dx.toFixed(0)+"px");
+  move.style.setProperty("--dy", dy.toFixed(0)+"px");
+  move.style.setProperty("--wob", wob.toFixed(0)+"px");
+  move.style.animation = `gvFlit ${dur.toFixed(0)}s ease-in-out forwards, gvFade ${dur.toFixed(0)}s ease forwards`;
+  move.innerHTML = `<g transform="scale(${scl.toFixed(2)})">${kind==="bird" ? SKY_BIRD : SKY_BUTTERFLY}</g>`;
+  flyer.appendChild(move);
+
+  /* a small deadpan reaction if you catch one — reuses the garden's line pool */
+  flyer.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    if(!busy && !sitting) think(pick(VISITOR_LINES), 9000);
+  });
+
+  layer.appendChild(flyer);
+  skyFlyerCount++;
+  setTimeout(()=>{ flyer.remove(); skyFlyerCount--; }, dur*1000 + 400);
+}
+setInterval(()=>{
+  if(!busy && !sitting && !modal.classList.contains("open") && skyFlyerCount < 2 && Math.random() < .45)
+    spawnSkyFlyer();
+}, 20000);
+setTimeout(()=>{ if(!busy && !sitting && !modal.classList.contains("open")) spawnSkyFlyer(); }, 4000);
 
 /* ── render ── */
 function render(){
