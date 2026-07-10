@@ -1239,6 +1239,11 @@
       <div class="row scalelabels"><span>hushed</span><span>full</span></div>
     </div>
     <div class="tr-card">
+      <h3>Swell</h3>
+      <input type="range" id="snd-swell" min="0" max="100" value="0" aria-label="Swell">
+      <div class="row scalelabels"><span>steady</span><span>rise &amp; fall</span></div>
+    </div>
+    <div class="tr-card">
       <h3>Warmth</h3>
       <input type="range" id="snd-warmth" min="0" max="100" value="50" aria-label="Warmth">
       <div class="row scalelabels"><span>airy &amp; bright</span><span>deep &amp; warm</span></div>
@@ -1306,7 +1311,7 @@
     </div>
     <div class="tr-card">
       <h3>About</h3>
-      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. Dynamics decides how far the hits swing between soft and loud — even at one end, ghost-quiet to nearly double at the other. There's a slower chimes layer too — singing bowls, bells and a deep temple bowl that swell and ring out on their own unhurried clock, sparse and never on a grid. It pauses itself when you leave the tab.</div>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Swell decides whether the whole thing breathes — holding one steady level, or rising and falling in slow, uneven waves. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. Dynamics decides how far the hits swing between soft and loud — even at one end, ghost-quiet to nearly double at the other. There's a slower chimes layer too — singing bowls, bells and a deep temple bowl that swell and ring out on their own unhurried clock, sparse and never on a grid. It pauses itself when you leave the tab.</div>
     </div>
     <div class="tr-btns">
       <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -3509,10 +3514,12 @@ let ambPercDynamics = clamp(store.get("ambPercDynamics",50),0,100);
 let ambChimeOn = store.get("ambChimeOn", false);
 let ambChimeType = store.get("ambChimeType","bowl");
 let ambChimeVolume = clamp(store.get("ambChimeVolume",100),0,100);
+let ambSwell = clamp(store.get("ambSwell",0),0,100);   /* macro rise/fall; 0 = flat/steady */
 const AMB_WAVE = { glass:"sine", reed:"triangle", string:"sawtooth", hush:"sine" };
 const AMB_PENTA = [1, 9/8, 5/4, 3/2, 5/3];
 let actx=null, ambVoices=[], ambFilter=null, ambMaster=null, ambNoteTimer=null, ambEvolveTimer=null;
 let ambPercTimer=null, ambNoiseBuf=null, ambChimeTimer=null;
+let ambSwellGain=null, ambSwellTimer=null, swellUp=false;
 function ambRootFreq(){ return isDarkHours() ? 98 : 130.81; }   /* G2 at night, C3 by day */
 function startAmbient(){
   if(actx) return;
@@ -3523,7 +3530,12 @@ function startAmbient(){
     ambMaster = actx.createGain(); ambMaster.gain.value = 0;
     ambFilter = actx.createBiquadFilter();
     ambFilter.type="lowpass"; ambFilter.frequency.value=420; ambFilter.Q.value=4;
-    ambFilter.connect(ambMaster); ambMaster.connect(actx.destination);
+    /* swell node multiplies the whole mix downstream of ambMaster, so it layers
+       UNDER ambEvolve()'s volume-driven control of ambMaster.gain rather than
+       fighting it for the same AudioParam (drone, notes, percussion and chimes
+       all route through ambMaster, so this breathes everything together). */
+    ambSwellGain = actx.createGain(); ambSwellGain.gain.value = 1;
+    ambFilter.connect(ambMaster); ambMaster.connect(ambSwellGain); ambSwellGain.connect(actx.destination);
     const wave = AMB_WAVE[ambTimbre]||"sine";
     const root = ambRootFreq();
     ambVoices = [0.5,1,1.5,2].map(m=>{
@@ -3542,6 +3554,7 @@ function startAmbient(){
     scheduleAmbNote();
     schedulePercHit();
     scheduleChimeStrike();
+    scheduleSwell();
     if(actx.state==="suspended") actx.resume();
   }catch(e){ actx=null; }
 }
@@ -3717,11 +3730,42 @@ function playChimeStrike(typeOverride){
   let ended=0;
   oscs.forEach(o=>{ o.stop(stopAt); o.onended=()=>{ if(++ended===oscs.length) nodes.forEach(n=>{ try{n.disconnect();}catch(_){} }); }; });
 }
+/* swell — a macro rise/fall on the whole mix. Re-arms itself each HALF wave,
+   ramping ambSwellGain between a full peak (1) and a trough (1-depth), so the
+   soundscape slowly breathes louder/softer instead of sitting at one level.
+   The peak is pinned at 1 (never louder than the Volume setting) and the swell
+   only ever dips from there, so it can't clip. One slider scales both the depth
+   AND the pace; the half-wave length carries a wide random buffer on top so the
+   breaths never land like a metronome (same spirit as Groove's timing jitter,
+   but on a tens-of-seconds macro cycle). ambSwell 0 = dead flat. */
+function scheduleSwell(){
+  clearTimeout(ambSwellTimer); ambSwellTimer=null;
+  if(!ambientOn || !actx || !ambSwellGain) return;
+  const now=actx.currentTime, sw=ambSwell/100;
+  if(sw<=0){                       /* flat: ease back to unity and stop cycling */
+    ambSwellGain.gain.cancelScheduledValues(now);
+    ambSwellGain.gain.setValueAtTime(ambSwellGain.gain.value, now);
+    ambSwellGain.gain.linearRampToValueAtTime(1, now+3);
+    return;
+  }
+  const depth=sw*0.7, trough=1-depth;              /* up to 70% quieter at the ebb */
+  /* full-cycle period: slow, wide waves at low settings, more active at high --
+     ~90s at a whisper of swell down to ~40s at full, then a 0.6..1.4x jitter so
+     no two breaths are the same length. Half of that is one rise or one fall. */
+  const half = ((90 - sw*50)/2) * rand(0.6,1.4);
+  swellUp=!swellUp;
+  const target = swellUp ? 1 : trough;
+  ambSwellGain.gain.cancelScheduledValues(now);
+  ambSwellGain.gain.setValueAtTime(ambSwellGain.gain.value, now);
+  ambSwellGain.gain.linearRampToValueAtTime(target, now+half);
+  ambSwellTimer=setTimeout(scheduleSwell, half*1000);
+}
 function stopAmbient(){
   clearInterval(ambEvolveTimer); ambEvolveTimer=null;
   clearTimeout(ambNoteTimer); ambNoteTimer=null;
   clearTimeout(ambPercTimer); ambPercTimer=null; ambNoiseBuf=null;
   clearTimeout(ambChimeTimer); ambChimeTimer=null;
+  clearTimeout(ambSwellTimer); ambSwellTimer=null; ambSwellGain=null;
   if(!actx){ return; }
   const ctx=actx, voices=ambVoices;
   try{ if(ambMaster) ambMaster.gain.setTargetAtTime(0, ctx.currentTime, 0.4); }catch(e){}
@@ -3751,6 +3795,7 @@ $("snd-perc-dynamics").value=ambPercDynamics;
 $("snd-chime-toggle").checked=ambChimeOn;
 $("snd-chime-type").value=ambChimeType;
 $("snd-chime-volume").value=ambChimeVolume;
+$("snd-swell").value=ambSwell;
 $("ambienttoggle").checked=ambientOn;
 $("snd-toggle").checked=ambientOn;
 $("snd-state").textContent=ambientOn?"on · evolving":"off";
@@ -3772,6 +3817,7 @@ $("snd-perc-dynamics").addEventListener("input", e=>{ ambPercDynamics=clamp(+e.t
 $("snd-chime-toggle").addEventListener("change", e=>{ ambChimeOn=e.target.checked; store.set("ambChimeOn",ambChimeOn); if(actx) scheduleChimeStrike(); });
 $("snd-chime-type").addEventListener("change", e=>{ ambChimeType=e.target.value; store.set("ambChimeType",ambChimeType); });
 $("snd-chime-volume").addEventListener("input", e=>{ ambChimeVolume=clamp(+e.target.value,0,100); store.set("ambChimeVolume",ambChimeVolume); });
+$("snd-swell").addEventListener("input", e=>{ ambSwell=clamp(+e.target.value,0,100); store.set("ambSwell",ambSwell); if(actx) scheduleSwell(); });
 document.addEventListener("visibilitychange", ()=>{
   if(!ambientOn || !actx) return;
   if(document.hidden){ try{actx.suspend();}catch(_){} } else { try{actx.resume();}catch(_){} }
