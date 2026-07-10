@@ -110,6 +110,24 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
 - **`prefers-reduced-motion`** — there's a `reduceMotion` const and a
   `@media (prefers-reduced-motion:reduce)` block that lists every looping
   animation to disable. Any new looping animation needs to be added there.
+- **Nap state** (`napping` flag, alongside `busy`/`sitting`) — after a long
+  untouched idle stretch (`NAP_IDLE_MS`, currently 7 min) a coarse 45s checker
+  *sometimes* (`NAP_CHANCE` 0.4, rolled each tick — organic, not a rigid timer)
+  nods Jord off: eyes close, mouth flat, and `#jordbob` swaps `.bob`→`.napping`
+  so he droops into a settled sag (a one-shot CSS `transition`, NOT a loop; the
+  droop transform is applied inline by JS after freezing his live float position
+  so the swap eases down instead of snapping). A `zzz` from the `SNORES` pool
+  loops in the shared `#thought` bubble via `think()`. All other idle systems
+  (`applyMood`, arm-wave/blink intervals, `scheduleThoughts`, `turnAround`,
+  `goIdle`) are gated on `!napping` so nothing fights it visually. Waking is
+  instant: a single delegated `document` `pointerdown` listener (plus
+  `vibeslider` `input`) stamps `lastInteraction` and, if napping, calls
+  `wakeNap()` — this runs on `pointerdown`, *before* the corresponding `click`,
+  so the pat/tap handlers see `napping` already false and behave normally. Under
+  reduce-motion only the droop *motion* is stripped (`#jordbob.napping{transition:none}`
+  → instant sag); the eyes/zzz/wake-on-touch state still happens, since it's
+  meaningful feedback, not ornament. Never put a competing animation/inline
+  transform on `#orbbody` for this — `#jordbob` is the safe layer, same as the bob.
 
 ## Feature changelog (chronological, oldest first)
 
@@ -173,6 +191,10 @@ Latest rounds (same day, later):
 - Accept/Enjoy line pools doubled (10 → 20 each)
 - Ambient weather layer added (clear/sun/rain/overcast, random per 3h window)
   — see architecture notes above
+- Nap state: after ~7 min untouched Jord sometimes (40% per 45s check) falls
+  asleep — eyes close, droops into a sag on `#jordbob`, soft `zzz` in the
+  bubble; wakes instantly on any interaction (delegated pointerdown listener).
+  Reduce-motion keeps the state, drops only the droop motion — see arch notes
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
