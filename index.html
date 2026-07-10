@@ -1082,7 +1082,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev J</span>
+    <span class="rev">rev K</span>
   </footer>
 </div>
 
@@ -1260,8 +1260,25 @@
       <div class="row scalelabels"><span>steady drone</span><span>wandering</span></div>
     </div>
     <div class="tr-card">
+      <h3>Percussion</h3>
+      <label class="row" style="cursor:pointer">
+        <span class="label">soft percussion</span>
+        <input type="checkbox" id="snd-perc-toggle">
+      </label>
+      <div class="row">
+        <select id="snd-perc-type" aria-label="Percussion type">
+          <option value="brushes">brushes</option>
+          <option value="taps">taps</option>
+          <option value="drops">drops</option>
+        </select>
+      </div>
+      <h3>Groove</h3>
+      <input type="range" id="snd-perc-groove" min="0" max="100" value="35" aria-label="Groove">
+      <div class="row scalelabels"><span>steady</span><span>vibey</span></div>
+    </div>
+    <div class="tr-card">
       <h3>About</h3>
-      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders. It pauses itself when you leave the tab.</div>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders. There's an optional soft percussion layer too — pick a texture and let Groove decide how loose it feels, from metronome-steady to properly vibey. It pauses itself when you leave the tab.</div>
     </div>
     <div class="tr-btns">
       <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -3450,9 +3467,13 @@ let ambWarmth = clamp(store.get("ambWarmth",50),0,100);
 let ambDensity = clamp(store.get("ambDensity",45),0,100);
 let ambVariety = clamp(store.get("ambVariety",50),0,100);
 let ambTimbre = store.get("ambTimbre","glass");
+let ambPercOn = store.get("ambPercOn", false);
+let ambPercType = store.get("ambPercType","brushes");
+let ambPercGroove = clamp(store.get("ambPercGroove",35),0,100);
 const AMB_WAVE = { glass:"sine", reed:"triangle", string:"sawtooth", hush:"sine" };
 const AMB_PENTA = [1, 9/8, 5/4, 3/2, 5/3];
 let actx=null, ambVoices=[], ambFilter=null, ambMaster=null, ambNoteTimer=null, ambEvolveTimer=null;
+let ambPercTimer=null, ambNoiseBuf=null;
 function ambRootFreq(){ return isDarkHours() ? 98 : 130.81; }   /* G2 at night, C3 by day */
 function startAmbient(){
   if(actx) return;
@@ -3473,9 +3494,14 @@ function startAmbient(){
       osc.connect(g); g.connect(ambFilter); osc.start();
       return {osc,g,m};
     });
+    /* shared noise buffer for the percussion layer (reused per hit) */
+    ambNoiseBuf = actx.createBuffer(1, Math.floor(actx.sampleRate*0.5), actx.sampleRate);
+    const nd = ambNoiseBuf.getChannelData(0);
+    for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
     ambEvolve();
     ambEvolveTimer=setInterval(ambEvolve, 4000);
     scheduleAmbNote();
+    schedulePercHit();
     if(actx.state==="suspended") actx.resume();
   }catch(e){ actx=null; }
 }
@@ -3531,9 +3557,54 @@ function playAmbNote(){
   g.gain.linearRampToValueAtTime(0, now+dur);
   osc.stop(now+dur+0.1);
 }
+/* percussion — a third generative layer, off unless ambPercOn */
+function schedulePercHit(){
+  clearTimeout(ambPercTimer); ambPercTimer=null;
+  if(!ambientOn || !ambPercOn || !actx) return;
+  const dens=ambDensity/100, groove=ambPercGroove/100;
+  const base = 1.8 - dens*0.9;                        /* seconds per pulse: denser = quicker */
+  let wait = base + base*groove*0.6*(Math.random()*2-1); /* groove loosens the grid: up to ±60% jitter */
+  let doHit = true;
+  if(groove>0.15){
+    const r=Math.random();
+    if(r < groove*0.18) wait *= 0.45;                 /* squeeze in a syncopated early hit */
+    else if(r > 1-groove*0.16) doHit=false;           /* or drop a beat for a loose rest */
+  }
+  wait = Math.max(0.12, wait);
+  ambPercTimer=setTimeout(()=>{ if(doHit) playPercHit(); schedulePercHit(); }, wait*1000);
+}
+function playPercHit(){
+  if(!actx || actx.state!=="running" || !ambNoiseBuf || !ambMaster) return;
+  const now=actx.currentTime, type=ambPercType, groove=ambPercGroove/100;
+  const src=actx.createBufferSource(); src.buffer=ambNoiseBuf;
+  const filt=actx.createBiquadFilter();
+  const g=actx.createGain(); g.gain.value=0;
+  let peak, dur;
+  if(type==="taps"){          /* woody tick — tight mid-band burst, near-instant decay */
+    filt.type="bandpass"; filt.frequency.value=1600; filt.Q.value=6;
+    peak=0.40; dur=0.06;
+  } else if(type==="drops"){  /* soft round mallet — low, lowpassed, longer tail */
+    filt.type="lowpass"; filt.frequency.value=300; filt.Q.value=1;
+    peak=0.36; dur=0.22;
+  } else {                     /* brushes — airy filtered-noise sweep, gentle */
+    filt.type="bandpass"; filt.frequency.value=4200; filt.Q.value=0.7;
+    peak=0.28; dur=0.14;
+  }
+  peak *= 1 + (Math.random()*2-1)*0.18*groove;        /* humanise the velocity as groove rises */
+  peak = clamp(peak, 0.05, 0.6);
+  /* route straight to master (not through the drone's dark lowpass) so the transient keeps its bite */
+  src.connect(filt); filt.connect(g); g.connect(ambMaster);
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peak, now+0.004);
+  g.gain.exponentialRampToValueAtTime(0.0008, now+dur);
+  src.start(now);
+  src.stop(now+dur+0.03);
+  src.onended=()=>{ try{ src.disconnect(); filt.disconnect(); g.disconnect(); }catch(_){} };
+}
 function stopAmbient(){
   clearInterval(ambEvolveTimer); ambEvolveTimer=null;
   clearTimeout(ambNoteTimer); ambNoteTimer=null;
+  clearTimeout(ambPercTimer); ambPercTimer=null; ambNoiseBuf=null;
   if(!actx){ return; }
   const ctx=actx, voices=ambVoices;
   try{ if(ambMaster) ambMaster.gain.setTargetAtTime(0, ctx.currentTime, 0.4); }catch(e){}
@@ -3554,6 +3625,9 @@ $("snd-warmth").value=ambWarmth;
 $("snd-density").value=ambDensity;
 $("snd-variety").value=ambVariety;
 $("snd-timbre").value=ambTimbre;
+$("snd-perc-toggle").checked=ambPercOn;
+$("snd-perc-type").value=ambPercType;
+$("snd-perc-groove").value=ambPercGroove;
 $("ambienttoggle").checked=ambientOn;
 $("snd-toggle").checked=ambientOn;
 $("snd-state").textContent=ambientOn?"on · evolving":"off";
@@ -3566,6 +3640,9 @@ $("snd-warmth").addEventListener("input", e=>{ ambWarmth=clamp(+e.target.value,0
 $("snd-density").addEventListener("input", e=>{ ambDensity=clamp(+e.target.value,0,100); store.set("ambDensity",ambDensity); if(actx){ ambEvolve(); scheduleAmbNote(); } });
 $("snd-variety").addEventListener("input", e=>{ ambVariety=clamp(+e.target.value,0,100); store.set("ambVariety",ambVariety); if(actx) ambEvolve(); });
 $("snd-timbre").addEventListener("change", e=>{ ambTimbre=e.target.value; store.set("ambTimbre",ambTimbre); const w=AMB_WAVE[ambTimbre]||"sine"; if(actx) ambVoices.forEach(vo=>{ try{vo.osc.type=w;}catch(_){} }); });
+$("snd-perc-toggle").addEventListener("change", e=>{ ambPercOn=e.target.checked; store.set("ambPercOn",ambPercOn); if(actx) schedulePercHit(); });
+$("snd-perc-type").addEventListener("change", e=>{ ambPercType=e.target.value; store.set("ambPercType",ambPercType); });
+$("snd-perc-groove").addEventListener("input", e=>{ ambPercGroove=clamp(+e.target.value,0,100); store.set("ambPercGroove",ambPercGroove); if(actx) schedulePercHit(); });
 document.addEventListener("visibilitychange", ()=>{
   if(!ambientOn || !actx) return;
   if(document.hidden){ try{actx.suspend();}catch(_){} } else { try{actx.resume();}catch(_){} }
