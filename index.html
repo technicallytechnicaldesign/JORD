@@ -76,10 +76,10 @@
   .hdr-right{display:flex;align-items:center;gap:8px}
   .icon-btn{
     font:inherit;color:var(--ink);background:var(--panel);
-    border:1.5px solid var(--ink);border-radius:8px;
-    width:28px;height:28px;padding:0;min-height:0;
+    border:1.5px solid var(--ink);border-radius:9px;
+    width:34px;height:34px;padding:0;min-height:0;
     display:flex;align-items:center;justify-content:center;
-    cursor:pointer;font-size:13px;line-height:1;
+    cursor:pointer;font-size:15px;line-height:1;
     transition:transform .1s ease, box-shadow .15s ease;
   }
   .icon-btn:hover{box-shadow:2px 2px 0 var(--leaf)}
@@ -117,30 +117,26 @@
   #orbwrap svg{width:100%;max-width:400px;height:auto;display:block}
   svg *{vector-effect:non-scaling-stroke}
 
-  /* lift/tilt/sway/duration are custom properties so JS can nudge the float
-     organically. a gentle side-to-side drift (--bob-sway) rides along with
-     the lift so it reads as an unhurried figure-eight rather than a flat
-     up-down bounce -- 0%/100% share the identical rest transform so the loop
-     is seamless at the CSS level regardless of when JS re-rolls the values
-     (JS itself only ever changes them right at that rest point, see below). */
+  /* deliberately simple and fixed: one calm drift, always the same. it used to
+     be JS-driven (amplitude/tilt/sway/duration re-rolled via custom properties
+     on a live animation) for variety, but that made him occasionally jump —
+     mutating a running animation's inputs, even synced to iteration
+     boundaries, isn't fully glitch-proof across browsers. Variety now comes
+     from the OTHER things layered on top (wiggle, buzzy shake, nap) rather
+     than complicating this resting loop. Lives on the wrapper, never on
+     #orbbody (JS drives that transform directly for breathing/shaky/etc). */
   @keyframes bob{
-    0%,100%{transform:translate(0,0) rotate(calc(-1 * var(--bob-tilt,.7deg)))}
-    25%{transform:translate(calc(-1 * var(--bob-sway,4px)), calc(var(--bob-lift,-9px) * .35)) rotate(calc(-.5 * var(--bob-tilt,.7deg)))}
-    50%{transform:translate(0,var(--bob-lift,-9px)) rotate(var(--bob-tilt,.7deg))}
-    75%{transform:translate(var(--bob-sway,4px), calc(var(--bob-lift,-9px) * .35)) rotate(calc(.5 * var(--bob-tilt,.7deg)))}
+    0%,100%{transform:translate(0,0) rotate(-.6deg);opacity:1}
+    25%{transform:translate(-3px,-3.5px) rotate(-.3deg);opacity:.97}
+    50%{transform:translate(0,-10px) rotate(.6deg);opacity:.93}
+    75%{transform:translate(3px,-3.5px) rotate(.3deg);opacity:.97}
   }
-  /* a faint ethereal fade rides the exact same cadence as the lift (shared
-     --bob-dur): opacity dips a touch as he reaches the top of his drift, so he
-     reads as a slow, ghostly float rather than a solid bounce. Lives on the
-     wrapper, never on #orbbody (JS drives that transform directly). */
-  @keyframes jordFade{0%,100%{opacity:1}50%{opacity:.9}}
-  .bob{transform-origin:140px 150px;
-       animation:bob var(--bob-dur,10s) cubic-bezier(.37,0,.63,1) infinite,
-                 jordFade var(--bob-dur,10s) ease-in-out infinite}
+  .bob{transform-origin:140px 150px;animation:bob 10s cubic-bezier(.37,0,.63,1) infinite}
   /* nap: .bob is swapped off and this on so Jord droops down into a heavy,
      settled sag (one-shot transition, not a loop). JS freezes his current
-     float position first so the swap eases down instead of snapping. */
-  #jordbob.napping{transform-origin:140px 150px;transition:transform 1.8s ease}
+     float position first so the swap eases down instead of snapping; opacity
+     is forced back to fully solid since a sleeping Jord doesn't fade. */
+  #jordbob.napping{transform-origin:140px 150px;transition:transform 1.8s ease;opacity:1}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
   @keyframes wiggle{0%,100%{transform:rotate(0)}35%{transform:rotate(-1.3deg)}70%{transform:rotate(1deg)}}
@@ -529,7 +525,8 @@
   }
   #trends.open{display:block}
   .tr-inner{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-  .tr-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+  .tr-head{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+  .tr-head .label{flex:1;text-align:right}
   .tr-head h2{font-size:13px;letter-spacing:.22em;font-weight:600}
   .tr-card{border:1.5px solid var(--ink);border-radius:10px;padding:12px 14px;background:var(--panel)}
   .tr-card h3{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;font-weight:400}
@@ -960,6 +957,7 @@
     <div class="tr-head screen-only">
       <h2>JORD · VIBE TELEMETRY</h2>
       <span class="label" id="tr-date"></span>
+      <button id="tr-close-top" class="icon-btn" aria-label="Back to Jord" title="Back to Jord">✕</button>
     </div>
     <label class="row screen-only" style="cursor:pointer">
       <span class="label">mission markers on charts</span>
@@ -995,6 +993,7 @@
     <div class="tr-head">
       <h2>JORD · KEEPSAKE SHELF</h2>
       <span class="label" id="sh-count"></span>
+      <button id="sh-close-top" class="icon-btn" aria-label="Back to Jord" title="Back to Jord">✕</button>
     </div>
     <div id="sh-empty">nothing on the shelf yet.<br>little things drift by while you're here — Jord keeps the ones that visit.</div>
     <div id="sh-grid" class="sh-grid"></div>
@@ -1009,6 +1008,7 @@
     <div class="tr-head">
       <h2>JORD · GARDEN</h2>
       <span class="label" id="gd-count"></span>
+      <button id="gd-close-top" class="icon-btn" aria-label="Back to Jord" title="Back to Jord">✕</button>
     </div>
     <div id="gd-empty">the garden's bare for now.<br>breathe, ground, accept, enjoy, sit — every one plants something new. fresh growth only: it all clears out at 5am.</div>
     <div id="gd-field"></div>
@@ -1024,6 +1024,7 @@
     <div class="tr-head">
       <h2>JORD · SOUNDSCAPE</h2>
       <span class="label" id="snd-state">off</span>
+      <button id="snd-close-top" class="icon-btn" aria-label="Back to Jord" title="Back to Jord">✕</button>
     </div>
     <label class="row" style="cursor:pointer">
       <span class="label">ambient sound</span>
@@ -1666,7 +1667,7 @@ const jordis=$("jordis"), toast=$("toast"),
       modal=$("modal"), exPhase=$("ex-phase"), exBody=$("ex-body"), exCount=$("ex-count"),
       exNext=$("ex-next"), exClose=$("ex-close"), lastEl=$("lastcheck"),
       notifBtn=$("b-notif"), notifState=$("notifstate"), intervalSel=$("interval"),
-      thought=$("thought"), orb=$("jord"), orbbody=$("orbbody"), orbblush=$("orbblush"),
+      thought=$("thought"), orbbody=$("orbbody"), orbblush=$("orbblush"),
       faceflip=$("faceflip"), backface=$("backface"),
       armL=$("arm-l"), armR=$("arm-r"),
       floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
@@ -1814,36 +1815,12 @@ if(!reduceMotion){
   }, 4200);
 }
 
-/* ── organic float: re-roll Jord's bob amplitude, tilt, sway and tempo so the
-   idle drift never feels metronomic. -9px is the lift floor (never less);
-   some cycles lift as high as -22px, with a gentle side-to-side sway riding
-   along. .bob is already in the reduced-motion disable list.
-
-   Previously this re-rolled on an unsynced setTimeout, which could land
-   mid-cycle — changing --bob-dur or the keyframe targets while the animation
-   was already partway through interpolating toward the OLD values produces a
-   visible snap. Now it only ever rerolls exactly on "animationiteration",
-   which fires right as a cycle completes and the transform is back at its
-   shared 0%/100% rest state — the only moment new values can't cause a jump.
-   Not every iteration rerolls (55% chance), so some breaths repeat before
-   the next surprise rather than changing every single cycle. ── */
-if(!reduceMotion){
-  const jordbob = $("jordbob");
-  const reflowt = ()=>{
-    orb.style.setProperty("--bob-lift", rand(-22,-9).toFixed(1)+"px");
-    /* softer tilt/sway than before so the motion reads as a slow *drift*
-       rather than a swing */
-    orb.style.setProperty("--bob-tilt", rand(.4,1.1).toFixed(2)+"deg");
-    orb.style.setProperty("--bob-sway", rand(2,6).toFixed(1)+"px");
-    /* baseline is now genuinely slow and floaty (7-13s per breath); roughly
-       1 in 4 cycles stretches out even further into a very languid 16-24s
-       drift, so the tempo reads as unhurried and wave-like, never metronomic */
-    const dur = Math.random()<.25 ? rand(16,24) : rand(7,13);
-    orb.style.setProperty("--bob-dur", dur.toFixed(1)+"s");
-  };
-  reflowt();
-  jordbob.addEventListener("animationiteration", ()=>{ if(Math.random()<.55) reflowt(); });
-}
+/* the idle float used to be re-rolled from here (amplitude/tilt/sway/duration
+   as custom properties on a live animation) for variety. Removed — even
+   synced to animation-iteration boundaries, mutating a running animation's
+   inputs was an occasional source of visible jumps. .bob is now a single
+   fixed keyframe (see its CSS) with zero JS involvement, so it can't glitch;
+   variety comes from wiggle/buzzy/nap instead of complicating this loop. */
 
 /* ── the bubble: one space above Jord's head for musings (think), dialogue
    (say), and — when nothing's going on — a quiet, comical waiting phrase ── */
@@ -2332,7 +2309,7 @@ let vibeReactTimer=null;
    time the slider ENTERS the top band (tracked via vibeWasInBuzz) and hold that
    decision while you linger there, so dragging around the top doesn't re-roll
    every input event and flicker the shake on and off */
-let vibeWasInBuzz=false, buzzArmed=false;
+let vibeWasInBuzz=false, buzzArmed=false, bodyReactState=null;
 function reactToVibePreview(v){
   /* persistent hot/cold tint — applied regardless of reduce-motion (it's colour, not motion).
      slider goes blue toward the heavy end, warm toward the buzzing end; Jord's blush
@@ -2354,7 +2331,6 @@ function reactToVibePreview(v){
   }
   if(reduceMotion) return;
   clearTimeout(vibeReactTimer);
-  orbbody.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
   stageEl.classList.remove("warm");
   /* buzzy is now rare: only the genuine top of the slider ('supernova'
      territory, 94+) can shake at all — the old floor started at 84 and shook
@@ -2363,20 +2339,29 @@ function reactToVibePreview(v){
      fire it keeps its energetic character. */
   const buzzingFloor = VIBE_BANDS[4].max+1; /* 94 — genuine 'supernova' only */
   const inBuzz = v>=buzzingFloor;
+  let desired = null;
   if(inBuzz){
     if(!vibeWasInBuzz) buzzArmed = Math.random()<.35;
-    if(buzzArmed){
-      const hard = v>=98;
-      orbbody.classList.add(hard ? "orb-shaky-hard" : "orb-shaky");
-    }
+    if(buzzArmed) desired = v>=98 ? "orb-shaky-hard" : "orb-shaky";
   } else if(v<=VIBE_BANDS[0].max){
-    orbbody.classList.add("orb-still");
+    desired = "orb-still";
   } else if(v>=VIBE_MID_LO && v<=VIBE_MID_HI){
     stageEl.classList.add("warm");
+  }
+  /* only touch the classList when the target actually changes — removing +
+     re-adding the same class every single slider "input" tick (this fires on
+     every pixel of drag) restarts its animation from frame 0 each time,
+     which looked like a stutter whenever the slider sat still in a reactive
+     zone for more than one tick */
+  if(desired !== bodyReactState){
+    orbbody.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
+    if(desired) orbbody.classList.add(desired);
+    bodyReactState = desired;
   }
   vibeWasInBuzz = inBuzz;
   vibeReactTimer=setTimeout(()=>{
     orbbody.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
+    bodyReactState = null;
     stageEl.classList.remove("warm");
   }, 2200);
 }
@@ -2551,6 +2536,7 @@ $("b-trends").addEventListener("click", ()=>{
   trends.classList.add("open");
 });
 $("tr-close").addEventListener("click", ()=>trends.classList.remove("open"));
+$("tr-close-top").addEventListener("click", ()=>trends.classList.remove("open"));
 $("tr-print").addEventListener("click", ()=>{ populateKeepsake(); window.print(); });
 $("missiontoggle").checked = showMissions;
 $("missiontoggle").addEventListener("change", ()=>{
@@ -2850,6 +2836,7 @@ $("sh-grid").addEventListener("click", (e)=>{
 });
 $("b-shelf").addEventListener("click", ()=>{ renderShelf(); shelfPanel.classList.add("open"); });
 $("sh-close").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
+$("sh-close-top").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
 shelfPanel.addEventListener("click", (e)=>{ if(e.target===shelfPanel) shelfPanel.classList.remove("open"); });
 
 /* ── garden: one quiet bloom a day, kept in a wild overlapping meadow ── */
@@ -2932,6 +2919,7 @@ $("gd-field").addEventListener("click", (e)=>{
 });
 $("b-garden").addEventListener("click", ()=>{ resetGardenIfNewDay(); renderGarden(); gardenPanel.classList.add("open"); });
 $("gd-close").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
+$("gd-close-top").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
 gardenPanel.addEventListener("click", (e)=>{ if(e.target===gardenPanel) gardenPanel.classList.remove("open"); });
 
 /* ── ambient soundscape (opt-in · Web Audio only · state-responsive) ── */
@@ -3051,6 +3039,7 @@ $("ambienttoggle").addEventListener("change", e=>setAmbient(e.target.checked));
 $("snd-toggle").addEventListener("change", e=>setAmbient(e.target.checked));
 $("b-sound").addEventListener("click", ()=>{ settings.classList.remove("open"); soundPanel.classList.add("open"); });
 $("snd-close").addEventListener("click", ()=>soundPanel.classList.remove("open"));
+$("snd-close-top").addEventListener("click", ()=>soundPanel.classList.remove("open"));
 $("snd-warmth").addEventListener("input", e=>{ ambWarmth=clamp(+e.target.value,0,100); store.set("ambWarmth",ambWarmth); if(actx) ambEvolve(); });
 $("snd-density").addEventListener("input", e=>{ ambDensity=clamp(+e.target.value,0,100); store.set("ambDensity",ambDensity); if(actx){ ambEvolve(); scheduleAmbNote(); } });
 $("snd-variety").addEventListener("input", e=>{ ambVariety=clamp(+e.target.value,0,100); store.set("ambVariety",ambVariety); if(actx) ambEvolve(); });
@@ -3294,7 +3283,10 @@ function wakeNap(){
     if(napping) return;                             /* dozed off again meanwhile */
     jb.classList.remove("napping");
     jb.classList.add("bob");                        /* float resumes near rest */
-  }, reduceMotion ? 0 : 1600);
+  }, reduceMotion ? 0 : 1850);   /* the sag's ease-back transition is 1.8s -- wait
+     for it to actually finish before handing off to .bob, or the swap catches
+     him mid-transition and the fresh keyframe's exact 0% start snaps visibly
+     against wherever the transition hadn't quite settled yet */
   thought.classList.remove("show");
   if(Math.random()<.7) say(pick(WAKE_LINES), 7000);
   setTimeout(()=>{ if(!busy && !sitting && !napping) applyMood(); }, reduceMotion ? 200 : 1900);
