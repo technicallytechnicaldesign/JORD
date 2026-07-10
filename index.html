@@ -269,7 +269,9 @@
      dialogue (say) — plus a quiet idle phrase when there's nothing to add ── */
   #thought{
     position:absolute;top:2px;left:50%;
-    max-width:min(66%,240px);
+    /* shrink-to-fit up to this cap: short musings stay a compact pill, long ones
+       spread wide and wrap into fewer lines, reading like a top bar over the stage */
+    max-width:min(92%,380px);
     /* translucent paper + a soft blur so it settles into the scene rather than
        sitting on top of it as opaque UI chrome (solid-paper fallback first for
        browsers without color-mix / backdrop-filter — still perfectly legible) */
@@ -287,6 +289,9 @@
     pointer-events:none;z-index:3;
   }
   #thought.show{opacity:.9;transform:translateX(-50%) translateY(0) scale(1)}
+  /* long-text variant: wider still and flatter, so a genuine paragraph reads as a
+     calm banner spanning the stage rather than a cramped tall pill */
+  #thought.thought-banner{max-width:min(96%,420px);border-radius:9px;line-height:1.4;letter-spacing:.01em}
   #thought.idle{color:var(--dim)}
   #thought.idle.show{opacity:.5}
   /* a single small tail dot, anchoring the pill toward Jord's head */
@@ -1630,6 +1635,9 @@ function showBubble(text, hold, idle){
   clearTimeout(bubbleTimer); clearTimeout(idleTimer);
   thought.textContent=text;
   thought.classList.toggle("idle", !!idle);
+  /* long musings/dialogue (SIT_LINES, longer say() copy) get the flatter banner
+     shape so they read as a top bar; short pills keep their compact rounding */
+  thought.classList.toggle("thought-banner", !idle && text.length>78);
   thought.classList.add("show");
   if(idle){ idleTimer=setTimeout(goIdle, rand(16000,30000)); return; }
   bubbleTimer=setTimeout(goIdle, hold);
