@@ -130,6 +130,10 @@
     78%{transform:translate(var(--bob-sway,5px), calc(var(--bob-lift,-9px) * .35)) rotate(calc(.5 * var(--bob-tilt,.8deg)))}
   }
   .bob{transform-origin:140px 150px;animation:bob var(--bob-dur,6s) ease-in-out infinite}
+  /* nap: .bob is swapped off and this on so Jord droops down into a heavy,
+     settled sag (one-shot transition, not a loop). JS freezes his current
+     float position first so the swap eases down instead of snapping. */
+  #jordbob.napping{transform-origin:140px 150px;transition:transform 1.8s ease}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
   @keyframes wiggle{0%,100%{transform:rotate(0)}30%{transform:rotate(-2.5deg)}70%{transform:rotate(2deg)}}
@@ -333,6 +337,9 @@
     #t-water.water-wild .rippling,#t-water.water-wild .wave-line,#t-water.water-calm .rippling,
     .rain-streak,#w-sun .sun-glow,#w-sun .sun-rays,
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway{animation:none}
+    /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
+       motion is stripped, so he just settles into the sag instantly */
+    #jordbob.napping{transition:none}
   }
 
   /* ── one bubble, centered above Jord's head, for both musings (think) and
@@ -1061,7 +1068,7 @@ let vibes = store.get("vibes", []);
 let missions = store.get("missions", []);
 let showMissions = store.get("showMissions", true);
 let nightModeOverride = store.get("nightModeOverride", "auto");
-let reminderTimer=null, busy=false, sitting=false, currentTier=-1;
+let reminderTimer=null, busy=false, sitting=false, napping=false, currentTier=-1;
 let patTimes = [];
 let shelf = store.get("shelf", []);
 let garden = store.get("garden", []);
@@ -1710,7 +1717,7 @@ function armAnim(which, kind){
   });
 }
 setInterval(()=>{
-  if(busy || sitting || Math.random()>.4) return;
+  if(busy || sitting || napping || Math.random()>.4) return;
   const r=Math.random();
   if(r<.5) armAnim(Math.random()<.5?"l":"r","wave");
   else if(r<.85) armAnim("both","flail");
@@ -1719,7 +1726,7 @@ setInterval(()=>{
 
 /* ── turnaround ── */
 function turnAround(){
-  if(busy || sitting || reduceMotion) return;
+  if(busy || sitting || napping || reduceMotion) return;
   busy=true;
   faceflip.classList.add("away");
   setTimeout(()=>{
@@ -1767,7 +1774,7 @@ function pickMood(){
   return pick(MOODS[pick(pools)]);
 }
 function applyMood(){
-  if(busy || sitting) return;
+  if(busy || sitting || napping) return;
   const [e,m]=pickMood();
   setEyes(e); setMouth(m);
   if(!reduceMotion && Math.random()<.3){
@@ -1779,7 +1786,7 @@ setInterval(applyMood, 7000 + Math.random()*6000);
 
 if(!reduceMotion){
   setInterval(()=>{
-    if(busy || sitting) return;
+    if(busy || sitting || napping) return;
     const openish = ["e-open","e-wide","e-side"].some(id=>$(id).style.display!=="none");
     if(openish && Math.random()<.8){
       const prev = EYES.find(e=>$("e-"+e).style.display!=="none");
@@ -1845,7 +1852,7 @@ function goIdle(){
   /* idle phrases only when Jord is genuinely idle — never mid-sit, mid-exercise,
      or mid-anything-busy; otherwise just fade the bubble away */
   thought.classList.remove("show");
-  if(sitting || busy || modal.classList.contains("open")) return;
+  if(sitting || busy || napping || modal.classList.contains("open")) return;
   idleTimer=setTimeout(()=>showBubble(pick(WAITING), 0, true), 520);
 }
 function think(text, hold){
@@ -1854,7 +1861,7 @@ function think(text, hold){
 }
 function scheduleThoughts(){
   setTimeout(()=>{
-    if(!busy && !sitting && !modal.classList.contains("open")){
+    if(!busy && !sitting && !napping && !modal.classList.contains("open")){
       const pool = isNight() && Math.random()<.4 ? NIGHT_THOUGHTS : THOUGHTS;
       think(pick(pool));
     }
@@ -3170,6 +3177,81 @@ $("orbwrap").addEventListener("click", ()=>{
     setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2800);
   });
 })();
+
+/* ── nap: after a long, untouched idle stretch Jord sometimes nods off — not on
+   a rigid timer, just a chance rolled each check so it feels organic. Eyes
+   close, he droops down into a settled sag on #jordbob (the safe layer; never
+   #orbbody, which JS drives directly for breathing/shake/etc.), and a soft
+   "zzz" drifts up in the one shared bubble. ANY interaction wakes him instantly:
+   a single delegated pointerdown listener stamps the interaction time and, if
+   he's mid-nap, ends it right there — that fires before the corresponding
+   click, so pat/tap logic sees napping already false and behaves normally.
+   The droop is decorative motion (stripped under reduce-motion → instant sag);
+   the eyes-closed / zzz / wake-on-touch state is meaningful feedback and stays. */
+const NAP_IDLE_MS = 7*60*1000;          /* "a long while" ≈ 7 min with no input */
+const NAP_CHANCE  = 0.4;                /* rolled each check once past the threshold */
+const SNORES = ["zzz…","z z z…","zzzzzz.","…zzz.","zzz.","mmmzzz…","zzzz…z."];
+const WAKE_LINES = [
+  "oh — hello. I was just resting my eyes. and the rest of me.",
+  "mm. back. I went somewhere soft for a minute there.",
+  "oh! you're here. I was being round with my eyes shut, is all.",
+  "awake. definitely was awake the whole time. obviously."
+];
+let lastInteraction = Date.now();
+let napZzzTimer = null;
+
+function snore(){
+  if(!napping) return;
+  think(pick(SNORES), 10000);
+  napZzzTimer = setTimeout(snore, rand(6000,9000));
+}
+function startNap(){
+  if(busy || sitting || holdBreathing || napping) return;
+  napping = true;
+  const jb = $("jordbob");
+  /* freeze his current float position, THEN swap .bob→.napping, so removing the
+     live bounce doesn't snap him to rest before the droop — he eases down from
+     wherever he happened to be floating */
+  const cur = getComputedStyle(jb).transform;
+  jb.classList.remove("bob");
+  jb.style.transform = (cur && cur!=="none") ? cur : "";
+  void jb.getBoundingClientRect();                 /* commit the frozen start */
+  jb.classList.add("napping");
+  jb.style.transform = "translate(0,10px) rotate(3deg)";   /* the heavy sag */
+  setEyes("closed"); setMouth("flat");
+  snore();
+}
+function wakeNap(){
+  if(!napping) return;
+  napping = false;
+  clearTimeout(napZzzTimer); napZzzTimer = null;
+  const jb = $("jordbob");
+  jb.style.transform = "";                          /* eases back up out of the sag */
+  setTimeout(()=>{
+    if(napping) return;                             /* dozed off again meanwhile */
+    jb.classList.remove("napping");
+    jb.classList.add("bob");                        /* float resumes near rest */
+  }, reduceMotion ? 0 : 1600);
+  thought.classList.remove("show");
+  if(Math.random()<.7) say(pick(WAKE_LINES), 7000);
+  setTimeout(()=>{ if(!busy && !sitting && !napping) applyMood(); }, reduceMotion ? 200 : 1900);
+}
+
+/* one delegated listener catches every interaction anywhere: stamp the time and
+   wake instantly if napping. pointerdown covers taps/clicks; the slider's input
+   is cheap insurance for keyboard-driven changes too. in-memory, per-session. */
+function markInteraction(){ lastInteraction = Date.now(); if(napping) wakeNap(); }
+document.addEventListener("pointerdown", markInteraction, {passive:true});
+vibeslider.addEventListener("input", markInteraction);
+
+/* the trigger: coarse periodic check, no reduce-motion bail (the state itself is
+   meaningful) — past the idle threshold, only sometimes actually nod off */
+setInterval(()=>{
+  if(napping || busy || sitting || holdBreathing) return;
+  if(modal.classList.contains("open")) return;
+  if(Date.now() - lastInteraction < NAP_IDLE_MS) return;
+  if(Math.random() < NAP_CHANCE) startNap();
+}, 45000);
 
 })();
 </script>
