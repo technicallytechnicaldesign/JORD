@@ -1285,8 +1285,25 @@
       <div class="row scalelabels"><span>steady</span><span>vibey</span></div>
     </div>
     <div class="tr-card">
+      <h3>Chimes</h3>
+      <label class="row" style="cursor:pointer">
+        <span class="label">bowls &amp; bells</span>
+        <input type="checkbox" id="snd-chime-toggle">
+      </label>
+      <div class="row">
+        <select id="snd-chime-type" aria-label="Chime type">
+          <option value="bowl">singing bowl</option>
+          <option value="bell">bell</option>
+          <option value="temple">temple bowl</option>
+        </select>
+      </div>
+      <h3>Chime volume</h3>
+      <input type="range" id="snd-chime-volume" min="0" max="100" value="100" aria-label="Chime volume">
+      <div class="row scalelabels"><span>hushed</span><span>full</span></div>
+    </div>
+    <div class="tr-card">
       <h3>About</h3>
-      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. It pauses itself when you leave the tab.</div>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. There's a slower chimes layer too — singing bowls, bells and a deep temple bowl that swell and ring out on their own unhurried clock, sparse and never on a grid. It pauses itself when you leave the tab.</div>
     </div>
     <div class="tr-btns">
       <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -3485,10 +3502,13 @@ let ambPercOn = store.get("ambPercOn", false);
 let ambPercType = store.get("ambPercType","brushes");
 let ambPercGroove = clamp(store.get("ambPercGroove",35),0,100);
 let ambPercVolume = clamp(store.get("ambPercVolume",100),0,100);
+let ambChimeOn = store.get("ambChimeOn", false);
+let ambChimeType = store.get("ambChimeType","bowl");
+let ambChimeVolume = clamp(store.get("ambChimeVolume",100),0,100);
 const AMB_WAVE = { glass:"sine", reed:"triangle", string:"sawtooth", hush:"sine" };
 const AMB_PENTA = [1, 9/8, 5/4, 3/2, 5/3];
 let actx=null, ambVoices=[], ambFilter=null, ambMaster=null, ambNoteTimer=null, ambEvolveTimer=null;
-let ambPercTimer=null, ambNoiseBuf=null;
+let ambPercTimer=null, ambNoiseBuf=null, ambChimeTimer=null;
 function ambRootFreq(){ return isDarkHours() ? 98 : 130.81; }   /* G2 at night, C3 by day */
 function startAmbient(){
   if(actx) return;
@@ -3517,6 +3537,7 @@ function startAmbient(){
     ambEvolveTimer=setInterval(ambEvolve, 4000);
     scheduleAmbNote();
     schedulePercHit();
+    scheduleChimeStrike();
     if(actx.state==="suspended") actx.resume();
   }catch(e){ actx=null; }
 }
@@ -3638,10 +3659,62 @@ function playPercHit(typeOverride){
   src.stop(now+dur+0.03);
   src.onended=()=>{ try{ src.disconnect(); filt.disconnect(); g.disconnect(); }catch(_){} };
 }
+/* chimes/gongs/bowls — a fourth generative layer, off unless ambChimeOn.
+   Deliberately slow and spacious (tens of seconds between strikes), NOT a
+   rhythmic pulse like percussion: singing-bowl swells and the odd bell tap,
+   long resonant decays. Gongs/bowls are naturally inharmonic, so each strike
+   is a few detuned sine partials at non-integer ratios (beating gives the
+   shimmer) rather than percussion's noise burst. */
+const CHIME_TYPES = ["bowl","bell","temple"];
+function scheduleChimeStrike(){
+  clearTimeout(ambChimeTimer); ambChimeTimer=null;
+  if(!ambientOn || !ambChimeOn || !actx) return;
+  const dens=ambDensity/100;
+  /* base gap is long (denser only nudges it), and the wide random multiplier is
+     the whole point -- these should never land on a grid, so the buffer runs
+     from roughly half to nearly double the base (~7s..~44s span across density). */
+  const base = 24 - dens*10;                 /* ~14s dense .. ~24s sparse */
+  const wait = base * rand(0.5, 1.8);
+  ambChimeTimer=setTimeout(()=>{ playChimeStrike(); scheduleChimeStrike(); }, wait*1000);
+}
+function playChimeStrike(typeOverride){
+  if(!actx || actx.state!=="running" || !ambMaster) return;
+  const now=actx.currentTime, type=typeOverride||ambChimeType;
+  const root=ambRootFreq(), ratio=pick(AMB_PENTA);   /* in key with the drone */
+  let partials, attack, dur, peak, oct;
+  if(type==="bell"){          /* small bell tap — bright, partial-rich, quicker (but still long) decay */
+    oct=4; partials=[1, 2.0, 2.76, 3.01]; attack=0.008; dur=rand(2.6,4.4); peak=0.14;
+  } else if(type==="temple"){ /* deep temple bowl — low, warm, very long swell */
+    oct=1; partials=[1, 1.5, 2.01]; attack=0.18; dur=rand(8,14); peak=0.18;
+  } else {                    /* bowl/gong swell — mid, slightly inharmonic, slow bloom */
+    oct=2; partials=[1, 1.48, 2.03]; attack=rand(0.25,0.7); dur=rand(6,11); peak=0.16;
+  }
+  const f0=root*ratio*oct;
+  const g=actx.createGain(); g.gain.value=0; g.connect(ambMaster);
+  const nodes=[g], oscs=[];
+  partials.forEach((mult,idx)=>{
+    const osc=actx.createOscillator();
+    osc.type="sine"; osc.frequency.value=f0*mult;
+    osc.detune.value=rand(-6,6);                     /* subtle beating between partials */
+    const pg=actx.createGain(); pg.gain.value = idx===0 ? 1 : 0.5/(idx+1);  /* higher partials quieter */
+    osc.connect(pg); pg.connect(g);
+    nodes.push(pg, osc); oscs.push(osc); osc.start(now);
+  });
+  peak *= ambChimeVolume/100;
+  peak = clamp(peak, 0, 0.35);
+  /* route straight to master (not the drone's dark lowpass) so the shimmer survives */
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peak, now+attack);   /* the swell in */
+  g.gain.exponentialRampToValueAtTime(0.0006, now+dur);  /* the long tail out (never true 0 for exp) */
+  const stopAt=now+dur+0.1;
+  let ended=0;
+  oscs.forEach(o=>{ o.stop(stopAt); o.onended=()=>{ if(++ended===oscs.length) nodes.forEach(n=>{ try{n.disconnect();}catch(_){} }); }; });
+}
 function stopAmbient(){
   clearInterval(ambEvolveTimer); ambEvolveTimer=null;
   clearTimeout(ambNoteTimer); ambNoteTimer=null;
   clearTimeout(ambPercTimer); ambPercTimer=null; ambNoiseBuf=null;
+  clearTimeout(ambChimeTimer); ambChimeTimer=null;
   if(!actx){ return; }
   const ctx=actx, voices=ambVoices;
   try{ if(ambMaster) ambMaster.gain.setTargetAtTime(0, ctx.currentTime, 0.4); }catch(e){}
@@ -3667,6 +3740,9 @@ $("snd-perc-toggle").checked=ambPercOn;
 $("snd-perc-type").value=ambPercType;
 $("snd-perc-volume").value=ambPercVolume;
 $("snd-perc-groove").value=ambPercGroove;
+$("snd-chime-toggle").checked=ambChimeOn;
+$("snd-chime-type").value=ambChimeType;
+$("snd-chime-volume").value=ambChimeVolume;
 $("ambienttoggle").checked=ambientOn;
 $("snd-toggle").checked=ambientOn;
 $("snd-state").textContent=ambientOn?"on · evolving":"off";
@@ -3684,6 +3760,9 @@ $("snd-timbre").addEventListener("change", e=>{ ambTimbre=e.target.value; store.
 $("snd-perc-toggle").addEventListener("change", e=>{ ambPercOn=e.target.checked; store.set("ambPercOn",ambPercOn); if(actx) schedulePercHit(); });
 $("snd-perc-type").addEventListener("change", e=>{ ambPercType=e.target.value; store.set("ambPercType",ambPercType); });
 $("snd-perc-groove").addEventListener("input", e=>{ ambPercGroove=clamp(+e.target.value,0,100); store.set("ambPercGroove",ambPercGroove); if(actx) schedulePercHit(); });
+$("snd-chime-toggle").addEventListener("change", e=>{ ambChimeOn=e.target.checked; store.set("ambChimeOn",ambChimeOn); if(actx) scheduleChimeStrike(); });
+$("snd-chime-type").addEventListener("change", e=>{ ambChimeType=e.target.value; store.set("ambChimeType",ambChimeType); });
+$("snd-chime-volume").addEventListener("input", e=>{ ambChimeVolume=clamp(+e.target.value,0,100); store.set("ambChimeVolume",ambChimeVolume); });
 document.addEventListener("visibilitychange", ()=>{
   if(!ambientOn || !actx) return;
   if(document.hidden){ try{actx.suspend();}catch(_){} } else { try{actx.resume();}catch(_){} }
