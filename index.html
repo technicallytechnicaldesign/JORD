@@ -1808,7 +1808,11 @@ if(!reduceMotion){
     orb.style.setProperty("--bob-lift", rand(-22,-9).toFixed(1)+"px");
     orb.style.setProperty("--bob-tilt", rand(.6,1.6).toFixed(2)+"deg");
     orb.style.setProperty("--bob-sway", rand(3,9).toFixed(1)+"px");
-    orb.style.setProperty("--bob-dur", rand(4.5,7).toFixed(1)+"s");
+    /* mostly a normal, unhurried pace -- but roughly 1 in 3 cycles stretches
+       out into something really slow and languid, so the tempo itself reads
+       as wave-like rather than settling into one average speed */
+    const dur = Math.random()<.32 ? rand(9,16) : rand(4.5,7);
+    orb.style.setProperty("--bob-dur", dur.toFixed(1)+"s");
   };
   reflowt();
   jordbob.addEventListener("animationiteration", ()=>{ if(Math.random()<.55) reflowt(); });
