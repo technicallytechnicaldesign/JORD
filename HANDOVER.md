@@ -1,6 +1,8 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-09 (night), after several more rounds on top of the redesign
+Last updated: 2026-07-10, after a "slow, fady, floaty ghost" motion pass and a
+keepsake-PDF mini-garden strip (see the two newest changelog entries). Prior:
+2026-07-09 (night), after several more rounds on top of the redesign
 below: cheek blush, fading vibe-word tint, a slimmer/more-blended thought bubble,
 a one-page infographic-style PDF with a spiky→smooth wave, header/viewBox layout
 changes, a new Garden page, and a service-worker caching fix. This doc exists so a
@@ -195,6 +197,23 @@ Latest rounds (same day, later):
   asleep — eyes close, droops into a sag on `#jordbob`, soft `zzz` in the
   bubble; wakes instantly on any interaction (delegated pointerdown listener).
   Reduce-motion keeps the state, drops only the droop motion — see arch notes
+- "Floaty ghost" motion pass: idle bob tempo slowed hard (was 4.5-7s typical /
+  32% chance 9-16s; now 7-13s typical / 25% chance 16-24s), given a floatier
+  `cubic-bezier(.37,0,.63,1)` ease and even 25/50/75 keyframe spacing; tilt/sway
+  softened (.6-1.6→.4-1.1deg, 3-9→2-6px) so it drifts not swings. A synced
+  `jordFade` opacity pulse (1→.9 at the top of the lift, same `--bob-dur`) on
+  `#jordbob` gives the ethereal fade — never on `#orbbody`. Buzzy made rare: the
+  vibe-slider shaky trigger floor went 84→94 (supernova only) behind a 35% roll
+  made once on band-entry (tracked via `vibeWasInBuzz`/`buzzArmed`, so no
+  mid-drag flicker). The `applyMood` head-tilt wiggle dropped 30%→12% and slowed
+  .9s→1.7s at gentler ±1.3deg. The fady/soften changes are covered by the
+  existing `.bob`/`.wiggling` reduced-motion entries (no new entry needed).
+- Keepsake PDF mini-garden: `populateKeepsake()` now appends a compact,
+  single-row strip of TODAY's live `garden` (capped at 12 blooms) above the
+  footer, reusing `FLORA`/`GOLDEN_FLOWER`/`gseed()`/`objHue()` at a small fixed
+  height; empty garden shows a light in-voice one-liner. A little `ks-notes`/
+  `ks-foot` spacing was trimmed to protect the one-page keepsake+wave budget
+  (not print-preview-verified — worth a real print check).
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
