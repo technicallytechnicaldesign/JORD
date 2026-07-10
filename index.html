@@ -1234,6 +1234,11 @@
       <input type="checkbox" id="snd-toggle">
     </label>
     <div class="tr-card">
+      <h3>Volume</h3>
+      <input type="range" id="snd-volume" min="0" max="100" value="100" aria-label="Volume">
+      <div class="row scalelabels"><span>hushed</span><span>full</span></div>
+    </div>
+    <div class="tr-card">
       <h3>Warmth</h3>
       <input type="range" id="snd-warmth" min="0" max="100" value="50" aria-label="Warmth">
       <div class="row scalelabels"><span>airy &amp; bright</span><span>deep &amp; warm</span></div>
@@ -1272,13 +1277,16 @@
           <option value="drops">drops</option>
         </select>
       </div>
+      <h3>Percussion volume</h3>
+      <input type="range" id="snd-perc-volume" min="0" max="100" value="100" aria-label="Percussion volume">
+      <div class="row scalelabels"><span>hushed</span><span>full</span></div>
       <h3>Groove</h3>
       <input type="range" id="snd-perc-groove" min="0" max="100" value="35" aria-label="Groove">
       <div class="row scalelabels"><span>steady</span><span>vibey</span></div>
     </div>
     <div class="tr-card">
       <h3>About</h3>
-      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders. There's an optional soft percussion layer too — pick a texture and let Groove decide how loose it feels, from metronome-steady to properly vibey. It pauses itself when you leave the tab.</div>
+      <div class="snd-note">A few soft voices, generated live — no recordings. The hum leans warmer at night, brighter by day, and stirs a little when something drifts by to visit. Variety sets how much it wanders — push it and the drone genuinely roams, not just a little. There's an optional soft percussion layer too, with its own volume — pick a texture and let Groove decide how loose it feels; at the vibey end it really lets loose, with syncopation, dropped beats, and the odd texture swap. It pauses itself when you leave the tab.</div>
     </div>
     <div class="tr-btns">
       <button id="snd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -3463,6 +3471,7 @@ gardenPanel.addEventListener("click", (e)=>{ if(e.target===gardenPanel) gardenPa
 
 /* ── ambient soundscape (opt-in · Web Audio only · state-responsive) ── */
 let ambientOn = store.get("ambientOn", false);
+let ambVolume = clamp(store.get("ambVolume",100),0,100);
 let ambWarmth = clamp(store.get("ambWarmth",50),0,100);
 let ambDensity = clamp(store.get("ambDensity",45),0,100);
 let ambVariety = clamp(store.get("ambVariety",50),0,100);
@@ -3470,6 +3479,7 @@ let ambTimbre = store.get("ambTimbre","glass");
 let ambPercOn = store.get("ambPercOn", false);
 let ambPercType = store.get("ambPercType","brushes");
 let ambPercGroove = clamp(store.get("ambPercGroove",35),0,100);
+let ambPercVolume = clamp(store.get("ambPercVolume",100),0,100);
 const AMB_WAVE = { glass:"sine", reed:"triangle", string:"sawtooth", hush:"sine" };
 const AMB_PENTA = [1, 9/8, 5/4, 3/2, 5/3];
 let actx=null, ambVoices=[], ambFilter=null, ambMaster=null, ambNoteTimer=null, ambEvolveTimer=null;
@@ -3509,17 +3519,22 @@ function ambEvolve(){
   if(!actx || actx.state==="closed") return;
   const now=actx.currentTime, tier=tierOf(calm), v=+vibeslider.value, dark=isDarkHours();
   const vari=ambVariety/100;
-  const vol = 0.05 + (ambDensity/100)*0.035;
+  const vol = (0.05 + (ambDensity/100)*0.035) * (ambVolume/100);
   ambMaster.gain.setTargetAtTime(ambientOn?vol:0, now, 1.5);
   let cut = 260 + (100-ambWarmth)*7 + tier*90 + (dark?-120:140);
   if(objectPresent) cut += 170;
-  /* variety wanders the cutoff — steadier at low, roving at high */
-  cut += rand(-1,1)*vari*340;
+  /* variety wanders the cutoff -- steadier at low, roving at high. Quadratic
+     term makes the top of the range wander WAY further than a straight-line
+     scale would (was a flat vari*340) without disturbing the low/mid feel
+     much (at vari=0.5 this is ~310, close to the old ~170 midpoint scaled). */
+  cut += rand(-1,1)*vari*(340 + vari*560);
   cut = clamp(cut, 160, 2600);
-  /* high variety = faster, wider drift; low variety = slow, near-static */
-  ambFilter.frequency.setTargetAtTime(cut, now, 2.4 - vari*1.3);
+  /* high variety = faster, wider drift; low variety = slow, near-static.
+     Glide time constants pushed lower at the top end too, so high variety
+     doesn't just wander further, it visibly MOVES there faster. */
+  ambFilter.frequency.setTargetAtTime(cut, now, 2.4 - vari*1.9);
   const dens=ambDensity/100, base=0.28;
-  const detSpread = 2 + vari*24;    /* detune wander range in cents */
+  const detSpread = 2 + vari*(24 + vari*40);    /* detune wander range in cents, same quadratic boost */
   ambVoices.forEach(vo=>{
     let g;
     if(vo.m===1) g=base;
@@ -3527,10 +3542,11 @@ function ambEvolve(){
     else if(vo.m===1.5) g=base*0.5*dens;
     else g=base*0.5*(0.4+dens*0.4);
     if(v<=VIBE_BANDS[0].max && vo.m>=1.5) g*=0.5;
-    /* variety adds a gentle wandering gain jitter to the texture */
-    g *= 1 + rand(-1,1)*vari*0.28;
-    vo.g.gain.setTargetAtTime(g, now, 2.4 - vari*1.0);
-    vo.osc.detune.setTargetAtTime(rand(-detSpread,detSpread), now, 3.2 - vari*1.6);
+    /* variety adds a wandering gain jitter to the texture -- quadratic boost
+       so max variety genuinely roams (was capped at a gentle +-0.28) */
+    g *= 1 + rand(-1,1)*vari*(0.28 + vari*0.5);
+    vo.g.gain.setTargetAtTime(g, now, 2.6 - vari*2.0);
+    vo.osc.detune.setTargetAtTime(rand(-detSpread,detSpread), now, 3.4 - vari*2.6);
   });
 }
 function scheduleAmbNote(){
@@ -3558,24 +3574,37 @@ function playAmbNote(){
   osc.stop(now+dur+0.1);
 }
 /* percussion — a third generative layer, off unless ambPercOn */
+const PERC_TYPES = ["brushes","taps","drops"];
 function schedulePercHit(){
   clearTimeout(ambPercTimer); ambPercTimer=null;
   if(!ambientOn || !ambPercOn || !actx) return;
   const dens=ambDensity/100, groove=ambPercGroove/100;
   const base = 1.8 - dens*0.9;                        /* seconds per pulse: denser = quicker */
-  let wait = base + base*groove*0.6*(Math.random()*2-1); /* groove loosens the grid: up to ±60% jitter */
-  let doHit = true;
+  /* groove loosens the grid -- quadratic term so the vibey end genuinely
+     lets loose (was capped at a modest +-60% jitter) while low/mid groove
+     stays close to how it felt before */
+  const jitterMult = groove*0.6 + groove*groove*0.9;   /* up to 1.5x at groove=1 */
+  let wait = base + base*jitterMult*(Math.random()*2-1);
+  let doHit = true, swapType = null;
   if(groove>0.15){
     const r=Math.random();
-    if(r < groove*0.18) wait *= 0.45;                 /* squeeze in a syncopated early hit */
-    else if(r > 1-groove*0.16) doHit=false;           /* or drop a beat for a loose rest */
+    const syncChance = groove*0.18 + groove*groove*0.35;  /* up to ~53% at groove=1 */
+    const dropChance = groove*0.16 + groove*groove*0.30;  /* up to ~46% at groove=1 */
+    if(r < syncChance) wait *= 0.45;                    /* squeeze in a syncopated early hit */
+    else if(r > 1-dropChance) doHit=false;               /* or drop a beat for a loose rest */
+  }
+  /* at high groove, occasionally reach for a different texture entirely --
+     real variety, not just timing wobble */
+  if(doHit && groove>0.6 && Math.random() < (groove-0.6)*0.5){
+    const others = PERC_TYPES.filter(t=>t!==ambPercType);
+    swapType = pick(others);
   }
   wait = Math.max(0.12, wait);
-  ambPercTimer=setTimeout(()=>{ if(doHit) playPercHit(); schedulePercHit(); }, wait*1000);
+  ambPercTimer=setTimeout(()=>{ if(doHit) playPercHit(swapType); schedulePercHit(); }, wait*1000);
 }
-function playPercHit(){
+function playPercHit(typeOverride){
   if(!actx || actx.state!=="running" || !ambNoiseBuf || !ambMaster) return;
-  const now=actx.currentTime, type=ambPercType, groove=ambPercGroove/100;
+  const now=actx.currentTime, type=typeOverride||ambPercType, groove=ambPercGroove/100;
   const src=actx.createBufferSource(); src.buffer=ambNoiseBuf;
   const filt=actx.createBiquadFilter();
   const g=actx.createGain(); g.gain.value=0;
@@ -3590,8 +3619,11 @@ function playPercHit(){
     filt.type="bandpass"; filt.frequency.value=4200; filt.Q.value=0.7;
     peak=0.28; dur=0.14;
   }
-  peak *= 1 + (Math.random()*2-1)*0.18*groove;        /* humanise the velocity as groove rises */
-  peak = clamp(peak, 0.05, 0.6);
+  /* humanise the velocity as groove rises -- quadratic boost, same reasoning
+     as the timing jitter above (was capped at a gentle +-18%) */
+  peak *= 1 + (Math.random()*2-1)*(0.18*groove + 0.4*groove*groove);
+  peak *= ambPercVolume/100;
+  peak = clamp(peak, 0, 0.6);
   /* route straight to master (not through the drone's dark lowpass) so the transient keeps its bite */
   src.connect(filt); filt.connect(g); g.connect(ambMaster);
   g.gain.setValueAtTime(0, now);
@@ -3621,12 +3653,14 @@ function setAmbient(on){
   if(st) st.textContent = ambientOn ? "on · evolving" : "off";
   if(ambientOn) startAmbient(); else stopAmbient();
 }
+$("snd-volume").value=ambVolume;
 $("snd-warmth").value=ambWarmth;
 $("snd-density").value=ambDensity;
 $("snd-variety").value=ambVariety;
 $("snd-timbre").value=ambTimbre;
 $("snd-perc-toggle").checked=ambPercOn;
 $("snd-perc-type").value=ambPercType;
+$("snd-perc-volume").value=ambPercVolume;
 $("snd-perc-groove").value=ambPercGroove;
 $("ambienttoggle").checked=ambientOn;
 $("snd-toggle").checked=ambientOn;
@@ -3636,6 +3670,8 @@ $("snd-toggle").addEventListener("change", e=>setAmbient(e.target.checked));
 $("b-sound").addEventListener("click", ()=>{ settings.classList.remove("open"); soundPanel.classList.add("open"); });
 $("snd-close").addEventListener("click", ()=>soundPanel.classList.remove("open"));
 $("snd-close-top").addEventListener("click", ()=>soundPanel.classList.remove("open"));
+$("snd-volume").addEventListener("input", e=>{ ambVolume=clamp(+e.target.value,0,100); store.set("ambVolume",ambVolume); if(actx) ambEvolve(); });
+$("snd-perc-volume").addEventListener("input", e=>{ ambPercVolume=clamp(+e.target.value,0,100); store.set("ambPercVolume",ambPercVolume); });
 $("snd-warmth").addEventListener("input", e=>{ ambWarmth=clamp(+e.target.value,0,100); store.set("ambWarmth",ambWarmth); if(actx) ambEvolve(); });
 $("snd-density").addEventListener("input", e=>{ ambDensity=clamp(+e.target.value,0,100); store.set("ambDensity",ambDensity); if(actx){ ambEvolve(); scheduleAmbNote(); } });
 $("snd-variety").addEventListener("input", e=>{ ambVariety=clamp(+e.target.value,0,100); store.set("ambVariety",ambVariety); if(actx) ambEvolve(); });
