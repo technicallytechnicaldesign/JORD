@@ -1,9 +1,13 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-10, after adding **ambient sky flyers** — occasional
-butterflies (reusing `BUTTERFLY_SVG`) and the odd distant bird drifting through
-the upper sky, biased toward the top-left (footer bumped to **rev J** — see the
-newest changelog entry). Prior same day: **5 new expressive eye variants**
+Last updated: 2026-07-10, after adding an **optional percussion layer** to the
+ambient soundscape — a third generative layer (off by default, own sub-toggle)
+with three synthesised textures (brushes/taps/drops) and a **Groove** slider that
+loosens the timing from metronome-steady to loose/syncopated (footer bumped to
+**rev K** — see the newest changelog entry). Prior same day: **ambient sky
+flyers** — occasional butterflies (reusing `BUTTERFLY_SVG`) and the odd distant
+bird drifting through the upper sky, biased toward the top-left (footer was at
+**rev J**). Prior same day: **5 new expressive eye variants**
 (look-left/right/up, a lowered-lid "peer", and a cute "uwu") wired into the
 mood system (footer bumped to **rev I** — see the changelog).
 Prior same day: a **last-hour vibe chart** and an
@@ -144,6 +148,38 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   visiting). Settings live on their own `#sound` page (reachable via a header
   icon, not buried in Settings). Includes a "variety" control that scales how
   much the generative engine wanders.
+  - **Percussion layer** (rev K) — a THIRD generative system alongside the
+    drone voices and `scheduleAmbNote()`/`playAmbNote()` plucking, structured
+    the same way: `schedulePercHit()` re-arms itself via `setTimeout`,
+    `playPercHit()` does one-shot synthesis. Opt-in and independent of the main
+    `ambientOn` toggle via `ambPercOn` (`#snd-perc-toggle`) — it produces sound
+    only when BOTH flags are true (`schedulePercHit()` guards on
+    `ambientOn && ambPercOn && actx` and self-cancels otherwise), and the
+    toggle's change handler calls `schedulePercHit()` directly so it engages/
+    disengages while the rest of the soundscape keeps playing (no full restart).
+    `startAmbient()` builds a shared 0.5s white-noise buffer (`ambNoiseBuf`,
+    reused via a fresh `AudioBufferSourceNode` per hit) and kicks off
+    `schedulePercHit()`; `stopAmbient()` clears `ambPercTimer` and nulls the
+    buffer. Percussion routes `src → biquad → gain → ambMaster` (straight to
+    master, NOT through the drone's dark ~420Hz `ambFilter`, so transients keep
+    their bite); on/off + tab-hide are handled for free because everything hangs
+    off `ambMaster`/`actx` (master fades to 0 when `ambientOn` off; `actx`
+    suspends when hidden and `playPercHit()` early-returns unless
+    `state==="running"`). Three types (`ambPercType`, `#snd-perc-type`):
+    **brushes** (airy bandpass ~4200Hz Q0.7, 0.14s), **taps** (woody tick,
+    bandpass ~1600Hz Q6, 0.06s), **drops** (soft round mallet, lowpass ~300Hz,
+    0.22s) — each a noise burst with a 4ms linear attack + exponential decay,
+    node disconnected on `onended` (no leaks). The **Groove** slider
+    (`ambPercGroove`, `#snd-perc-groove`) is the "how vibes it is" control:
+    beat interval `base = 1.8 - density*0.9`s; groove adds `±base*groove*0.6`
+    random jitter, and above groove 0.15 rolls a chance to squeeze in an early
+    syncopated hit (`wait*=0.45`) or drop a beat (rest), plus scales a
+    per-hit velocity humanisation — so groove 0 = metronomic, groove 100 =
+    loose/swung/human. Persisted like every other soundscape control. Audio
+    only — NOT ear-verified in this env (no audio out); reasoned for graph
+    correctness (envelopes reach ~0, sources stopped+disconnected, sane buffer
+    length/filter ranges) but the actual *character/mix balance* of the three
+    textures wants a real listen.
 - **PDF export** — Trends → "Save as PDF" uses the browser's native
   `window.print()`, and is now THREE printed pages, each populated at print
   time via a single chain off `populateKeepsake()` (→ `populateWave()` →
@@ -391,6 +427,17 @@ Latest rounds (same day, later):
   but NOT browser-verified — the flight-path feel, whether the top-band `startY`
   never clips the viewBox top (`y=-40`) at a wobble peak, and whether the bird
   reads as a bird are the things worth a real look.
+
+- Optional percussion + Groove slider (rev K): a third generative layer on the
+  soundscape, off by default behind its own `#snd-perc-toggle` (`ambPercOn`),
+  engaging/disengaging live without restarting the rest of the engine. Three
+  synthesised noise-burst textures (brushes/taps/drops via `#snd-perc-type`) and
+  a Groove slider (`#snd-perc-groove`, steady↔vibey) that loosens the timing
+  grid — see the percussion sub-note under the Ambient soundscape architecture
+  section for the full graph/lifecycle/timing-math breakdown. Node-verified
+  (syntax + every new store key read+written, every new DOM id present in both
+  HTML and JS) but NOT ear-verified — no audio out in this env, so the texture
+  character and mix balance want a real listen.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
