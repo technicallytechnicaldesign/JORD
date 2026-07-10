@@ -1,7 +1,9 @@
 # JORD — Handover Doc
 
-Last updated: 2026-07-10, after a "slow, fady, floaty ghost" motion pass and a
-keepsake-PDF mini-garden strip (see the two newest changelog entries). Prior:
+Last updated: 2026-07-10, after adding occasional garden visitors (butterfly/
+ladybug/spider drifting through the `#garden` panel — see the newest changelog
+entry). Prior same day: a "slow, fady, floaty ghost" motion pass and a
+keepsake-PDF mini-garden strip. Prior:
 2026-07-09 (night), after several more rounds on top of the redesign
 below: cheek blush, fading vibe-word tint, a slimmer/more-blended thought bubble,
 a one-page infographic-style PDF with a spiky→smooth wave, header/viewBox layout
@@ -75,6 +77,21 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   `resetGardenIfNewDay()`). Flowers scatter/overlap chaotically (deterministic
   per-entry hash via `gseed()`, not a tidy grid like the shelf), each paired
   with a small symbol from `MISSION_ICON` for whichever activity triggered it.
+- **Garden visitors** (`#gd-visitors`, a sibling of `#gd-field`, NOT inside it)
+  — occasional ambient creatures (`spawnGardenVisitor()`, `GV_KINDS` weighted
+  toward butterflies, plus ladybug/spider; SVGs `BUTTERFLY_SVG`/`LADYBUG_SVG`/
+  `SPIDER_SVG`) that drift through the meadow while the panel's open. They live
+  in their own overlay layer precisely because `renderGarden()` rewrites
+  `#gd-field.innerHTML` wholesale — putting creatures there would leak/wipe
+  them. Each runs a finite CSS animation (`gvFlit`+`gvFade` for butterfly/
+  ladybug, `gvDangle`+`gvSway` for the spider) and self-removes on the first
+  `animationend` (the flutter/sway loops never fire one). `startGardenVisitors()`
+  (called from the `b-garden` open handler) clears the layer, rolls ~38% for an
+  arrival shortly after open, then runs a 26s interval that self-terminates once
+  `#garden` is no longer `.open` (so none of the three close paths need to touch
+  it). Clickable for a deadpan `VISITOR_LINES` one-liner via the reused `.gd-word`
+  bubble. Under `reduceMotion` they don't spawn at all (pure ornament); the
+  `.gv`/`.gv-flap`/`.gv-swing` classes are also in the reduce-motion disable list.
 - **Weather** (`#weather`, sibling of `#orbbody` like the other sky layers) —
   purely decorative, no geolocation/network: `WEATHER_STATES` (clear/sun/rain/
   overcast, weighted toward clear) picked via `weatherRoll(bucket)` where
@@ -214,6 +231,14 @@ Latest rounds (same day, later):
   height; empty garden shows a light in-voice one-liner. A little `ks-notes`/
   `ks-foot` spacing was trimmed to protect the one-page keepsake+wave budget
   (not print-preview-verified — worth a real print check).
+
+- Garden visitors: occasional line-art creatures (butterfly weighted highest,
+  the odd ladybug or dangling spider) drift through the `#garden` panel while
+  it's open. Live in a new `#gd-visitors` overlay sibling of `#gd-field` (kept
+  out of the flowers' rewritten innerHTML on purpose), each a finite CSS
+  animation that self-removes on animationend. ~38% arrival shortly after open +
+  a 30% roll every 26s on a self-terminating interval; clickable for a deadpan
+  line. No spawns under reduce-motion — see architecture notes above.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
