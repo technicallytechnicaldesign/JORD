@@ -131,6 +131,17 @@
   @keyframes ripple{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.28);opacity:0}}
   .rippling{transform-origin:140px 248px;animation:ripple 4.5s ease-out infinite}
   .rippling.r2{animation-delay:2.2s}
+  /* ── water states: the vibe extremes swap the surface between a choppy 'wild'
+     (fast, far-reaching ripples + a shuddering wave line) and a glassy 'calm'
+     (slow, barely-there ripples, still surface). default (neither class) keeps
+     the original gentle rhythm. ── */
+  @keyframes rippleWild{0%{transform:scale(.85);opacity:.75}100%{transform:scale(1.55);opacity:0}}
+  @keyframes waveShudder{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,-1.5px)}50%{transform:translate(2px,1px)}75%{transform:translate(-2px,.5px)}}
+  #t-water.water-wild .rippling{animation:rippleWild 2.4s ease-out infinite}
+  #t-water.water-wild .rippling.r2{animation-delay:1s}
+  #t-water.water-wild .wave-line{animation:waveShudder 1.9s ease-in-out infinite}
+  #t-water.water-calm .rippling{animation-duration:6.8s;opacity:.85}
+  #t-water.water-calm .rippling.r2{animation-delay:3.5s}
   @keyframes flutter{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(7px,-9px) rotate(9deg)}50%{transform:translate(13px,-3px) rotate(-7deg)}75%{transform:translate(5px,-11px) rotate(5deg)}}
   .fluttering{animation:flutter 8s ease-in-out infinite}
   @keyframes twinkle{0%,100%{opacity:.1}50%{opacity:.85}}
@@ -293,6 +304,7 @@
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
     .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise,
     .unit,.stage,.ard,#moon,
+    #t-water.water-wild .rippling,#t-water.water-wild .wave-line,#t-water.water-calm .rippling,
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway{animation:none}
   }
 
@@ -639,7 +651,7 @@
         <g id="t-water" class="tier hidden" stroke="var(--water)" stroke-width="1.5">
           <ellipse class="rippling"    cx="140" cy="248" rx="66" ry="9"/>
           <ellipse class="rippling r2" cx="140" cy="248" rx="66" ry="9"/>
-          <path d="M 86 248 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0" opacity=".6"/>
+          <path class="wave-line" d="M 86 248 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0 q 9 4 18 0 q 9 -4 18 0" opacity=".6"/>
         </g>
 
         <g id="orbbody">
@@ -2142,6 +2154,13 @@ function reactToVibePreview(v){
   const dist = Math.abs(v-50)/50;
   vibeslider.classList.toggle("vibe-cold", cold && v<=VIBE_BANDS[1].max);
   vibeslider.classList.toggle("vibe-hot", !cold && v>=VIBE_BANDS[3].max+1);
+  /* mirror the hot/cold extremes onto the water surface: buzzing → wild/choppy,
+     heavy → glassy/calm. class only carries rhythm; reduced-motion CSS gates it. */
+  const wt=$("t-water");
+  if(wt){
+    wt.classList.toggle("water-wild", !cold && v>=VIBE_BANDS[3].max+1);
+    wt.classList.toggle("water-calm", cold && v<=VIBE_BANDS[1].max);
+  }
   if(orbblush){
     orbblush.setAttribute("fill", cold ? "var(--water)" : "var(--bloom)");
     orbblush.setAttribute("opacity", (dist*dist*0.24).toFixed(3));
