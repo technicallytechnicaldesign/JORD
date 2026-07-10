@@ -313,6 +313,12 @@ For anything beyond a small tweak, the effective loop has been:
      `OBJECTS[].react`/`VIBE_NOTES`/`SHELF_MEMORY`/`WAITING` for tone.
    - Single self-contained file, no new dependencies, no build step.
    - Never leave a broken/non-parsing script committed.
+   - **Bump the footer's `<span class="rev">rev X</span>` (search for it) to
+     the next letter whenever a round ships a substantial change** — the
+     user asked for this as a standing convention (currently at `rev F`).
+     Use judgment on "substantial" — a single small copy/number tweak
+     doesn't need it, a real feature or a multi-part round does. Don't bump
+     it more than once per round even if the round has several commits.
    - End with a clear summary: what shipped, commit hashes, anything skipped
      and why.
 4. **When the agent finishes, verify locally before reporting to the user:**
