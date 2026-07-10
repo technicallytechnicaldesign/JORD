@@ -2,19 +2,22 @@
 
 ## Next session — nothing queued
 
-At **rev N**. Nothing is queued for next time — this was a small
-keepsake-PDF-page round on top of a long series, and it's a natural stopping
-point. Open threads if a future session wants them, none urgent:
+At **rev O**. Nothing is queued for next time. Open threads if a future
+session wants them, none urgent:
 
-- **Nothing this round is print-verified** — no browser/print access in this
-  env. The three page-1 additions (bigger portrait + arms + sometimes-held
-  item, the today's-shelf strip, the rare reflection line) are reasoned from
-  coordinates/layout only. The single most useful thing a human can do is a
-  real **Trends → Save as PDF** and eyeball page 1: does the taller portrait +
-  two compact strips + (conditional) rare line still fit on ONE sheet with the
-  wave coda, or does it push the wave onto a second page? And do the arms/hands
-  read right, does a held object land believably in the right hand, does it ever
-  collide with the left flora sprig?
+- **Nothing PDF-related is print-verified** — no browser/print access in this
+  env. Page 1 was deliberately loosened this round (rev O: portrait 150→220px,
+  margins opened up throughout, no longer fighting for a strict one-sheet
+  fit) — it will very likely push the wave coda onto its own page now, which
+  is the intended trade-off, not a bug to fix. Worth an actual
+  **Trends → Save as PDF** at some point to confirm it reads well, and
+  whether the arms/held-item art (rev N) looks right.
+- **Garden reset modes (rev O) are logic-verified, not visually verified** —
+  the "Garden resets" Settings option (5am/weekly/at 50 flowers) and the
+  200-flower cap were tested via headless DOM simulation (count-mode hitting
+  50 and resetting, weekly mode not wiping on first switch, the cap actually
+  capping at 200) — all pass — but nobody's looked at the Settings row itself
+  in a real browser.
 - **None of rev M is ear-verified** (no audio out in this env) — the chime
   types' character/tuning, the percussion dynamics range, and the swell's
   depth/period feel are all reasoned from the Web Audio graph, not heard.
@@ -23,7 +26,17 @@ point. Open threads if a future session wants them, none urgent:
 
 ---
 
-Last updated: 2026-07-11, after a **keepsake-PDF round (rev N)**: three
+Last updated: 2026-07-11, after a **garden-reset + PDF-spacing round (rev O)**:
+a new Settings option "Garden resets" (5am default / weekly / at 50 flowers —
+`gardenResetMode`, `checkGardenReset()`, replaces the old day-only
+`resetGardenIfNewDay()`), a 200-flower hard cap (was 150), and page 1 of the
+keepsake PDF loosened up (bigger portrait, generous margins) instead of
+fighting for a strict one-sheet fit. A real bug was caught before shipping:
+the Settings-select wiring initially referenced `gardenResetMode` ~230 lines
+before its `let` declaration actually ran (temporal dead zone — would have
+thrown on every single garden-planting action for every user), found via a
+headless DOM test that actually exercises the reset flow rather than just a
+syntax check. Prior: a **keepsake-PDF round (rev N)**: three
 additions to page 1 of the printed keepsake — a **today's-shelf strip** (a
 compact deduped-by-kind row of the objects that drifted in since the 5am reset,
 mirroring the existing garden strip; `.ksh-*` styling), a **rare-item
@@ -126,13 +139,20 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
   persistent tint.
 - **Garden** (`#garden` panel, `❀` header icon) — the anti-shelf: one flower
   plants per *activity* (`plantGarden(type)`, called from `logMission(type)`,
-  not from vibe-logging — that was a real bug once, see caveats), and the whole
-  garden clears out fresh at 5am (`gardenDayKey()` shifts the clock back 5h
+  not from vibe-logging — that was a real bug once, see caveats). Reset
+  schedule is user-choosable (Settings > Garden resets, `gardenResetMode`,
+  persisted): **5am** (default — `gardenDayKey()` shifts the clock back 5h
   before taking a calendar day, so anything before 5am still counts as
-  yesterday's growth — checked both on planting and on opening the panel via
-  `resetGardenIfNewDay()`). Flowers scatter/overlap chaotically (deterministic
-  per-entry hash via `gseed()`, not a tidy grid like the shelf), each paired
-  with a small symbol from `MISSION_ICON` for whichever activity triggered it.
+  yesterday's growth), **weekly** (resets every 7 days off a stored
+  `gardenResetAt` timestamp — if that timestamp doesn't exist yet, it's seeded
+  to *now* rather than triggering an immediate reset, so switching modes never
+  silently wipes an existing garden), or **at 50 flowers** (count-based).
+  `checkGardenReset()` (was `resetGardenIfNewDay()` — renamed since it's not
+  day-only anymore) is checked both on planting and on opening the panel.
+  Hard-capped at **200** blooms regardless of mode (was 150), as a backstop.
+  Flowers scatter/overlap chaotically (deterministic per-entry hash via
+  `gseed()`, not a tidy grid like the shelf), each paired with a small symbol
+  from `MISSION_ICON` for whichever activity triggered it.
 - **Garden visitors** (`#gd-visitors`, a sibling of `#gd-field`, NOT inside it)
   — occasional ambient creatures (`spawnGardenVisitor()`, `GV_KINDS` weighted
   toward butterflies, plus ladybug/spider; SVGs `BUTTERFLY_SVG`/`LADYBUG_SVG`/
@@ -596,6 +616,20 @@ Latest rounds (same day, later):
   print-verified — whether page 1 (taller portrait + garden strip + shelf strip
   + optional rare line + wave coda) still fits ONE sheet, and whether the
   arms/held-object read right on paper, want a real Trends→Save-as-PDF check.
+
+- Garden reset modes + 200 cap + PDF page-1 breathing room (rev O): a new
+  Settings option lets the garden reset on a 5am boundary (default), weekly,
+  or once it hits 50 flowers — see the Garden sub-note under architecture
+  notes above for the full mechanics. Hard cap raised 150→200. Page 1 of the
+  keepsake PDF given real margins and a bigger 220px portrait instead of
+  fighting for a strict one-sheet fit, on request — the wave coda will likely
+  land on its own page now, intentionally. A genuine temporal-dead-zone bug
+  (Settings-select code referencing a `let` ~230 lines before its declaration
+  ran) was caught by a headless DOM test that exercises the actual reset
+  flow, not just `node --check` — fixed before it shipped. Verified via Node
+  simulation: count-mode reaching 50 and resetting, weekly mode not wiping an
+  existing garden on first switch, and the 200 cap actually capping. Not
+  visually verified — nobody's seen the new Settings row in a real browser.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
