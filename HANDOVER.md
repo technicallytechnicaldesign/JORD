@@ -1,5 +1,57 @@
 # JORD — Handover Doc
 
+## Next session — queued up, start here
+
+Written ~1.3h before pickup, at **rev L**. Do these in order. Be creative on
+execution, keep reports short — the user wants punchy summaries, not
+blow-by-blow.
+
+1. **General tidy pass.** The file is ~4,050 lines / 221KB now, grown fast
+   across many rounds. Look for: dead code (check `orb`-style unused-variable
+   leftovers), duplicated logic that could share a helper (several chart
+   functions / several spawn functions have near-identical shapes), comments
+   that restate the obvious vs. ones that actually explain a non-obvious
+   constraint (keep the latter, cut the former), and any leftover TODO-shaped
+   loose ends. Annotate clearly but with **no fluff** — a comment should earn
+   its place by explaining a *why*, not restate a *what*. Don't restructure
+   architecture, just clean what's there.
+2. **Add a chimes/gongs/meditation-bell layer.** Same shape as the percussion
+   layer added at rev K (own sub-toggle, own type `<select>`, own volume
+   slider) — see "Ambient soundscape" in the architecture notes below for the
+   exact pattern (`ambPercOn`/`schedulePercHit`/`playPercHit` etc.). This is a
+   slower, more spacious layer than percussion: think singing-bowl/gong swells
+   and occasional soft chime strikes, not a rhythmic pulse. Offer a few
+   distinct types (e.g. a bowl/gong swell, a small bell tap, a deeper temple
+   bowl) synthesized the same way percussion's noise-burst textures are (or
+   oscillator-based with a long resonant decay — gongs/bowls are usually
+   inharmonic partials over a fundamental, worth a couple of detuned
+   oscillators per strike rather than pure noise).
+3. **Make percussion more varied still.** Add a dynamics/velocity-range
+   control — some hits noticeably soft, some noticeably louder, not just the
+   existing groove-driven ±velocity jitter (`playPercHit()`'s
+   `0.18*groove + 0.4*groove*groove` term) which is fairly narrow. Consider a
+   dedicated slider (or fold it into Groove — your call) that widens the
+   peak-gain range hit-to-hit.
+4. **Add an overall rise-and-fall ("swell") slider for the whole soundscape.**
+   A new macro control, independent of Volume: does the mix stay one steady
+   tone, or does it breathe — gradually louder, gradually softer, in slow
+   waves? The slider should control (a) whether swelling happens at all vs.
+   flat/steady, and (b) roughly how far apart the waves are (period) — with a
+   random jitter/buffer on top of that period so it's not a metronomic pulse
+   (same spirit as Groove's jitter, applied to a much slower macro-gain cycle
+   instead of individual hit timing). Likely implemented as a slow
+   `setTargetAtTime`/scheduled ramp on `ambMaster.gain` (or a dedicated gain
+   node ahead of it) layered under whatever `ambVolume` is currently set to,
+   not replacing it.
+5. **Write a standalone-module project plan** for eventually splitting the
+   whole ambient soundscape engine out of `index.html` into its own file/
+   project, for reuse beyond JORD. **Planning only — do not actually extract
+   the code.** A first draft already exists at `SOUNDSCAPE_MODULE_PLAN.md` in
+   the repo root (written alongside this handoff) — read it, refine/expand it
+   with whatever's been added in steps 2-4 above, don't start from scratch.
+
+---
+
 Last updated: 2026-07-10, after adding an **optional percussion layer** to the
 ambient soundscape — a third generative layer (off by default, own sub-toggle)
 with three synthesised textures (brushes/taps/drops) and a **Groove** slider that
@@ -36,8 +88,10 @@ no transcript to inspect after the fact either. **Do not rely on this path for
 unattended work again** — if the user wants something done at a specific future
 clock time with nobody present to babysit it, say so plainly and treat the local
 `Agent` path as the only trustworthy option, even though it can't itself wait for
-a clock time (it has to be kicked off when someone's around to start it). The
-five items above still need doing as of this writing.
+a clock time (it has to be kicked off when someone's around to start it). (The
+five items the failed routine was supposed to do — bubble width, loading
+flourish, bounce, moon phase/drift, water states — were all subsequently
+shipped anyway, via the local `Agent` path, across later rounds this same day.)
 
 ## What this is
 
