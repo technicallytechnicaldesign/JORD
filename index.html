@@ -352,7 +352,11 @@
      stage. --tb-y is a small per-appearance vertical jitter (some appearances
      sit a touch higher or lower) set fresh by JS each time it (re)appears. ── */
   #thought{
-    position:absolute;top:9px;left:50%;
+    /* percentage top (not a fixed px) so this tracks the SVG's own proportions
+       as it scales -- 28% sits just above his head (body top is ~37% down the
+       viewBox); a fixed px value drifted further from him every time the sky
+       above his head grew across earlier rounds */
+    position:absolute;top:28%;left:50%;
     max-width:min(75%,380px);
     /* translucent paper + a soft blur so it settles into the scene rather than
        sitting on top of it as opaque UI chrome (solid-paper fallback first for
@@ -365,9 +369,10 @@
     font-size:11px;text-align:center;line-height:1.35;
     box-shadow:0 1px 5px rgba(0,0,0,.05);
     /* starts low, right around his head, before rising into its reading
-       height on entrance -- see .leaving below for the reverse trip */
+       height on entrance -- see .leaving below for the reverse trip. Much
+       slower now (was .5s) -- a slow, unhurried rise, not a pop-in. */
     opacity:0;transform:translateX(-50%) translateY(calc(34px + var(--tb-y,0px))) scale(.94);
-    transition:opacity .5s ease, transform .5s ease;
+    transition:opacity 1.6s ease, transform 1.6s ease;
     pointer-events:none;z-index:3;
   }
   #thought.show{opacity:.9;transform:translateX(-50%) translateY(var(--tb-y,0px)) scale(1)}
@@ -380,17 +385,19 @@
   #thought.tb-flat{border:1px solid var(--faint);border-radius:6px}
   #thought.tb-dash{border:1.3px dashed var(--dim);border-radius:12px}
   /* bounce entrance: overshoots slightly then settles, instead of the plain
-     ease -- only the transform's curve changes, opacity still fades plainly */
-  #thought.tb-bounce{transition:opacity .5s ease, transform .6s cubic-bezier(.34,1.7,.64,1)}
+     ease -- only the transform's curve changes, opacity still fades plainly.
+     Slowed to match the calmer baseline (was .6s). */
+  #thought.tb-bounce{transition:opacity 1.6s ease, transform 1.3s cubic-bezier(.34,1.7,.64,1)}
   /* a thought's natural end: it keeps rising past its reading height and
      dissolves, rather than sinking back down to where it started -- drifting
-     away, not popping back into his head. Slower + ease-in for an unhurried
-     dissipation. Declared after .tb-bounce so this always wins the exit
-     timing even though tb-bounce can still be attached from the entrance. */
+     away, not popping back into his head. Much slower now (was .85s) for a
+     genuinely unhurried dissipation. Declared after .tb-bounce so this always
+     wins the exit timing even though tb-bounce can still be attached from
+     the entrance. */
   #thought.leaving{
     opacity:0;
     transform:translateX(-50%) translateY(calc(-16px + var(--tb-y,0px))) scale(1.03);
-    transition:opacity .85s ease-in, transform .85s ease-in;
+    transition:opacity 3s ease-in, transform 3s ease-in;
   }
   /* long-text variant: wider still and flatter, so a genuine paragraph reads as a
      calm banner spanning the stage rather than a cramped tall pill. Still capped
@@ -569,6 +576,16 @@
   #shelf.open,#sound.open,#garden.open{display:block}
   #sh-empty{font-size:12px;color:var(--dim);text-align:center;padding:30px 8px;line-height:1.8}
   .sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px}
+  /* ── today vs. all-time split: today resets at 5am (same boundary as the
+     garden), all-time is the existing full dedup-by-kind shelf, unchanged ── */
+  .sh-section-label{
+    font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--faint);
+  }
+  #sh-today-wrap .sh-section-label{margin-top:2px}
+  .sh-mini-empty{font-size:11px;color:var(--dim);padding:6px 2px 4px}
+  #sh-today-grid:empty{display:none}
   .sh-item{
     border:1.5px solid var(--ink);border-radius:10px;background:var(--panel);
     aspect-ratio:1;display:flex;align-items:center;justify-content:center;
@@ -1050,6 +1067,12 @@
       <button id="sh-close-top" class="icon-btn" aria-label="Back to Jord" title="Back to Jord">✕</button>
     </div>
     <div id="sh-empty">nothing on the shelf yet.<br>little things drift by while you're here — Jord keeps the ones that visit.</div>
+    <div id="sh-today-wrap">
+      <div class="sh-section-label">today <span class="label" id="sh-today-count"></span></div>
+      <div id="sh-today-empty" class="sh-mini-empty">nothing today (yet) — it resets at 5am.</div>
+      <div id="sh-today-grid" class="sh-grid"></div>
+    </div>
+    <div class="sh-section-label" id="sh-all-label">all time</div>
     <div id="sh-grid" class="sh-grid"></div>
     <div class="tr-btns">
       <button id="sh-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -1908,7 +1931,7 @@ const WAITING = [
 ];
 let bubbleTimer=null, idleTimer=null, leaveTimer=null, bubbleGen=0;
 const TB_BORDERS = ["tb-soft","tb-ink","tb-flat","tb-dash"];
-const TB_LEAVE_MS = 850;   /* matches .leaving's transition duration in CSS */
+const TB_LEAVE_MS = 3000;   /* matches .leaving's transition duration in CSS */
 /* actually paints the bubble: fresh text + a freshly-rolled stylistic variant
    every time it (re)appears, so consecutive thoughts don't look identical —
    different border/radius, a small vertical jitter (some sit a touch higher
@@ -2898,21 +2921,18 @@ function objHue(t){
   const buckets=[-24,-12,0,12,24];
   return buckets[Math.abs(t|0)%buckets.length];
 }
-function renderShelf(){
-  const grid=$("sh-grid");
-  if(!shelf.length){ $("sh-count").textContent=""; grid.innerHTML=""; $("sh-empty").style.display="block"; return; }
-  $("sh-empty").style.display="none";
-  /* group by object type: one tile per distinct kind, most-recently-seen first,
-     with a small ×N badge for kinds that have visited more than once */
+/* group a list of shelf sightings by object type -- one tile per distinct
+   kind, most-recently-seen first, with a small ×N badge for kinds seen more
+   than once in that list. Shared by both the today and all-time sections. */
+function shelfTiles(items){
   const groups=new Map();
-  shelf.forEach(s=>{
+  items.forEach(s=>{
     const g=groups.get(s.i);
     if(g){ g.n++; if(s.t>g.t) g.t=s.t; }
     else groups.set(s.i, {i:s.i, t:s.t, n:1});
   });
   const list=[...groups.values()].sort((a,b)=>b.t-a.t);
-  $("sh-count").textContent = `${list.length} kind${list.length===1?"":"s"} · ${shelf.length} kept`;
-  grid.innerHTML = list.map((g,idx)=>{
+  return {kinds:list.length, html:list.map((g,idx)=>{
     const o=OBJECTS[g.i]; if(!o) return "";
     const delay=(idx*0.29%2.6).toFixed(2);
     const hue=objHue(g.t);
@@ -2923,7 +2943,31 @@ function renderShelf(){
       + `<g class="sh-art obj-floaty" style="animation-delay:${delay}s;${filt}">${o.svg}</g></svg>`
       + badge
       + `</div>`;
-  }).join("");
+  }).join("")};
+}
+function renderShelf(){
+  const grid=$("sh-grid"), todayWrap=$("sh-today-wrap"), todayGrid=$("sh-today-grid"),
+        todayEmpty=$("sh-today-empty"), todayCount=$("sh-today-count"), allLabel=$("sh-all-label");
+  if(!shelf.length){
+    $("sh-count").textContent=""; grid.innerHTML=""; $("sh-empty").style.display="block";
+    todayWrap.style.display="none"; allLabel.style.display="none";
+    return;
+  }
+  $("sh-empty").style.display="none";
+  todayWrap.style.display=""; allLabel.style.display="";
+
+  /* today resets at 5am, same boundary as the garden -- so you can see
+     everything Jord's ever kept, but also just what showed up today */
+  const key=gardenDayKey(new Date());
+  const todays=shelf.filter(s=>gardenDayKey(new Date(s.t))===key);
+  const todayT=shelfTiles(todays);
+  todayGrid.innerHTML=todayT.html;
+  todayEmpty.style.display = todays.length ? "none" : "block";
+  todayCount.textContent = todays.length ? `${todayT.kinds} kind${todayT.kinds===1?"":"s"} · ${todays.length} today` : "";
+
+  const allT=shelfTiles(shelf);
+  grid.innerHTML=allT.html;
+  $("sh-count").textContent = `${allT.kinds} kind${allT.kinds===1?"":"s"} · ${shelf.length} kept`;
 }
 function showShelfBubble(item, text){
   item.querySelectorAll(".sh-bubble").forEach(b=>b.remove());
@@ -2940,7 +2984,7 @@ function showShelfBubble(item, text){
   requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.add("show")));
   setTimeout(()=>{ b.classList.remove("show"); setTimeout(()=>b.remove(),450); }, 2600);
 }
-$("sh-grid").addEventListener("click", (e)=>{
+function shelfItemClick(e){
   const item=e.target.closest(".sh-item"); if(!item) return;
   const art=item.querySelector(".sh-art");
   if(!reduceMotion && art){
@@ -2954,7 +2998,9 @@ $("sh-grid").addEventListener("click", (e)=>{
     const line = (o && Math.random()<.5) ? o.react : pick(SHELF_MEMORY);
     showShelfBubble(item, line);
   }
-});
+}
+$("sh-grid").addEventListener("click", shelfItemClick);
+$("sh-today-grid").addEventListener("click", shelfItemClick);
 $("b-shelf").addEventListener("click", ()=>{ renderShelf(); shelfPanel.classList.add("open"); });
 $("sh-close").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
 $("sh-close-top").addEventListener("click", ()=>shelfPanel.classList.remove("open"));
