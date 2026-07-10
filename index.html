@@ -124,20 +124,27 @@
      is seamless at the CSS level regardless of when JS re-rolls the values
      (JS itself only ever changes them right at that rest point, see below). */
   @keyframes bob{
-    0%,100%{transform:translate(0,0) rotate(calc(-1 * var(--bob-tilt,.8deg)))}
-    22%{transform:translate(calc(-1 * var(--bob-sway,5px)), calc(var(--bob-lift,-9px) * .35)) rotate(calc(-.5 * var(--bob-tilt,.8deg)))}
-    50%{transform:translate(0,var(--bob-lift,-9px)) rotate(var(--bob-tilt,.8deg))}
-    78%{transform:translate(var(--bob-sway,5px), calc(var(--bob-lift,-9px) * .35)) rotate(calc(.5 * var(--bob-tilt,.8deg)))}
+    0%,100%{transform:translate(0,0) rotate(calc(-1 * var(--bob-tilt,.7deg)))}
+    25%{transform:translate(calc(-1 * var(--bob-sway,4px)), calc(var(--bob-lift,-9px) * .35)) rotate(calc(-.5 * var(--bob-tilt,.7deg)))}
+    50%{transform:translate(0,var(--bob-lift,-9px)) rotate(var(--bob-tilt,.7deg))}
+    75%{transform:translate(var(--bob-sway,4px), calc(var(--bob-lift,-9px) * .35)) rotate(calc(.5 * var(--bob-tilt,.7deg)))}
   }
-  .bob{transform-origin:140px 150px;animation:bob var(--bob-dur,6s) ease-in-out infinite}
+  /* a faint ethereal fade rides the exact same cadence as the lift (shared
+     --bob-dur): opacity dips a touch as he reaches the top of his drift, so he
+     reads as a slow, ghostly float rather than a solid bounce. Lives on the
+     wrapper, never on #orbbody (JS drives that transform directly). */
+  @keyframes jordFade{0%,100%{opacity:1}50%{opacity:.9}}
+  .bob{transform-origin:140px 150px;
+       animation:bob var(--bob-dur,10s) cubic-bezier(.37,0,.63,1) infinite,
+                 jordFade var(--bob-dur,10s) ease-in-out infinite}
   /* nap: .bob is swapped off and this on so Jord droops down into a heavy,
      settled sag (one-shot transition, not a loop). JS freezes his current
      float position first so the swap eases down instead of snapping. */
   #jordbob.napping{transform-origin:140px 150px;transition:transform 1.8s ease}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
-  @keyframes wiggle{0%,100%{transform:rotate(0)}30%{transform:rotate(-2.5deg)}70%{transform:rotate(2deg)}}
-  .wiggling{transform-origin:140px 150px;animation:wiggle .9s ease-in-out}
+  @keyframes wiggle{0%,100%{transform:rotate(0)}35%{transform:rotate(-1.3deg)}70%{transform:rotate(1deg)}}
+  .wiggling{transform-origin:140px 150px;animation:wiggle 1.7s ease-in-out}
   @keyframes ripple{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.28);opacity:0}}
   .rippling{transform-origin:140px 248px;animation:ripple 4.5s ease-out infinite}
   .rippling.r2{animation-delay:2.2s}
@@ -1777,7 +1784,9 @@ function applyMood(){
   if(busy || sitting || napping) return;
   const [e,m]=pickMood();
   setEyes(e); setMouth(m);
-  if(!reduceMotion && Math.random()<.3){
+  /* the curious head-tilt is now rare (12%, was 30%) and slow, so it reads as
+     a gentle occasional glance rather than a snap interrupting the slow float */
+  if(!reduceMotion && Math.random()<.12){
     orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect();
     orbbody.classList.add("wiggling");
   }
@@ -1813,12 +1822,14 @@ if(!reduceMotion){
   const jordbob = $("jordbob");
   const reflowt = ()=>{
     orb.style.setProperty("--bob-lift", rand(-22,-9).toFixed(1)+"px");
-    orb.style.setProperty("--bob-tilt", rand(.6,1.6).toFixed(2)+"deg");
-    orb.style.setProperty("--bob-sway", rand(3,9).toFixed(1)+"px");
-    /* mostly a normal, unhurried pace -- but roughly 1 in 3 cycles stretches
-       out into something really slow and languid, so the tempo itself reads
-       as wave-like rather than settling into one average speed */
-    const dur = Math.random()<.32 ? rand(9,16) : rand(4.5,7);
+    /* softer tilt/sway than before so the motion reads as a slow *drift*
+       rather than a swing */
+    orb.style.setProperty("--bob-tilt", rand(.4,1.1).toFixed(2)+"deg");
+    orb.style.setProperty("--bob-sway", rand(2,6).toFixed(1)+"px");
+    /* baseline is now genuinely slow and floaty (7-13s per breath); roughly
+       1 in 4 cycles stretches out even further into a very languid 16-24s
+       drift, so the tempo reads as unhurried and wave-like, never metronomic */
+    const dur = Math.random()<.25 ? rand(16,24) : rand(7,13);
     orb.style.setProperty("--bob-dur", dur.toFixed(1)+"s");
   };
   reflowt();
@@ -2308,6 +2319,11 @@ function updateVibeWord(v, force){
 /* live reactions are a brief flourish, not a sustained state — they clear
    themselves out a couple seconds after the slider settles */
 let vibeReactTimer=null;
+/* buzzy is meant to be rare now: we roll a probability gate exactly once each
+   time the slider ENTERS the top band (tracked via vibeWasInBuzz) and hold that
+   decision while you linger there, so dragging around the top doesn't re-roll
+   every input event and flicker the shake on and off */
+let vibeWasInBuzz=false, buzzArmed=false;
 function reactToVibePreview(v){
   /* persistent hot/cold tint — applied regardless of reduce-motion (it's colour, not motion).
      slider goes blue toward the heavy end, warm toward the buzzing end; Jord's blush
@@ -2331,15 +2347,25 @@ function reactToVibePreview(v){
   clearTimeout(vibeReactTimer);
   orbbody.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
   stageEl.classList.remove("warm");
-  const buzzingFloor = VIBE_BANDS[3].max+1; /* first value past "pretty good" */
-  if(v>=buzzingFloor){
-    const hard = v > VIBE_BANDS[4].max;
-    orbbody.classList.add(hard ? "orb-shaky-hard" : "orb-shaky");
+  /* buzzy is now rare: only the genuine top of the slider ('supernova'
+     territory, 94+) can shake at all — the old floor started at 84 and shook
+     the whole ~17pt band every time. Even up here it's gated behind a 35%
+     roll made once on entry, so most trips to the top stay calm; when it does
+     fire it keeps its energetic character. */
+  const buzzingFloor = VIBE_BANDS[4].max+1; /* 94 — genuine 'supernova' only */
+  const inBuzz = v>=buzzingFloor;
+  if(inBuzz){
+    if(!vibeWasInBuzz) buzzArmed = Math.random()<.35;
+    if(buzzArmed){
+      const hard = v>=98;
+      orbbody.classList.add(hard ? "orb-shaky-hard" : "orb-shaky");
+    }
   } else if(v<=VIBE_BANDS[0].max){
     orbbody.classList.add("orb-still");
   } else if(v>=VIBE_MID_LO && v<=VIBE_MID_HI){
     stageEl.classList.add("warm");
   }
+  vibeWasInBuzz = inBuzz;
   vibeReactTimer=setTimeout(()=>{
     orbbody.classList.remove("orb-shaky","orb-shaky-hard","orb-still");
     stageEl.classList.remove("warm");
