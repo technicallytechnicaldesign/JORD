@@ -400,6 +400,53 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `KID_WISH_SAYS`, `KID_PRAISE`, `KID_ACCEPT`, `KID_ENJOY`,
     `KID_GROUND_STEPS`. Breathe/ground/sit mechanics are identical in both
     modes; only the wording and the reward lines swap.
+- **Little Jord, second pass** (rev R) — the mode got its own row of buttons,
+  its own flora, and a sillier garden. Read alongside the rev-Q note above.
+  - **Her button row is four wide, not five**: Breathe, Giggle, Love, Magic.
+    `body.kid` hides `#b-ground` and `#b-accept` and reveals `#b-giggle` (which
+    is `display:none` everywhere else); `.actions` goes to 4 columns.
+    `applyActionWords()` + the `ACTION_WORDS` table swap Enjoy→Love (♥) and
+    Sit→Magic (✦) by rewriting each button's icon span and trailing text node,
+    so the swap reverses cleanly when the mode goes off. Accept's sentiment
+    isn't lost: `KID_ACCEPT` now surfaces in `scheduleThoughts()` at ~18% in
+    kid mode, so "it's okay" still turns up on its own.
+  - **Breathe** drops the two holds in kid mode: `phases` becomes just
+    in/out, 4s each, 4 rounds (32s instead of 64s), with a different silly cue
+    per round from `KID_BREATH_IN`/`KID_BREATH_OUT` shown in `#ex-body`.
+  - **Giggle** (`#b-giggle`) is ground's slot doing the opposite job: six
+    `GIGGLE_STEPS`, Jord pulling a face and flailing an arm on each, ending in
+    a giggle fit (chaos eyes, 6 hearts, `GIGGLE_LINES`, a bloom).
+  - **Love** takes no modal at all — `bigHeart()` grows one large pink heart
+    (`.big-heart`, 5.4s) out of `translate(140,150)`, a line from
+    `KID_LOVE_LINES` lands a beat later, a small burst follows, one flower is
+    planted. Deliberately the least mechanical button in the app.
+  - **Magic** is the sit, enchanted: 90s instead of 120s, `KID_SIT_LINES`, a
+    `rainbow(true)` to open and close it, and `starDust()` drifting stars every
+    19s via `sitStarTimer` (cleared in `endSit` alongside the other two).
+    `rainbow()` gained a `force` argument purely so the sit can show one while
+    `sitting` is true. `floatHeart`/`heartBurst` gained the same escape hatch
+    for deliberate moments inside a `busy` mode.
+  - **Poking him tickles**: in kid mode a pat gives a `TICKLE_LINES` giggle
+    ~55% of the time plus `kidBounce()` (`.kid-bounce`, a much less composed
+    one-shot on `#orbbody`, same discipline as `.wiggling` and never stacked
+    with it — the class is cleared on a timer, not `animationend`, because the
+    arms' animations bubble). Five fast pats become a giggle fit rather than
+    the grown-up dizzy spell.
+  - **One garden, two kinds of flower.** `plantGarden()` stamps `kid:1` on
+    blooms planted in kid mode (only when true — grown-up entries are byte-for
+    -byte what they were) and picks its symbol from `KID_SYM`. `renderGarden()`
+    and the printed garden page both branch on `g.kid` to draw `KID_FLORA` /
+    `KID_GOLDEN_FLOWER` (hearts, stars, a small rainbow, a swirl, a bunch of
+    hearts), skip the hue-rotate so the pink stays pink, and add a faint
+    offset `.gd-kid-tw` twinkle. The count line says "N blooms today · M with
+    hearts" when both are present. Poking one of hers gives a `KID_GARDEN_LINES`
+    line whichever mode you're in.
+  - **Sillier garden company**: `GV_KIDS` adds bee (butterfly's flight path,
+    faster), snail (the ladybug's, at a sixth the distance over ~40s), pet rock
+    (`gvFade` only, 60-100s, never moves, has his own `KID_ROCK_LINES`),
+    drifting hearts and twinkling sparkles. Visitors arrive on 85% of opens and
+    every 18s at 60% while it's open. `el.dataset.kind` is what `gvPoke()` reads
+    to decide between rock lines and `KID_VISITOR_LINES`.
 - **Chart lead-in vectors** (rev Q) — `chartLastHour()`, `chartLast24h()` and
   `chartHistory()` each draw a dotted, half-lit vector toward the newest entry
   that falls *before* their window, with a `"3h ago · 77"` note. The point
@@ -721,6 +768,19 @@ Latest rounds (same day, later):
   stub and the 110-unit length cap. **Not** visually eyeballed — screenshots
   weren't available in this environment, so nobody has actually *looked* at the
   rainbow's arc or the heart burst's spacing yet.
+
+- Little Jord's own row + a shared garden (rev R): her four buttons (breathe,
+  giggle, love, magic), her own flora planted into the SAME meadow as the
+  grown-up blooms, tickling, and a sillier garden (bee, snail, pet rock,
+  drifting hearts and sparkles). See the architecture note above. This round
+  was verified properly: a jsdom harness now loads the real `index.html`,
+  flips the mode, drives every button and asserts on the DOM and storage —
+  34 assertions, all passing, including "kid mode records no mission" and
+  "both kinds of bloom survive a mode switch". The harness lives OUTSIDE this
+  repo (the single-file no-dependency rule stands) at
+  `PROJECTS/JORD/02_WORK/dom-test/` in the workspace, with a README. Still not
+  eyeballed: nothing here has been seen on a screen, so colour, spacing and
+  the feel of the timings are all unverified.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.

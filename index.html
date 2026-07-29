@@ -141,6 +141,16 @@
   #surface{transform-origin:140px 150px;animation:spin 110s linear infinite}
   @keyframes wiggle{0%,100%{transform:rotate(0)}35%{transform:rotate(-1.3deg)}70%{transform:rotate(1deg)}}
   .wiggling{transform-origin:140px 150px;animation:wiggle 1.7s ease-in-out}
+  /* the tickle bounce: same layer and same one-shot pattern as .wiggling (never
+     both at once), just far less composed. Little-jord mode only. */
+  @keyframes kidBounce{
+    0%,100%{transform:translateY(0) rotate(0)}
+    20%{transform:translateY(-9px) rotate(-4.5deg)}
+    44%{transform:translateY(4px) rotate(3.5deg)}
+    66%{transform:translateY(-5px) rotate(-2.5deg)}
+    86%{transform:translateY(2px) rotate(1.2deg)}
+  }
+  .kid-bounce{transform-origin:140px 150px;animation:kidBounce 1.25s cubic-bezier(.3,1.25,.5,1)}
   @keyframes ripple{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.28);opacity:0}}
   .rippling{transform-origin:140px 248px;animation:ripple 4.5s ease-out infinite}
   .rippling.r2{animation-delay:2.2s}
@@ -365,7 +375,7 @@
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway,
     .sh-rare-item,.sh-sparkle,
     .gv,.gv-flap,.gv-swing,
-    .heart-pop,.rainbow-arc,
+    .heart-pop,.rainbow-arc,.big-heart,.kid-star,.gd-kid-tw,.gv-tw,.kid-bounce,
     .skyfly,.skyfly .gv-flap,.skybird-flap{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
@@ -538,6 +548,45 @@
              display:flex;align-items:center;justify-content:center}
   #b-wish{min-height:54px;font-size:11px;color:var(--bloom);letter-spacing:.08em}
   #b-wish:hover{box-shadow:3px 3px 0 var(--bloom)}
+
+  /* little jord's chrome leans pink where grown-up Jord leans green */
+  body.kid button:hover,body.kid .icon-btn:hover{box-shadow:3px 3px 0 var(--bloom)}
+  body.kid button:focus-visible,body.kid .icon-btn:focus-visible{outline-color:var(--bloom)}
+  body.kid .stage{box-shadow:0 0 0 3px color-mix(in srgb, var(--bloom) 16%, transparent)}
+  /* four wide buttons instead of five narrow ones: breathe, giggle, love, magic */
+  body.kid .actions{grid-template-columns:repeat(4,1fr)}
+  body.kid #b-ground,body.kid #b-accept{display:none}
+  #b-giggle{display:none}
+  body.kid #b-giggle{display:flex}
+
+  /* the big pink heart: "love" is just this, once, slowly */
+  @keyframes bigHeart{
+    0%{opacity:0;transform:translateY(0) scale(.15)}
+    18%{opacity:.95}
+    70%{opacity:.9}
+    100%{opacity:0;transform:translateY(-74px) scale(1.5)}
+  }
+  .big-heart{animation:bigHeart 5.4s cubic-bezier(.25,.7,.4,1) forwards}
+  /* stars, for the magic sit */
+  @keyframes kidStar{
+    0%{opacity:0;transform:scale(.2) rotate(0deg)}
+    22%{opacity:1;transform:scale(1) rotate(35deg)}
+    72%{opacity:.9}
+    100%{opacity:0;transform:scale(.35) rotate(120deg)}
+  }
+  .kid-star{animation:kidStar 6.5s ease-in-out forwards}
+  /* her blooms twinkle very faintly, so they read as hers at a glance */
+  @keyframes gdKidTw{0%,100%{opacity:.35}50%{opacity:1}}
+  .gd-kid-tw{animation:gdKidTw 3.6s ease-in-out infinite}
+  /* garden extras: bee, snail, pet rock, drifting heart, sparkle */
+  .gv-bee svg{width:20px;height:auto}
+  .gv-bee .gv-flap{transform-box:fill-box;transform-origin:center;animation:gvFlutter .22s ease-in-out infinite}
+  .gv-snail svg{width:26px;height:auto}
+  .gv-rock svg{width:34px;height:auto}
+  .gv-heart svg{width:17px;height:auto}
+  .gv-sparkle svg{width:18px;height:auto}
+  .gv-sparkle .gv-tw{transform-box:fill-box;transform-origin:center;animation:gvTwinkle 2.2s ease-in-out infinite}
+  @keyframes gvTwinkle{0%,100%{transform:scale(.72);opacity:.55}50%{transform:scale(1.12);opacity:1}}
 
   /* a small burst of hearts, for the moments that deserve several */
   @keyframes heartPop{
@@ -1126,6 +1175,8 @@
   <section class="actions" aria-label="Check-in actions">
     <button id="b-breathe"><span class="icon">∿</span>Breathe</button>
     <button id="b-ground"><span class="icon">▽</span>Ground</button>
+    <!-- little jord only: takes ground's place in the row -->
+    <button id="b-giggle"><span class="icon">◠</span>Giggle</button>
     <button id="b-accept"><span class="icon">✓</span>Accept</button>
     <button id="b-enjoy"><span class="icon">✦</span>Enjoy</button>
     <button id="b-sit"><span class="icon">◯</span>Sit</button>
@@ -1151,7 +1202,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev Q</span>
+    <span class="rev">rev R</span>
   </footer>
 </div>
 
@@ -1445,11 +1496,18 @@ let kidMode = store.get("kidMode", false);
 /* pick the kid pool or the grown-up one, at the call site, every time */
 function kp(adult, kid){ return kidMode ? kid : adult; }
 
-const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯",wish:"✿"};
+const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯",wish:"✿",giggle:"◠"};
+/* the same activities, wearing her symbols, so her blooms are legible as hers
+   in a garden the two of you share */
+const KID_SYM = {breathe:"∿",giggle:"◠",enjoy:"♥",sit:"✦",wish:"✿",ground:"▽",accept:"♡"};
 function logMission(type){
-  missions.push({t:Date.now(), type});
-  if(missions.length>1000) missions=missions.slice(-1000);
-  store.set("missions", missions);
+  /* little jord records nothing — the activity still grows a flower, it just
+     never lands in the missions log the charts are built from */
+  if(!kidMode){
+    missions.push({t:Date.now(), type});
+    if(missions.length>1000) missions=missions.slice(-1000);
+    store.set("missions", missions);
+  }
   /* one bloom per activity, planted when you actually *do* something —
      the whole garden resets fresh at 5am, so a busy day fills right up */
   if(typeof plantGarden==="function" && plantGarden(type)){
@@ -2037,6 +2095,95 @@ const KID_ENJOY = [
   "mission: stretch like a cat that's just woken up.",
   "mission: pick one colour and spot it five times."
 ];
+/* breathing, but funny: the cue changes every round so it stays a game.
+   Paired by index with the out-breath below. */
+const KID_BREATH_IN = [
+  "in… like you're smelling a whole birthday cake",
+  "in… the biggest sniff of the biggest flower",
+  "in… fill right up, like a balloon",
+  "in… like you're about to say something enormous",
+  "in… quietly, so the cat doesn't notice"
+];
+const KID_BREATH_OUT = [
+  "out… like blowing a dandelion, gently",
+  "out… like fogging up a cold window",
+  "out… like a very slow, very polite dragon",
+  "out… like blowing out every candle at once",
+  "out… let it go all the way to the end"
+];
+/* the giggle: a small silly routine, done slowly, ending in a laugh */
+const GIGGLE_STEPS = [
+  ["wiggle","wiggle all ten fingers.\nas fast as they'll go."],
+  ["stretch","reach up as tall as you can.\nnow wobble a bit."],
+  ["face","pull your silliest face.\nI'll pull mine too."],
+  ["noise","say BLEUGH.\nout loud. I'll wait."],
+  ["shake","shake it all out.\nlike a dog after a puddle."],
+  ["the hard bit","now try not to laugh.\ngood luck. I'm terrible at this."]
+];
+const GIGGLE_LINES = [
+  "I couldn't keep it in either.",
+  "hehe. okay. okay. one more.",
+  "that face. that FACE.",
+  "I laughed first. I always laugh first.",
+  "well, that's the day improved.",
+  "we're both very bad at not laughing."
+];
+const TICKLE_LINES = [
+  "hehehe. that tickles.",
+  "eee! not the round bit!",
+  "hee. again. no wait. yes. again.",
+  "I'm ticklish absolutely everywhere. it's a design flaw.",
+  "hahaha. stop. don't stop. stop.",
+  "wobbling! officially wobbling!",
+  "ha! you got me.",
+  "careful, I giggle at the slightest thing."
+];
+const KID_LOVE_LINES = [
+  "here. that one's for you.",
+  "one heart, from me, no reason needed.",
+  "I made you this. it's a heart. I only know the one shape.",
+  "take it. I've got loads.",
+  "a big one, because you're worth a big one.",
+  "straight from the middle of me."
+];
+const KID_SIT_LINES = [
+  "shh. something lovely is about to happen.",
+  "feel that? that's the quiet arriving.",
+  "the stars come out when we're still. I checked.",
+  "nothing to do. nothing to fix. just us being round.",
+  "if you listen very hard, you can hear the garden growing.",
+  "a rainbow needs rain and sun and a bit of patience. so does this.",
+  "magic is mostly waiting, it turns out.",
+  "we're doing it. this is the whole thing."
+];
+const KID_VISITOR_LINES = [
+  "hello, small friend.",
+  "it says hi. I'm translating.",
+  "it's been very busy doing nothing.",
+  "careful, it's shy.",
+  "it came to see you specifically. it told me.",
+  "no idea what it's up to. seems happy though.",
+  "that one hums. listen.",
+  "it's got somewhere to be. eventually."
+];
+const KID_ROCK_LINES = [
+  "that's a rock. it lives here now.",
+  "the rock has been thinking all morning.",
+  "he's called Kevin. I didn't choose it.",
+  "very good at sitting still. the best, actually.",
+  "the rock says nothing. the rock means it.",
+  "pet him if you like. he'd like that."
+];
+const KID_GARDEN_LINES = [
+  "you grew this one.",
+  "this one's yours. I can tell by the hearts.",
+  "it grew while we were laughing.",
+  "careful, it's proud of itself.",
+  "we planted this together.",
+  "a wish went into this one.",
+  "it grows a bit every time you come.",
+  "sparkly. very sparkly."
+];
 const KID_GROUND_STEPS = [
   ["5 · SEE","find five things you can see.\nsmall boring things count best."],
   ["4 · TOUCH","find four things you can feel.\nthe floor. your clothes. the air."],
@@ -2137,6 +2284,35 @@ const GOLDEN_FLOWER = `<g stroke="var(--sun)" stroke-width="1.8"><path d="M 0 0 
 const BUTTERFLY_SVG = `<svg viewBox="-14 -12 28 24" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g class="gv-flap" stroke="var(--ink)" stroke-width="1.2" fill="var(--bloom)" fill-opacity=".4"><path d="M0 -3 Q -12 -11 -10 -3 Q -7 -1 0 -1 Z"/><path d="M0 0 Q -9 3 -8 8 Q -4 6 0 2 Z"/><path d="M0 -3 Q 12 -11 10 -3 Q 7 -1 0 -1 Z"/><path d="M0 0 Q 9 3 8 8 Q 4 6 0 2 Z"/></g><path d="M0 -6 V6" stroke="var(--ink)" stroke-width="1.4"/><path d="M0 -6 Q -2 -9 -4 -10 M0 -6 Q 2 -9 4 -10" stroke="var(--ink)" stroke-width="1"/></svg>`;
 const LADYBUG_SVG = `<svg viewBox="-11 -9 22 18" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g stroke="var(--ink)" stroke-width="1"><path d="M-6 -5 L -9 -8 M -7 0 L -10 0 M -6 5 L -9 8 M 6 -5 L 9 -8 M 7 0 L 10 0 M 6 5 L 9 8"/></g><ellipse cx="0" cy="0" rx="6.5" ry="6" fill="var(--bloom)" stroke="var(--ink)" stroke-width="1.2"/><path d="M0 -6 V6" stroke="var(--ink)" stroke-width="1"/><circle cx="0" cy="-6.5" r="2.4" fill="var(--ink)" stroke="none"/><g fill="var(--ink)" stroke="none"><circle cx="-3" cy="-1.5" r="1.1"/><circle cx="3" cy="-1.5" r="1.1"/><circle cx="-2.6" cy="2.6" r="1.1"/><circle cx="2.6" cy="2.6" r="1.1"/></g></svg>`;
 const SPIDER_SVG = `<svg viewBox="-12 0 24 116" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g class="gv-swing"><line x1="0" y1="0" x2="0" y2="99" stroke="var(--dim)" stroke-width="1"/><g transform="translate(0 105)" stroke="var(--ink)" stroke-width="1.2"><path d="M-2 -3 Q -8 -7 -11 -3 M-2 -1 Q -9 -1 -12 3 M-2 1 Q -9 3 -11 8 M-2 3 Q -7 7 -9 11"/><path d="M2 -3 Q 8 -7 11 -3 M2 -1 Q 9 -1 12 3 M2 1 Q 9 3 11 8 M2 3 Q 7 7 9 11"/><ellipse cx="0" cy="1" rx="4" ry="5" fill="var(--ink)"/><circle cx="0" cy="-4.5" r="2.4" fill="var(--ink)"/><circle cx="-1" cy="-5" r=".6" fill="var(--paper)" stroke="none"/><circle cx="1" cy="-5" r=".6" fill="var(--paper)" stroke="none"/></g></g></svg>`;
+/* ── little jord's flora ──
+   the same line-art house style and the same stem-from-origin geometry as
+   FLORA, but hers: hearts, stars, rainbows. Planted into the SAME garden as
+   the grown-up blooms (one meadow, both of you), just visibly hers. The heart
+   path is the one floatHeart() uses, translated up onto a stem. */
+const KID_FLORA = [
+  /* heart on a stem */
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -10"/><g transform="translate(0 -25)" stroke="var(--bloom)" fill="var(--bloom)" fill-opacity=".22"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g></g>`,
+  /* four-point star */
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -11"/><path d="M 0 -22 L 2.2 -16.8 L 7.4 -14.6 L 2.2 -12.4 L 0 -7.2 L -2.2 -12.4 L -7.4 -14.6 L -2.2 -16.8 Z" stroke="var(--sun)" stroke-width="1.5" fill="var(--sun)" fill-opacity=".18"/></g>`,
+  /* a little rainbow growing out of the ground */
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -9"/><g fill="none" stroke-width="1.8"><path d="M -9 -10 A 9 9 0 0 1 9 -10" stroke="#e26d5c"/><path d="M -6 -10 A 6 6 0 0 1 6 -10" stroke="#e0cb57"/><path d="M -3 -10 A 3 3 0 0 1 3 -10" stroke="#6fa8c0"/></g></g>`,
+  /* pink swirl lollipop */
+  `<g stroke="var(--ink)" stroke-width="1.6"><path d="M 0 0 v -10"/><circle cx="0" cy="-16" r="6" stroke="var(--bloom)"/><path d="M 0 -16 q 2.6 -1 2.6 -3 q 0 -3 -3.4 -3 q -4.4 0 -4.4 4.4 q 0 5.4 6 5.4" stroke="var(--bloom)" stroke-width="1.3"/></g>`,
+  /* a small bunch of hearts */
+  `<g stroke="var(--ink)" stroke-width="1.5"><path d="M 0 0 v -8"/><g stroke="var(--bloom)" fill="var(--bloom)" fill-opacity=".2"><g transform="translate(0 -21) scale(.5)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g><g transform="translate(-6.5 -13) scale(.4)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g><g transform="translate(6.5 -14) scale(.4)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g></g></g>`
+];
+const KID_GOLDEN_FLOWER = `<g stroke="var(--sun)" stroke-width="1.7"><path d="M 0 0 v -10" stroke="var(--ink)"/><g transform="translate(0 -25)" fill="var(--sun)" fill-opacity=".3"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g><path d="M -10.5 -21 v -3 M -12 -22.5 h 3 M 10.5 -14 v -3 M 9 -15.5 h 3" stroke-width="1.2"/></g>`;
+
+/* ── little jord's garden company ──
+   sillier visitors for the meadow, same stroke-based house style: a bee, a
+   snail in no hurry whatsoever, a pet rock that just sits there, plus drifting
+   hearts and sparkles. */
+const BEE_SVG = `<svg viewBox="-12 -11 25 21" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g class="gv-flap" stroke="var(--ink)" stroke-width="1" fill="var(--water)" fill-opacity=".35"><ellipse cx="-2" cy="-5.5" rx="5" ry="3"/><ellipse cx="3.4" cy="-6" rx="4.4" ry="2.7"/></g><ellipse cx="0" cy="0" rx="7" ry="4.6" fill="var(--sun)" fill-opacity=".55" stroke="var(--ink)" stroke-width="1.2"/><path d="M -1.6 -4.3 v 8.6 M 2.2 -4 v 8" stroke="var(--ink)" stroke-width="1.1"/><path d="M 7 0.4 h 3.6" stroke="var(--ink)" stroke-width="1"/><circle cx="-5.2" cy="-1" r=".8" fill="var(--ink)" stroke="none"/></svg>`;
+const SNAIL_SVG = `<svg viewBox="-14 -12 28 22" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g stroke="var(--ink)" stroke-width="1.2"><path d="M -12 7 q 1.5 -5 6 -5 h 10"/><circle cx="3" cy="0.5" r="6.2" fill="var(--bloom)" fill-opacity=".35"/><path d="M 3 0.5 q 2.5 -1 2.5 -3.1 q 0 -3.2 -3.5 -3.2 q -4.6 0 -4.6 4.7 q 0 5.7 6.3 5.7"/><path d="M -6.5 2.2 q -1.4 -5 -3 -7.2 M -8.4 3 q -3.2 -3 -4.8 -4.4"/></g><circle cx="-9.7" cy="-5.4" r="1.2" fill="var(--ink)"/><circle cx="-13.4" cy="-1.6" r="1.2" fill="var(--ink)"/></svg>`;
+const PETROCK_SVG = `<svg viewBox="-16 -15 32 26" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M -13 9 q -2.5 -9 3.5 -13.5 q 6.5 -4.5 12.5 -1 q 6 3.5 5 9.5 q -0.6 5 -5.4 5 Z" fill="var(--faint)" stroke="var(--ink)" stroke-width="1.3"/><g fill="var(--paper)" stroke="var(--ink)" stroke-width="1"><circle cx="-4" cy="-1" r="2.7"/><circle cx="4.6" cy="-1.5" r="2.7"/></g><circle cx="-3.3" cy="-0.3" r="1" fill="var(--ink)" stroke="none"/><circle cx="5.3" cy="-0.9" r="1" fill="var(--ink)" stroke="none"/><path d="M -2 4.6 q 2.8 2.4 5.6 -0.2" stroke="var(--ink)" stroke-width="1.2"/></svg>`;
+const GVHEART_SVG = `<svg viewBox="-11 0 22 20" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" stroke="var(--bloom)" stroke-width="1.4" fill="var(--bloom)" fill-opacity=".3"/></svg>`;
+const GVSPARKLE_SVG = `<svg viewBox="-10 -10 20 20" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><g class="gv-tw"><path d="M 0 -8 L 1.9 -1.9 L 8 0 L 1.9 1.9 L 0 8 L -1.9 1.9 L -8 0 L -1.9 -1.9 Z" fill="var(--sun)" fill-opacity=".45" stroke="var(--sun)" stroke-width="1"/></g></svg>`;
+
 const VISITOR_LINES = [
   "just passing through.",
   "it landed, considered you, moved on.",
@@ -2393,8 +2569,11 @@ function think(text, hold){
 function scheduleThoughts(){
   setTimeout(()=>{
     if(!busy && !sitting && !napping && !modal.classList.contains("open")){
+      /* the "it's okay" button isn't in little jord's row, so its sentiment
+         turns up in his ordinary musings instead — it's too useful to lose */
       const pool = isNight() && Math.random()<.4 ? kp(NIGHT_THOUGHTS, KID_NIGHT_THOUGHTS)
-                                                 : kp(THOUGHTS, KID_THOUGHTS);
+                 : (kidMode && Math.random()<.18) ? KID_ACCEPT
+                 : kp(THOUGHTS, KID_THOUGHTS);
       think(pick(pool));
     }
     scheduleThoughts();
@@ -2649,8 +2828,10 @@ setInterval(()=>{ if(Math.random()<.3) shootStar(); }, 200*1000);
 
 /* ── rare content-heart: when the vibe's kept high and Jord's just being,
    a little heart occasionally drifts up off the top of it ── */
-function floatHeart(color, pop){
-  if(reduceMotion || busy || sitting) return;
+function floatHeart(color, pop, force){
+  /* `force` lets a deliberate moment (an exercise finishing, the giggle fit)
+     spawn hearts while a mode has `busy` set — the ambient path never does */
+  if(reduceMotion || (!force && (busy || sitting))) return;
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
   const spread = pop ? 46 : 20;
   g.setAttribute("transform",`translate(${rand(140-spread,140+spread).toFixed(0)},${rand(92,120).toFixed(0)})`);
@@ -2666,16 +2847,60 @@ function floatHeart(color, pop){
 }
 /* little jord's hearts come in handfuls, in several colours */
 const HEART_HUES = ["var(--bloom)","var(--sun)","var(--leaf)","var(--water)","#c58fd6","#e2748a"];
-function heartBurst(n){
-  if(reduceMotion || busy || sitting) return;
+function heartBurst(n, force){
+  if(reduceMotion || (!force && (busy || sitting))) return;
   const many = n || 4;
-  for(let i=0;i<many;i++) setTimeout(()=>floatHeart(pick(HEART_HUES), true), i*140);
+  for(let i=0;i<many;i++) setTimeout(()=>floatHeart(pick(HEART_HUES), true, force), i*140);
 }
 /* ── the rainbow (little jord only) ──
    arcs the whole sky behind him, holds a while, fades out. One at a time. */
 const RAINBOW_COLS = ["#e26d5c","#e59f45","#e0cb57","#7bbf7a","#6fa8c0","#7b8fd0","#b48ad6"];
-function rainbow(){
-  if(reduceMotion || sitting) return;
+/* the tickle bounce. Same layer and same one-shot discipline as .wiggling, and
+   never both at once — the class is cleared on a timer rather than
+   animationend, since the arms' own animations bubble up through #orbbody. */
+function kidBounce(){
+  if(reduceMotion) return;
+  orbbody.classList.remove("wiggling","kid-bounce");
+  void orbbody.getBoundingClientRect();
+  orbbody.classList.add("kid-bounce");
+  setTimeout(()=>orbbody.classList.remove("kid-bounce"), 1300);
+}
+/* one big pink heart, grown slowly out of the middle of him. This is the whole
+   of "love" in little-jord mode: no steps, no modal, just the gesture. */
+function bigHeart(){
+  if(reduceMotion) return;
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("transform","translate(140,150)");
+  const inner=document.createElementNS("http://www.w3.org/2000/svg","g");
+  inner.setAttribute("class","big-heart");
+  inner.innerHTML=`<g transform="translate(0,-26) scale(2.6)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" `
+    + `stroke="var(--bloom)" stroke-width="1.1" fill="var(--bloom)" fill-opacity=".45"/></g>`;
+  g.appendChild(inner);
+  meteorLayer.appendChild(g);
+  setTimeout(()=>g.remove(), 5800);
+}
+/* stars for the magic sit: they drift in the sky above him, slowly, one at a
+   time. Deliberately unhurried — this is the quiet part of the app. */
+function starDust(n){
+  if(reduceMotion) return;
+  for(let i=0;i<(n||3);i++){
+    setTimeout(()=>{
+      const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+      const s=rand(0.5,1.1);
+      g.setAttribute("transform",`translate(${rand(24,256).toFixed(0)},${rand(0,110).toFixed(0)}) scale(${s.toFixed(2)})`);
+      const inner=document.createElementNS("http://www.w3.org/2000/svg","g");
+      inner.setAttribute("class","kid-star");
+      inner.style.animationDelay=(Math.random()*1.4).toFixed(2)+"s";
+      inner.innerHTML=`<path d="M 0 -7 L 1.7 -1.7 L 7 0 L 1.7 1.7 L 0 7 L -1.7 1.7 L -7 0 L -1.7 -1.7 Z" `
+        + `fill="${pick(["var(--sun)","var(--bloom)","var(--water)"])}" fill-opacity=".55" stroke="none"/>`;
+      g.appendChild(inner);
+      meteorLayer.appendChild(g);
+      setTimeout(()=>g.remove(), 8200);
+    }, i*rand(500,1400));
+  }
+}
+function rainbow(force){
+  if(reduceMotion || (sitting && !force)) return;
   const layer = $("rainbow");
   if(!layer || layer.childNodes.length) return;
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
@@ -2902,7 +3127,7 @@ function reward(points, line){
 }
 
 /* ── SIT: the world softens, JORD speaks slowly ── */
-let sitTick=null, sitLineTimer=null;
+let sitTick=null, sitLineTimer=null, sitStarTimer=null;
 function startSit(){
   if(sitting || modal.classList.contains("open")) return;
   sitting=true;
@@ -2910,9 +3135,17 @@ function startSit(){
   thought.classList.remove("show");
   setEyes("closed"); setMouth("smile");
   orbbody.classList.add("breathing");
-  let t=120;
-  sittimer.textContent="2:00";
-  const linesUsed = [...SIT_LINES].sort(()=>Math.random()-.5).slice(0,5);
+  /* little jord's sit is the magic one: shorter (90s is a long time when
+     you're small), with a rainbow to open it and stars drifting through the
+     quiet. Same slowness, same long pauses — just visibly enchanted. */
+  let t = kidMode ? 90 : 120;
+  sittimer.textContent = kidMode ? "1:30" : "2:00";
+  if(kidMode){
+    rainbow(true);
+    starDust(3);
+    sitStarTimer=setInterval(()=>{ if(sitting) starDust(1+Math.floor(Math.random()*2)); }, 19000);
+  }
+  const linesUsed = [...kp(SIT_LINES, KID_SIT_LINES)].sort(()=>Math.random()-.5).slice(0,5);
   let li=0;
   say(linesUsed[li++], 26000);
   sitLineTimer=setInterval(()=>{
@@ -2927,11 +3160,13 @@ function startSit(){
 function endSit(early){
   if(!sitting) return;
   sitting=false;
-  clearInterval(sitTick); clearInterval(sitLineTimer);
-  sitTick=sitLineTimer=null;
+  clearInterval(sitTick); clearInterval(sitLineTimer); clearInterval(sitStarTimer);
+  sitTick=sitLineTimer=sitStarTimer=null;
   document.body.classList.remove("sitting");
   orbbody.classList.remove("breathing");
   logMission("sit");
+  /* the magic doesn't end abruptly: a rainbow and a few hearts see it out */
+  if(kidMode){ rainbow(true); setTimeout(()=>heartBurst(4), 700); }
   if(early){
     reward(6, kp("Even a little stillness counts. Thank you for some of your nothing.",
                  "even a little bit of still counts. thank you for sitting with me."));
@@ -3349,16 +3584,25 @@ $("b-breathe").addEventListener("click", ()=>{
   exNext.textContent="Begin"; exNext.style.display="";
   exNext.onclick=()=>{
     exNext.style.display="none";
-    const phases=[["inhale",1.09],["hold",1.09],["exhale",0.91],["hold",0.91]];
+    /* little jord's version drops the two holds: just in and out, four times,
+       with a different silly cue each round. Same 4s phases, half the length,
+       and much easier to actually follow when you're small. */
+    const phases = kidMode ? [["in",1.10],["out",0.90]]
+                           : [["inhale",1.09],["hold",1.09],["exhale",0.91],["hold",0.91]];
     let round=0,p=0,t=4;
     exBody.textContent="";
     /* only Jord's body breathes; transition spans the full 4s phase so it
        finishes exactly as the next phase begins (continuous, well-synced) */
     function setScale(s){ if(reduceMotion) return; orbbody.style.transformOrigin="140px 150px"; orbbody.style.transition="transform 4s ease-in-out"; orbbody.style.transform=`scale(${s})`; }
     function step(){
-      exPhase.textContent=phases[p][0]+"  ·  round "+(round+1)+"/4";
+      if(kidMode){
+        exPhase.textContent = (p===0?"breathe in":"and out")+"  ·  "+(round+1)+" of 4";
+        exBody.textContent = (p===0?KID_BREATH_IN:KID_BREATH_OUT)[round%KID_BREATH_IN.length];
+      } else {
+        exPhase.textContent=phases[p][0]+"  ·  round "+(round+1)+"/4";
+      }
       setScale(phases[p][1]);
-      setEyes(phases[p][0]==="exhale"?"closed":"open"); setMouth("o");
+      setEyes((phases[p][0]==="exhale"||phases[p][0]==="out")?"closed":"open"); setMouth("o");
       exCount.textContent=t;
       exTimer=setInterval(()=>{
         t--;
@@ -3368,7 +3612,8 @@ $("b-breathe").addEventListener("click", ()=>{
           if(p>=phases.length){ p=0; round++; }
           if(round>=4){
             exPhase.textContent="complete"; exCount.textContent="◡";
-            exBody.textContent=kp("Sixty-four seconds well spent.","you did the whole thing. every single side.");
+            exBody.textContent=kp("Sixty-four seconds well spent.","you did the whole thing. all four, in and out.");
+            if(kidMode) heartBurst(3, true);
             orbbody.style.transition=""; orbbody.style.transform="";
             exNext.style.display=""; exNext.textContent="Done";
             exNext.onclick=()=>{ closeModal(); logMission("breathe"); reward(14, pick(kp(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."], KID_PRAISE))); };
@@ -3401,6 +3646,40 @@ $("b-ground").addEventListener("click", ()=>{
   show();
 });
 
+/* ── giggle (little jord only) ──
+   ground's slot in the row, but the opposite job: six small silly instructions,
+   taken at the same unhurried pace, ending in Jord losing it completely. */
+$("b-giggle").addEventListener("click", ()=>{
+  openModal();
+  let i=0;
+  const FACES=[["chaos","wavy"],["wide","o"],["uwu","grin"],["squint","wavy"],["chaos","grin"],["happy","grin"]];
+  function show(){
+    exPhase.textContent=GIGGLE_STEPS[i][0];
+    exBody.textContent=GIGGLE_STEPS[i][1];
+    exCount.textContent="";
+    exNext.textContent = i<GIGGLE_STEPS.length-1 ? "done!" : "I laughed";
+    exNext.style.display="";
+    /* Jord does each one along with you */
+    const f=FACES[i%FACES.length];
+    setEyes(f[0]); setMouth(f[1]);
+    armAnim(pick(["l","r","both"]), pick(["flail","wave","yay"]));
+    if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+    exNext.onclick=()=>{
+      i++;
+      if(i>=GIGGLE_STEPS.length){
+        closeModal(); logMission("giggle");
+        /* the giggle fit: he wobbles, hearts everywhere, and he says so */
+        setEyes("chaos"); setMouth("grin");
+        armAnim("both","flail");
+        heartBurst(6, true);
+        if(Math.random()<.5) rainbow();
+        reward(10, pick(GIGGLE_LINES));
+      } else show();
+    };
+  }
+  show();
+});
+
 $("b-accept").addEventListener("click", ()=>{
   openModal();
   exPhase.textContent=kp("radical acceptance","it's okay");
@@ -3410,6 +3689,21 @@ $("b-accept").addEventListener("click", ()=>{
   exNext.onclick=()=>{ closeModal(); logMission("accept"); reward(10, pick(kp(["Accepted as-is. No revisions required.","Reality signed off. You too.","Noted, filed, released."], KID_PRAISE))); };
 });
 $("b-enjoy").addEventListener("click", ()=>{
+  /* little jord's "love": no steps, no modal, no mission. One big pink heart
+     out of the middle of him, one line, one flower. That's the whole thing. */
+  if(kidMode){
+    if(busy || sitting) return;
+    setEyes("heart"); setMouth("smile");
+    bigHeart();
+    logMission("enjoy");
+    calm=clamp(calm+8,5,100); lastCheck=Date.now();
+    store.set("calm",calm); store.set("lastCheck",lastCheck);
+    render();
+    setTimeout(()=>say(pick(KID_LOVE_LINES), 14000), 1100);
+    setTimeout(()=>heartBurst(3), 3600);
+    setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 8000);
+    return;
+  }
   openModal();
   exPhase.textContent=kp("tiny mission","a tiny mission");
   exBody.textContent=pick(kp(ENJOY_LINES, KID_ENJOY));
@@ -3493,9 +3787,26 @@ nightSel.addEventListener("change", ()=>{
    the wish is the whole of little jord's "input": one intention for the day,
    kept against the same 5am day boundary as the garden, and worth a flower.
    Nothing about it is scored, averaged or charted. */
+/* the shared buttons say something different in her row: enjoy becomes love (a
+   heart), sit becomes magic (a star). Breathe keeps its name, and giggle is
+   its own button that only exists here. */
+const ACTION_WORDS = {
+  "b-enjoy":{icon:"✦", label:"Enjoy", kidIcon:"♥", kidLabel:"Love"},
+  "b-sit":  {icon:"◯", label:"Sit",   kidIcon:"✦", kidLabel:"Magic"}
+};
+function applyActionWords(){
+  Object.keys(ACTION_WORDS).forEach(id=>{
+    const b=$(id), c=ACTION_WORDS[id]; if(!b) return;
+    const ic=b.querySelector(".icon");
+    if(ic) ic.textContent = kidMode ? c.kidIcon : c.icon;
+    const last=b.lastChild;
+    if(last && last.nodeType===3) last.nodeValue = kidMode ? c.kidLabel : c.label;
+  });
+}
 function applyKidMode(){
   document.body.classList.toggle("kid", kidMode);
   const t=$("kidtoggle"); if(t) t.checked=kidMode;
+  applyActionWords();
   showWish();
 }
 function showWish(){
@@ -3803,8 +4114,12 @@ gardenResetSel.addEventListener("change", ()=>{
 function plantGarden(type){
   checkGardenReset();
   const golden=Math.random()<.05;
-  const sym=MISSION_ICON[type]||"·";
-  garden.push({t:Date.now(), i:Math.floor(Math.random()*FLORA.length), golden, sym});
+  const sym=(kidMode ? KID_SYM[type] : MISSION_ICON[type]) || MISSION_ICON[type] || "·";
+  /* `kid` marks whose bloom this is — one shared meadow, two kinds of flower.
+     Only set when true, so grown-up entries stay exactly as they were. */
+  const entry={t:Date.now(), i:Math.floor(Math.random()*FLORA.length), golden, sym};
+  if(kidMode) entry.kid=1;
+  garden.push(entry);
   if(garden.length>200) garden=garden.slice(-200);
   store.set("garden", garden);
   return true;
@@ -3813,9 +4128,18 @@ function plantGarden(type){
 function gseed(n){ const x=Math.sin(n)*43758.5453; return x-Math.floor(x); }
 function renderGarden(){
   const field=$("gd-field");
+  $("gd-empty").textContent = kp(
+    "the garden's bare for now. breathe, ground, accept, enjoy, sit — every one plants something new. fresh growth only: it all clears out at 5am.",
+    "nothing's growing yet. breathe, giggle, love, be magic — every one of them plants a flower. they go to sleep at 5 in the morning and we start again.");
   if(!garden.length){ $("gd-count").textContent=""; field.innerHTML=""; $("gd-empty").style.display="block"; return; }
   $("gd-empty").style.display="none";
-  $("gd-count").textContent = `${garden.length} bloom${garden.length===1?"":"s"} today · resets at 5am`;
+  /* one meadow, both of you — say so when both kinds are in it */
+  const kidN = garden.filter(g=>g.kid).length, n = garden.length;
+  $("gd-count").textContent = kidN && kidN < n
+    ? `${n} bloom${n===1?"":"s"} today · ${kidN} with hearts · resets at 5am`
+    : kidMode
+      ? `${n} flower${n===1?"":"s"} today. we grew them.`
+      : `${n} bloom${n===1?"":"s"} today · resets at 5am`;
   field.innerHTML = garden.map((g,idx)=>{
     const seed=(g.t||0)+idx+1;
     const rx=(6+gseed(seed*0.9)*86).toFixed(1);        /* 6%..92% across */
@@ -3823,13 +4147,20 @@ function renderGarden(){
     const rot=((gseed(seed*2.3+5)-0.5)*32).toFixed(1); /* ±16deg lean */
     const scale=(0.72+gseed(seed*3.1+7)*0.72).toFixed(2);
     const hue=objHue(seed);
-    const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
+    /* hers keep their true colours — a hue-rotate would scramble the pink */
+    const filt=(hue && !g.kid)?`filter:hue-rotate(${hue}deg);`:"";
     const delay=(gseed(seed*4.2+3)*5).toFixed(2);
-    const art=g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length];
-    return `<div class="gd-flower" style="left:${rx}%;top:${ry}%;transform:translate(-50%,-100%) rotate(${rot}deg) scale(${scale});z-index:${idx}">`
+    const art = g.kid
+      ? (g.golden ? KID_GOLDEN_FLOWER : KID_FLORA[g.i%KID_FLORA.length])
+      : (g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length]);
+    /* a very faint twinkle on hers, offset per bloom so they don't pulse in unison */
+    const tw = g.kid
+      ? `<g class="gd-kid-tw" style="animation-delay:${(gseed(seed*5.5+2)*3.6).toFixed(2)}s"><path d="M 9 -22 v -3.4 M 7.3 -23.7 h 3.4" stroke="var(--sun)" stroke-width="1.1"/></g>`
+      : "";
+    return `<div class="gd-flower${g.kid?" gd-kid":""}" style="left:${rx}%;top:${ry}%;transform:translate(-50%,-100%) rotate(${rot}deg) scale(${scale});z-index:${idx}">`
       + `<div class="gd-sway" style="animation-delay:${delay}s;${filt}">`
       + `<svg viewBox="-14 -26 28 34" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
-      + art
+      + art + tw
       + `<text x="0" y="6" text-anchor="middle" font-size="7" fill="var(--dim)" stroke="none" font-family="inherit">${g.sym||"·"}</text>`
       + `</svg></div></div>`;
   }).join("");
@@ -3845,7 +4176,9 @@ $("gd-field").addEventListener("click", (e)=>{
     const field=$("gd-field");
     field.querySelectorAll(".gd-word").forEach(w=>w.remove());
     const w=document.createElement("div");
-    w.className="gd-word"; w.textContent=pick(GARDEN_LINES);
+    /* a bloom of hers gets one of her lines, whichever mode you're looking in */
+    w.className="gd-word";
+    w.textContent = pick(fl.classList.contains("gd-kid") ? KID_GARDEN_LINES : kp(GARDEN_LINES, KID_GARDEN_LINES));
     w.style.left=fl.style.left; w.style.top=fl.style.top;
     field.appendChild(w);
     requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add("show")));
@@ -3861,19 +4194,58 @@ $("gd-field").addEventListener("click", (e)=>{
 let gdVisitorTimer=null;
 /* butterflies weighted highest; the odd ladybug or dangling spider */
 const GV_KINDS=["fly","fly","fly","bug","spider"];
+/* little jord's meadow keeps sillier company: a bee, a snail in no hurry, a
+   pet rock that simply sits, and the odd heart or sparkle drifting through */
+const GV_KIDS=["fly","fly","bee","bee","bug","snail","rock","heart","heart","sparkle","spider"];
 function spawnGardenVisitor(kind){
   if(reduceMotion) return;
   const layer=$("gd-visitors");
   if(!layer || !gardenPanel.classList.contains("open")) return;
   const W=layer.clientWidth||300, H=layer.clientHeight||400;
-  kind = kind || pick(GV_KINDS);
+  kind = kind || pick(kidMode ? GV_KIDS : GV_KINDS);
   const el=document.createElement("div");
   el.className="gv gv-"+kind;
+  el.dataset.kind=kind;
   el.setAttribute("aria-hidden","true");
   const hue=objHue(Math.floor(Math.random()*9999));
-  if(hue) el.style.filter=`hue-rotate(${hue}deg)`;
+  /* hearts and sparkles keep their own colour; everyone else gets tinted */
+  if(hue && kind!=="heart" && kind!=="sparkle") el.style.filter=`hue-rotate(${hue}deg)`;
   let dur;
-  if(kind==="spider"){
+  if(kind==="rock"){
+    /* he does not travel. he has never travelled. */
+    el.innerHTML=PETROCK_SVG;
+    el.style.left=(10+Math.random()*72)+"%";
+    el.style.top=(74+Math.random()*16)+"%";
+    dur=60+Math.random()*40;
+    el.style.animation=`gvFade ${dur}s ease forwards`;
+  } else if(kind==="sparkle"){
+    el.innerHTML=GVSPARKLE_SVG;
+    el.style.left=(8+Math.random()*80)+"%";
+    el.style.top=(10+Math.random()*70)+"%";
+    dur=9+Math.random()*7;
+    el.style.animation=`gvFade ${dur}s ease forwards`;
+  } else if(kind==="heart"){
+    /* drifts gently upward and away, the way they do off Jord */
+    el.innerHTML=GVHEART_SVG;
+    el.style.left=(12+Math.random()*72)+"%";
+    el.style.top=(56+Math.random()*30)+"%";
+    el.style.setProperty("--dx",((Math.random()-0.5)*W*0.3).toFixed(0)+"px");
+    el.style.setProperty("--dy",(-H*(0.35+Math.random()*0.3)).toFixed(0)+"px");
+    el.style.setProperty("--wob","9px");
+    dur=13+Math.random()*7;
+    el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
+  } else if(kind==="snail"){
+    /* a ladybug's path, at a snail's pace and a fraction of the distance */
+    el.innerHTML=SNAIL_SVG;
+    const dir=Math.random()<.5?1:-1;
+    el.style.left=(dir>0 ? 6+Math.random()*16 : 78-Math.random()*16)+"%";
+    el.style.top=(80+Math.random()*8)+"%";
+    el.style.setProperty("--dx",(dir*W*(0.16+Math.random()*0.14)).toFixed(0)+"px");
+    el.style.setProperty("--dy","0px");
+    el.style.setProperty("--wob","2px");
+    dur=34+Math.random()*14;
+    el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
+  } else if(kind==="spider"){
     el.innerHTML=SPIDER_SVG;
     el.style.left=(12+Math.random()*64)+"%";
     el.style.top="0";
@@ -3890,14 +4262,16 @@ function spawnGardenVisitor(kind){
     dur=16+Math.random()*8;
     el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
   } else {
-    el.innerHTML=BUTTERFLY_SVG;
+    /* butterfly, or the bee — same flight path, the bee just buzzes it faster */
+    const isBee = kind==="bee";
+    el.innerHTML = isBee ? BEE_SVG : BUTTERFLY_SVG;
     const dir=Math.random()<.5?1:-1;
     el.style.left=(dir>0 ? 6+Math.random()*24 : 70-Math.random()*24)+"%";
     el.style.top=(14+Math.random()*54)+"%";
     el.style.setProperty("--dx",(dir*W*(0.4+Math.random()*0.4)).toFixed(0)+"px");
     el.style.setProperty("--dy",((Math.random()-0.5)*H*0.4).toFixed(0)+"px");
-    el.style.setProperty("--wob",(10+Math.random()*10).toFixed(0)+"px");
-    dur=15+Math.random()*7;
+    el.style.setProperty("--wob",(isBee?5:10+Math.random()*10).toFixed(0)+"px");
+    dur=isBee ? 9+Math.random()*4 : 15+Math.random()*7;
     el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
   }
   el.addEventListener("click", gvPoke);
@@ -3913,7 +4287,8 @@ function gvPoke(e){
   layer.querySelectorAll(".gv-word").forEach(w=>w.remove());
   const w=document.createElement("div");
   w.className="gd-word gv-word";
-  w.textContent=pick(VISITOR_LINES);
+  w.textContent = el.dataset.kind==="rock" ? pick(KID_ROCK_LINES)
+                                           : pick(kp(VISITOR_LINES, KID_VISITOR_LINES));
   const lr=layer.getBoundingClientRect(), er=el.getBoundingClientRect();
   w.style.left=(((er.left+er.width/2)-lr.left)/lr.width*100)+"%";
   w.style.top=Math.max(6,((er.top-lr.top)/lr.height*100))+"%";
@@ -3934,8 +4309,8 @@ function startGardenVisitors(){
      path has to remember to stop it */
   gdVisitorTimer=setInterval(()=>{
     if(!gardenPanel.classList.contains("open")){ clearInterval(gdVisitorTimer); gdVisitorTimer=null; return; }
-    if(Math.random()<.3) spawnGardenVisitor();
-  }, 26000);
+    if(Math.random() < (kidMode ? .6 : .3)) spawnGardenVisitor();
+  }, kidMode ? 18000 : 26000);
 }
 $("b-garden").addEventListener("click", ()=>{ checkGardenReset(); renderGarden(); gardenPanel.classList.add("open"); startGardenVisitors(); });
 $("gd-close").addEventListener("click", ()=>gardenPanel.classList.remove("open"));
@@ -4327,8 +4702,10 @@ function populateKeepsake(){
       const rot=((gseed(seed*2.3+5)-0.5)*22).toFixed(1);  /* ±11deg lean */
       const scale=(0.8+gseed(seed*3.1+7)*0.4).toFixed(2); /* .80..1.20 */
       const hue=objHue(seed);
-      const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
-      const artf=g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length];
+      const filt=(hue && !g.kid)?`filter:hue-rotate(${hue}deg);`:"";
+      const artf = g.kid
+        ? (g.golden ? KID_GOLDEN_FLOWER : KID_FLORA[g.i%KID_FLORA.length])
+        : (g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length]);
       return `<svg viewBox="-14 -26 28 34" style="transform:rotate(${rot}deg) scale(${scale});transform-origin:50% 100%;${filt}" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
         + artf
         + `<text x="0" y="6" text-anchor="middle" font-size="6" fill="var(--dim)" stroke="none" font-family="inherit">${g.sym||"·"}</text>`
@@ -4507,8 +4884,10 @@ function populateGardenPage(){
       const rot=((gseed(seed*2.3+5)-0.5)*32).toFixed(1); /* ±16deg lean */
       const scale=(0.72+gseed(seed*3.1+7)*0.72).toFixed(2);
       const hue=objHue(seed);
-      const filt=hue?`filter:hue-rotate(${hue}deg);`:"";
-      const art=g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length];
+      const filt=(hue && !g.kid)?`filter:hue-rotate(${hue}deg);`:"";
+      const art = g.kid
+        ? (g.golden ? KID_GOLDEN_FLOWER : KID_FLORA[g.i%KID_FLORA.length])
+        : (g.golden ? GOLDEN_FLOWER : FLORA[g.i%FLORA.length]);
       return `<div class="gp-flower" style="left:${rx}%;top:${ry}%;transform:translate(-50%,-100%) rotate(${rot}deg) scale(${scale});z-index:${idx}">`
         + `<svg viewBox="-14 -26 28 34" style="${filt}" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
         + art
@@ -4541,6 +4920,16 @@ $("orbwrap").addEventListener("click", ()=>{
   patTimes = patTimes.filter(t=>now-t<3000);
   if(patTimes.length>=5){
     patTimes=[];
+    if(kidMode){
+      /* a proper giggle fit rather than the grown-up dizzy spell */
+      setEyes("chaos"); setMouth("grin");
+      armAnim("both","flail");
+      think(pick(["hahaha! okay! okay! I'm all wobbly!","eeee! too many tickles! wonderful! too many!","hee hee hee — I can't, I can't, hee —"]), 11000);
+      heartBurst(6);
+      kidBounce();
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2600);
+      return;
+    }
     setEyes("chaos"); setMouth("wavy");
     armAnim("both","flail");
     think("whoa. okay. the world is a carousel and I love it.", 11000);
@@ -4549,8 +4938,18 @@ $("orbwrap").addEventListener("click", ()=>{
     return;
   }
   setEyes(kp("sparkle","heart")); setMouth("grin");
-  /* little jord loves being patted, visibly and every time */
-  if(kidMode){ heartBurst(3); if(Math.random()<.12) rainbow(); }
+  /* in little-jord mode a poke is a tickle: he giggles, bounces, sheds hearts */
+  if(kidMode){
+    heartBurst(3);
+    kidBounce();
+    if(Math.random()<.12) rainbow();
+    if(Math.random()<.55){
+      think(pick(TICKLE_LINES), 9000);
+      armAnim(pick(["l","r","both"]),"flail");
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1800);
+      return;
+    }
+  }
   const r=Math.random();
   if(pats===10) think(kp("ten pats. I am thriving.","ten pats! I'm having a wonderful time."), 12000);
   else if(pats===50) think(kp("fifty pats. we should get matching flowers.","fifty pats. we should get matching flowers."), 12000);
@@ -4560,7 +4959,8 @@ $("orbwrap").addEventListener("click", ()=>{
   else if(r < (kidMode?.42:.3)) turnAround();
   else think(pick(kp(THOUGHTS, KID_THOUGHTS)), 12000);
   armAnim("both","flail");
-  if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+  /* kid mode already bounced him above; never stack the two on #orbbody */
+  if(!reduceMotion && !kidMode){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
   setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1600);
 });
 
