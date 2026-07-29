@@ -447,6 +447,38 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     drifting hearts and twinkling sparkles. Visitors arrive on 85% of opens and
     every 18s at 60% while it's open. `el.dataset.kind` is what `gvPoke()` reads
     to decide between rock lines and `KID_VISITOR_LINES`.
+- **Little Jord, third pass** (rev S) — small additions off the back of real
+  use, all still gated on `kidMode`:
+  - **Her own drops.** Three objects (heart, sparkle, dinosaur) live at the
+    **tail** of `OBJECTS` carrying `kid:true`. That position is load-bearing:
+    `shelf` entries store an *index* into `OBJECTS`, so new items may only ever
+    be appended. `OBJ_ADULT_COUNT`/`KID_OBJECT_COUNT` split the array, and
+    `spawnObject()` rolls inside `0..OBJ_ADULT_COUNT` for grown-up Jord (he
+    never sees them at all) or, at 40%, inside the kid tail. `shelfTiles()`
+    gives them `.sh-kid-item` (soft pink backing, in either mode — it's about
+    whose keepsake it is) and skips the hue-rotate so they keep their colour.
+    The printed keepsake's held object filters the same way. **To add more:
+    append to the end and bump `KID_OBJECT_COUNT`.**
+  - **Pink water**: `body.kid #t-water{stroke:var(--bloom)}` — the ellipses and
+    the wave line carry no stroke of their own, so they inherit it. Verified
+    live: both resolve to `rgb(227,169,189)`.
+  - **The big heart** now drifts all the way up and out of the top of the frame
+    (`translateY(-224px)` over 6.8s, holding opacity until 88%) instead of
+    fading in place. Its removal timeout had to move with it (7200ms) — at the
+    old 5800ms it vanished mid-drift.
+  - **Breathe ends heart-eyed**: heart eyes, a big heart, and a five-heart
+    burst on the completion screen.
+  - **Poking him mid-giggle** is now its own interaction: the `giggling` flag
+    (set when `#b-giggle` opens the modal, cleared in `closeModal()`, so every
+    exit path clears it) is checked in the `#orbwrap` handler *before* the
+    usual `if(busy) return`, giving heart eyes, a `kidBounce()`, flailing arms,
+    forced hearts and a `TICKLE_LINES` giggle. Repeatable for as long as the
+    exercise is open.
+  - **The pet rock got a personality**: his SVG now has a `.rock-body` group
+    (so he can move without touching the layer's fade), swappable
+    `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
+    a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
+    (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
 - **Chart lead-in vectors** (rev Q) — `chartLastHour()`, `chartLast24h()` and
   `chartHistory()` each draw a dotted, half-lit vector toward the newest entry
   that falls *before* their window, with a `"3h ago · 77"` note. The point
@@ -781,6 +813,17 @@ Latest rounds (same day, later):
   `PROJECTS/JORD/02_WORK/dom-test/` in the workspace, with a README. Still not
   eyeballed: nothing here has been seen on a screen, so colour, spacing and
   the feel of the timings are all unverified.
+
+- Little Jord, third pass (rev S): her own drops (heart, sparkle, dinosaur)
+  with pink keepsake tiles, pink water, the big heart drifting out of frame,
+  heart eyes at the end of breathe, poking him mid-giggle, and a pet rock with
+  noises and heart eyes. The jsdom harness grew to 43 assertions. Two things
+  worth knowing from this round: **animations are frozen in the in-app browser
+  pane** (it doesn't composite, so `document.hidden` is true and every
+  `getAnimations()` entry sits at `currentTime: 0` forever) — you can verify
+  computed colours, classes and DOM state there, but never motion; and that's
+  how the big heart's removal-vs-duration mismatch was found, by measuring
+  rather than assuming.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
