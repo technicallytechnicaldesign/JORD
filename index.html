@@ -550,10 +550,29 @@
   #b-wish{min-height:54px;font-size:11px;color:var(--bloom);letter-spacing:.08em}
   #b-wish:hover{box-shadow:3px 3px 0 var(--bloom)}
 
-  /* little jord's chrome leans pink where grown-up Jord leans green */
-  body.kid button:hover,body.kid .icon-btn:hover{box-shadow:3px 3px 0 var(--bloom)}
-  body.kid button:focus-visible,body.kid .icon-btn:focus-visible{outline-color:var(--bloom)}
-  body.kid .stage{box-shadow:0 0 0 3px color-mix(in srgb, var(--bloom) 16%, transparent)}
+  /* ── little jord's chrome is pink wherever grown-up Jord's is green ──
+     the leaf green is the app's whole accent language (hovers, focus rings,
+     primary button text, the arrival glow, checkboxes). In her mode every one
+     of those becomes bloom pink. Nothing else moves: ink, paper and borders
+     are shared. */
+  body.kid button:hover,body.kid .icon-btn:hover,body.kid .sh-item:hover{box-shadow:3px 3px 0 var(--bloom)}
+  body.kid button:focus-visible,body.kid .icon-btn:focus-visible,
+  body.kid select:focus-visible,body.kid input:focus-visible{outline-color:var(--bloom)}
+  body.kid button.primary{color:var(--bloom)}
+  /* the exercise card's own accents: the phase title and the big count */
+  body.kid #ex-phase,body.kid #ex-count{color:var(--bloom)}
+  body.kid input[type=checkbox]{accent-color:var(--bloom)}
+  /* her buttons sit on a soft pink shadow instead of the neutral grey one */
+  body.kid .actions button,body.kid #b-wish{box-shadow:2px 2px 0 color-mix(in srgb, var(--bloom) 55%, var(--panel))}
+  /* the arrival pulse, in pink, and it SETTLES on a faint ring rather than
+     fading to nothing — the animation's `both` fill-mode wins the cascade over
+     any static box-shadow, so the resting state has to live in the keyframe */
+  body.kid .stage{animation-name:stageArriveKid;box-shadow:0 0 0 3px color-mix(in srgb, var(--bloom) 18%, transparent)}
+  @keyframes stageArriveKid{
+    0%{box-shadow:0 0 0 0 rgba(207,143,162,0)}
+    45%{box-shadow:0 0 15px 3px rgba(207,143,162,.30)}
+    100%{box-shadow:0 0 0 3px rgba(207,143,162,.20)}
+  }
   /* four wide buttons instead of five narrow ones: breathe, giggle, love, magic */
   body.kid .actions{grid-template-columns:repeat(4,1fr)}
   body.kid #b-ground,body.kid #b-accept{display:none}
@@ -1227,7 +1246,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev S</span>
+    <span class="rev">rev T</span>
   </footer>
 </div>
 

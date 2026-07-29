@@ -479,6 +479,22 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **Pink accents throughout her mode** (rev T) — the leaf green is the app's
+  entire accent language, so kid mode now overrides every interactive use of it
+  with bloom pink: button and icon-button hovers, all focus rings (buttons,
+  selects, inputs), `button.primary` text, `#ex-phase` and `#ex-count` on the
+  exercise card, checkbox `accent-color`, shelf-tile hover, and a soft pink
+  resting shadow under her action buttons and the wish button. Ink, paper and
+  borders are shared and untouched.
+  - **Gotcha worth remembering**: `.stage`'s arrival animation runs with
+    `fill-mode: both`, and an animation's fill beats any static declaration in
+    the cascade regardless of specificity. The kid-mode pink ring added in
+    rev R as a plain `box-shadow` rule was therefore never visible — it was
+    being overwritten by `stageArrive`'s transparent 100% keyframe. Fixed by
+    giving kid mode its own `stageArriveKid` keyframes whose 100% IS the
+    resting ring. Toggling the mode swaps `animation-name`, which restarts the
+    animation, so the pulse replays on switching too. Any future "static style
+    on `.stage` doesn't apply" report is almost certainly this.
 - **Chart lead-in vectors** (rev Q) — `chartLastHour()`, `chartLast24h()` and
   `chartHistory()` each draw a dotted, half-lit vector toward the newest entry
   that falls *before* their window, with a `"3h ago · 77"` note. The point
