@@ -356,6 +356,60 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     in-voice line AND still keeps the visitors for company. Nothing animates —
     it's paper. NOT print-preview-verified (no print access in this env) —
     worth a real 3-page print/pagination check.
+- **Little Jord mode** (rev Q) — an opt-in kid mode, `kidMode` (`store` key
+  `kidMode`, default false), toggled at the top of Settings (`#kidtoggle`) and
+  mirrored as `body.kid` by `applyKidMode()`. Grown-up Jord is unchanged: every
+  difference is gated on the flag, most of them through the one-line helper
+  `kp(adult, kid)` used at the call site (`pick(kp(THOUGHTS, KID_THOUGHTS))`),
+  so the two voices never blur. What it changes:
+  - **Nothing is recorded.** `body.kid` hides `.vibes` wholesale (slider, log
+    button, and the ▤ trends button, which lives inside it) plus the header's
+    `#lastcheck`; `fireReminder()` early-returns. `vibes` data is untouched, not
+    cleared — flipping back restores the lot.
+  - **The wish** (`.wish`/`#wish`, `#b-wish`, `#wish-text`, pools `KID_WISHES`/
+    `KID_WISH_SAYS`) takes the vibe row's place: one intention for the day,
+    stored as `{d, w}` under `kidWish` against `gardenDayKey()` (the same 5am
+    day boundary as the garden), re-rolled by tapping again, never the same one
+    twice running. Each wish plants a bloom via `plantGarden("wish")` —
+    deliberately NOT `logMission()`, since missions are telemetry and this
+    isn't. `MISSION_ICON.wish = "✿"` exists only to give that bloom its symbol.
+  - **Hearts** — `floatHeart(color, pop)` gained a colour and a `pop` variant
+    (`.heart-pop`, bigger travel, staggered `animation-delay`); `heartBurst(n)`
+    fires a handful in assorted `HEART_HUES`. The old 45s solitary-heart timer
+    is now a 20s one: kid mode bursts at 40% a tick, grown-up Jord keeps its
+    original effective rate (was .22/45s, now .1/20s, and still gated on
+    `tierOf(calm)>=3`). Pats, rewards and wishes all burst. `MOODS.smitten`
+    (heart eyes) is a kid-only pool and `pickMood()` ignores the calm tier
+    entirely in kid mode — nothing is being scored, so the face doesn't track it.
+  - **Rainbows** — `rainbow()` + the `#rainbow` SVG layer (sibling of
+    `#orbbody`, like the other sky layers), seven arcs r=128..106 centred on
+    (140,154) so it frames Jord without touching him. `.rainbow-arc` fades in,
+    holds ~12s, fades out; one at a time (guarded on the layer being empty).
+    Kid mode only — it never appears for grown-up Jord.
+  - **More surprises** — object spawn interval 50-140s (was 150-420s), the rare
+    flag rolls 22% (was 6%), garden visitors arrive 85% of opens (was 38%),
+    idle thoughts every 45-110s (was 70-180s).
+  - **Small fingers** — action buttons grow to 66px with 23px icons, icon
+    buttons to 40px, corners rounder. The ⚙ gear needs a deliberate 900ms
+    press-and-hold in kid mode (plain tap gets a line from Jord instead), so a
+    child poking every header button doesn't land in Settings and flip the mode
+    off. Implemented as pointerdown/up + a `held` flag that swallows the
+    trailing click.
+  - Kid copy pools all live together above `OBJECTS`: `KID_THOUGHTS`,
+    `KID_NIGHT_THOUGHTS`, `KID_WAITING`, `KID_IS`, `KID_WISHES`,
+    `KID_WISH_SAYS`, `KID_PRAISE`, `KID_ACCEPT`, `KID_ENJOY`,
+    `KID_GROUND_STEPS`. Breathe/ground/sit mechanics are identical in both
+    modes; only the wording and the reward lines swap.
+- **Chart lead-in vectors** (rev Q) — `chartLastHour()`, `chartLast24h()` and
+  `chartHistory()` each draw a dotted, half-lit vector toward the newest entry
+  that falls *before* their window, with a `"3h ago · 77"` note. The point
+  itself is never drawn (it isn't in this window); only the direction, clipped
+  at the plot box by `clipToBox()` and capped at 110 units long so a big gap
+  doesn't paint a dotted line clean across the chart as if it were a measured
+  trend. A completely empty window falls back to a 34-unit stub held at the
+  last known level. Helpers: `prevBefore(cutoff)`, `agoText(ms)`,
+  `clipToBox()`, `leadInSVG()`. The three "nothing yet" early-returns now also
+  require *no* prior reading before they'll show the bare text.
 - **Dark mode** — auto 5pm–5am, with a manual override (auto/always-on/always-off)
   in Settings.
 - **`prefers-reduced-motion`** — there's a `reduceMotion` const and a
@@ -649,6 +703,24 @@ Latest rounds (same day, later):
   PDF page 2 both updated, heading now "Last 24 hours · by hour" in both
   places. Verified with seeded data crossing a calendar-day boundary (23h-old
   point included, 25h-old excluded).
+
+- Little Jord mode + chart lead-in vectors (rev Q): an opt-in kid mode (see the
+  architecture note above) built because the app's owner's daughter had taken to
+  Jord — especially the garden, the visitors and the heart eyes — and wanted a
+  version of him with no mood logging, hearts and rainbows as the everyday
+  register, a daily wish to carry, and buttons a small hand can hit. Grown-up
+  Jord deliberately untouched. Alongside it, all three vibe charts learned to
+  draw the dotted direction toward the last reading *before* their window, so a
+  quiet stretch stops rendering as an empty box with no history. Verified in a
+  real browser this time (a local `python -m http.server` on the repo + the
+  in-app browser pane's JS console): kid mode toggling, persistence across
+  reload, hidden vibe surface, the wish planting a `✿` bloom against the 5am day
+  key, a 5-heart burst in mixed colours, the rainbow layer rendering, the
+  press-and-hold gear guard (plain tap refuses, 900ms hold opens), and the
+  lead-in geometry on seeded data in all three charts including the empty-window
+  stub and the 110-unit length cap. **Not** visually eyeballed — screenshots
+  weren't available in this environment, so nobody has actually *looked* at the
+  rainbow's arc or the heart burst's spacing yet.
 
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.

@@ -87,9 +87,9 @@
   .icon-btn:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
 
   /* ── sitting: the world softens ── */
-  header,.statusline,.actions,.vibes,footer{transition:opacity 1.4s ease}
+  header,.statusline,.actions,.vibes,.wish,footer{transition:opacity 1.4s ease}
   body.sitting header, body.sitting .statusline, body.sitting .actions,
-  body.sitting .vibes, body.sitting footer{opacity:.05;pointer-events:none}
+  body.sitting .vibes, body.sitting .wish, body.sitting footer{opacity:.05;pointer-events:none}
   body.sitting .stage{border-color:var(--ghost)}
   #sittimer{
     position:absolute;inset:0;
@@ -365,6 +365,7 @@
     .sh-art.spun,.sh-item .obj-floaty,.sh-item .obj-shimmer,.gd-sway,
     .sh-rare-item,.sh-sparkle,
     .gv,.gv-flap,.gv-swing,
+    .heart-pop,.rainbow-arc,
     .skyfly,.skyfly .gv-flap,.skybird-flap{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
@@ -518,6 +519,37 @@
   #vibeslider.vibe-hot::-moz-range-thumb{border-color:var(--bloom)}
   #orbblush{transition:opacity .5s ease, fill .5s ease}
 
+  /* ── little jord ──
+     an opt-in kid mode. The whole self-report surface (slider, log, trends,
+     "last check-in") goes away, tap targets grow for small fingers, and the
+     wish card takes the vibe row's place. Everything here is scoped to
+     body.kid so grown-up Jord is left exactly as he was. */
+  body.kid .vibes,body.kid #lastcheck{display:none}
+  body.kid .wish{display:flex}
+  body.kid .actions button{min-height:66px;font-size:9.5px;padding:10px 3px;border-radius:15px}
+  body.kid .actions button .icon{font-size:23px}
+  body.kid .icon-btn{width:40px;height:40px;font-size:17px;border-radius:12px}
+  body.kid button{border-radius:14px}
+  .wish{
+    display:none;background:var(--panel);border:1.5px solid var(--ink);border-radius:15px;
+    padding:11px 12px 12px;flex-direction:column;gap:9px;text-align:center;
+  }
+  #wish-text{font-size:13px;line-height:1.5;letter-spacing:.01em;min-height:40px;
+             display:flex;align-items:center;justify-content:center}
+  #b-wish{min-height:54px;font-size:11px;color:var(--bloom);letter-spacing:.08em}
+  #b-wish:hover{box-shadow:3px 3px 0 var(--bloom)}
+
+  /* a small burst of hearts, for the moments that deserve several */
+  @keyframes heartPop{
+    0%{opacity:0;transform:translateY(0) scale(.45)}
+    16%{opacity:1}
+    100%{opacity:0;transform:translateY(-62px) scale(1.15)}
+  }
+  .heart-pop{animation:heartPop 2.8s ease-out forwards}
+  /* the rainbow: arcs the whole sky, then quietly goes again */
+  @keyframes rbIn{0%{opacity:0}16%{opacity:1}78%{opacity:1}100%{opacity:0}}
+  .rainbow-arc{animation:rbIn 15s ease-in-out forwards}
+
   select{
     font:inherit;font-size:12px;color:var(--ink);
     background:var(--paper);border:1.5px solid var(--ink);border-radius:8px;
@@ -566,7 +598,8 @@
      no popup, no separate box; actions/vibes just step aside while it's open ── */
   #modal{display:none}
   #modal.open{display:block}
-  .stage.mode-active ~ .actions,.stage.mode-active ~ .vibes{display:none}
+  .stage.mode-active ~ .actions,.stage.mode-active ~ .vibes,
+  body.kid .stage.mode-active ~ .wish{display:none}
   .stage.mode-active .statusline{display:none}
   .exercise{
     padding:6px 4px 2px;text-align:center;display:flex;flex-direction:column;gap:7px;
@@ -860,6 +893,8 @@
         </g>
         <g id="meteor"></g>
         <g id="visitor"></g>
+        <!-- little-jord only: a rainbow arcs the whole sky now and then -->
+        <g id="rainbow"></g>
 
         <g id="clouds" stroke="var(--faint)" stroke-width="1.3">
           <g class="cloud cloud1">
@@ -1107,9 +1142,16 @@
     <div class="row scalelabels"><span>let's work on it</span><span>jangly vibes</span></div>
   </section>
 
+  <!-- little jord's half of that space: no logging, just a wish to carry -->
+  <section class="wish" id="wish" aria-label="Today's little wish">
+    <span class="label">today's little wish</span>
+    <div id="wish-text">tap the button and I'll find you one.</div>
+    <button id="b-wish">✿&nbsp; a wish, please</button>
+  </section>
+
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev P</span>
+    <span class="rev">rev Q</span>
   </footer>
 </div>
 
@@ -1118,6 +1160,13 @@
     <div class="settings-head">
       <span class="label">Settings</span>
       <button id="settings-close" class="icon-btn" aria-label="Close settings">✕</button>
+    </div>
+    <label class="row" style="cursor:pointer">
+      <span class="label">Little Jord</span>
+      <input type="checkbox" id="kidtoggle">
+    </label>
+    <div class="row">
+      <span id="kidhint" style="font-size:10px;color:var(--dim);letter-spacing:.05em">a gentler Jord for small people · nothing gets logged · more hearts, rainbows and visitors · hold ⚙ to get back in here</span>
     </div>
     <div class="row">
       <span class="label">Night mode</span>
@@ -1379,7 +1428,24 @@ let patTimes = [];
 let shelf = store.get("shelf", []);
 let garden = store.get("garden", []);
 
-const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯"};
+/* ── little jord ──
+   an opt-in kid mode, off by default and persisted like everything else.
+   Grown-up Jord is untouched: every difference is gated on this one flag, so
+   the two never blur into each other. What it changes, in one place:
+     · nothing is recorded. The vibe slider, the log button, the trends page
+       and the reminder nags are all gone from the UI and the timers.
+     · hearts are the everyday register instead of a rare treat, and rainbows
+       exist at all (they only ever appear here).
+     · the vibe row's space is taken by "today's little wish" — one intention
+       to carry around, which plants a flower in the garden.
+     · surprises come more often (visitors, rare finds, garden creatures).
+     · tap targets grow, and the settings gear needs a press-and-hold so small
+       fingers don't wander in by accident. */
+let kidMode = store.get("kidMode", false);
+/* pick the kid pool or the grown-up one, at the call site, every time */
+function kp(adult, kid){ return kidMode ? kid : adult; }
+
+const MISSION_ICON = {breathe:"∿",ground:"▽",accept:"✓",enjoy:"✦",sit:"◯",wish:"✿"};
 function logMission(type){
   missions.push({t:Date.now(), type});
   if(missions.length>1000) missions=missions.slice(-1000);
@@ -1865,6 +1931,121 @@ const VIBE_NOTES = [
   "Steady looks boring on a graph and feels like gold in a body."
 ];
 
+/* ── little jord's voice ──
+   the same Jord, talking to someone small: warm, plain, still a bit funny,
+   never babyish and never instructive. Nothing here is about tracking or
+   improving anything. */
+const KID_THOUGHTS = [
+  "hello, you. I was hoping you'd come today.",
+  "you have a very good face. I thought you should know.",
+  "I kept the sunny spot warm for you.",
+  "if you're feeling wobbly, we can be wobbly together.",
+  "look at that. a whole day, and you're in it.",
+  "I like your ideas. even the very silly ones. especially those.",
+  "big feelings are allowed in here. they can sit down and have a rest.",
+  "you don't have to be good at anything right now.",
+  "you're growing. I can tell. I'm extremely observant.",
+  "somebody here is wonderful, and it isn't me.",
+  "want to breathe with me? it's the one thing I'm truly excellent at.",
+  "I saved you a small piece of happiness. here.",
+  "the flowers asked after you.",
+  "it's okay to be slow. slow is a speed.",
+  "if a feeling gets too big to hold, put it down a minute. I'll watch it.",
+  "brave doesn't mean not scared. brave means scared, and going anyway.",
+  "your hands make things. that's a very good trick.",
+  "nothing needs doing right this second. isn't that nice.",
+  "I've been round all day. it's going well.",
+  "you're my favourite person who visits."
+];
+const KID_NIGHT_THOUGHTS = [
+  "the moon's up. that means we can both go a bit soft.",
+  "shh. the day's going to sleep.",
+  "one star for you, one for me, the rest are spare.",
+  "goodnight sounds are my favourite sounds.",
+  "I'll keep the dark company. you get some rest."
+];
+const KID_WAITING = ["…","hi.","♥","hello.","♪","boop.","hehe.","still here.","being round.","☀","✿"];
+const KID_IS = [
+  "very glad you came",
+  "full of hearts, mostly",
+  "keeping the sunny spot warm",
+  "rooting for you, literally",
+  "watching butterflies do their thing",
+  "collecting the good bits of the day",
+  "ready for anything, gently",
+  "thinking nice things about you"
+];
+/* one intention to carry around for the day — good intent, not homework */
+const KID_WISHES = [
+  "today I'll be kind to someone who isn't expecting it.",
+  "today I'll notice one tiny thing nobody else notices.",
+  "today I'll be brave about one small thing.",
+  "today I'll say thank you and really mean it.",
+  "today I'll let someone else go first.",
+  "today I'll find something that makes me laugh right out loud.",
+  "today I'll be gentle with myself when something goes wrong.",
+  "today I'll ask a question I actually want the answer to.",
+  "today I'll look at the sky for a proper long moment.",
+  "today I'll help without being asked.",
+  "today I'll try the hard thing one more time.",
+  "today I'll tell someone what I like about them.",
+  "today I'll make something, even if it comes out wonky.",
+  "today I'll listen all the way to the end.",
+  "today I'll take one big slow breath before I get cross.",
+  "today I'll pick a colour I love and keep an eye out for it.",
+  "today I'll be a good friend to somebody smaller than me.",
+  "today I'll say sorry properly, if I need to.",
+  "today I'll notice when I'm happy and stay there a second longer.",
+  "today I'll do one thing slowly, on purpose, and enjoy it."
+];
+const KID_WISH_SAYS = [
+  "that's a good one. I'll carry half of it for you.",
+  "there. now it's real, because we both know it.",
+  "I planted a flower for that wish. it's out in the garden.",
+  "keep it in your pocket. check on it later.",
+  "a very fine wish. I'm honoured to know it.",
+  "wish received. I'm holding onto my half all day."
+];
+const KID_PRAISE = [
+  "you did that. I saw the whole thing.",
+  "well done, you. something grew for it.",
+  "that was lovely. I'm a bit proud, honestly.",
+  "hooray. one flower, planted, in your name.",
+  "brilliant. genuinely brilliant.",
+  "look at you go. the garden's pleased too."
+];
+const KID_ACCEPT = [
+  "some things are just how they are today. that's allowed.",
+  "I can be sad and okay at the same time. both of them fit.",
+  "I don't have to like it to let it be true.",
+  "today was a bit hard. that really happened, and it's still okay.",
+  "I'm allowed to feel exactly how I feel.",
+  "nobody is good at everything. that includes me, and that's fine.",
+  "it's not my job to fix every bit of it right now."
+];
+const KID_ENJOY = [
+  "mission: find something soft and say hello to it.",
+  "mission: draw one very small picture of anything at all.",
+  "mission: look out of a window and find three living things.",
+  "mission: tell someone one thing you liked about today.",
+  "mission: hop five times. no reason.",
+  "mission: find something round. round things are the best things.",
+  "mission: give somebody a hug, if they'd like one.",
+  "mission: listen for the quietest sound in the room.",
+  "mission: find the best smell in the whole house.",
+  "mission: make up a name for a cloud.",
+  "mission: stretch like a cat that's just woken up.",
+  "mission: pick one colour and spot it five times."
+];
+const KID_GROUND_STEPS = [
+  ["5 · SEE","find five things you can see.\nsmall boring things count best."],
+  ["4 · TOUCH","find four things you can feel.\nthe floor. your clothes. the air."],
+  ["3 · HEAR","catch three sounds.\nyour own breathing counts."],
+  ["2 · SMELL","find two smells.\nor two you can remember."],
+  ["1 · TASTE","one taste.\nor one sip of something."],
+  ["0 · HERE","there you are.\nright here, right now, all in one piece."]
+];
+
 const OBJECTS = [
   {react:"oh hey! I've been looking for that.",
    svg:`<g stroke="var(--sun)" stroke-width="2"><path d="M 0 0 h 22 M 4 0 L 11 -20 L 18 0"/><path d="M 6.5 -7 h 9" stroke="var(--ink)"/></g>`},
@@ -2085,11 +2266,16 @@ const MOODS = {
   curious:  [["wide","o"],["side","hmm"],["open","o"],["chaos","wavy"],["lookleft","hmm"],["lookright","o"],["lookup","o"],["peer","hmm"],["peer","smirk"]],
   pensive:  [["squint","hmm"],["flat","flat"],["side","flat"],["closed","flat"],["lookup","hmm"]],
   sleepy:   [["closed","smile"],["closed","flat"],["squint","flat"],["flat","hmm"],["closed","kiss"],["uwu","smile"]],
-  chaotic:  [["chaos","wavy"],["squint","wavy"],["wide","wavy"],["sparkle","o"],["heart","smirk"]]
+  chaotic:  [["chaos","wavy"],["squint","wavy"],["wide","wavy"],["sparkle","o"],["heart","smirk"]],
+  /* little jord's own face: the heart eyes, out in the open where they belong */
+  smitten:  [["heart","grin"],["heart","smile"],["heart","o"],["uwu","grin"],["sparkle","grin"],["heart","kiss"]]
 };
 function pickMood(){
   const t=tierOf(calm);
-  let pools = t===3 ? ["delighted","content","curious","chaotic"]
+  /* in little-jord mode the face doesn't track a calm score — there's nothing
+     being scored. He's just pleased you're here. */
+  let pools = kidMode ? ["smitten","smitten","delighted","content","curious"]
+            : t===3 ? ["delighted","content","curious","chaotic"]
             : t===2 ? ["content","curious","chaotic","pensive"]
             : t===1 ? ["curious","pensive","content","chaotic"]
             :         ["pensive","curious","pensive","content"];
@@ -2197,7 +2383,7 @@ function goIdle(){
   hideThenProceed(()=>{
     if(gen!==bubbleGen) return;
     if(sitting || busy || napping || modal.classList.contains("open")) return;
-    idleTimer=setTimeout(()=>showBubble(pick(WAITING), 0, true), 300);
+    idleTimer=setTimeout(()=>showBubble(pick(kp(WAITING, KID_WAITING)), 0, true), 300);
   });
 }
 function think(text, hold){
@@ -2207,14 +2393,15 @@ function think(text, hold){
 function scheduleThoughts(){
   setTimeout(()=>{
     if(!busy && !sitting && !napping && !modal.classList.contains("open")){
-      const pool = isNight() && Math.random()<.4 ? NIGHT_THOUGHTS : THOUGHTS;
+      const pool = isNight() && Math.random()<.4 ? kp(NIGHT_THOUGHTS, KID_NIGHT_THOUGHTS)
+                                                 : kp(THOUGHTS, KID_THOUGHTS);
       think(pick(pool));
     }
     scheduleThoughts();
-  }, rand(70,180)*1000);
+  }, rand(kidMode?45:70, kidMode?110:180)*1000);
 }
 scheduleThoughts();
-setTimeout(()=>think(pick(THOUGHTS)), 6000);
+setTimeout(()=>think(pick(kp(THOUGHTS, KID_THOUGHTS))), 6000);
 
 /* ── flora ── */
 let floraCount=0;
@@ -2268,7 +2455,7 @@ function spawnObject(){
      8% — rare enough to feel like a find, common enough to actually see). Gets a
      gold glow + sparkles here, and its own section on the keepsake shelf. Old
      shelf entries predate this field; missing == falsy == not rare, no migration. */
-  const rare = Math.random()<.06;
+  const rare = Math.random() < (kidMode ? .22 : .06);   /* little jord finds treasure far more often */
   /* passive keepsake shelf: quietly log every visitor */
   const spawnT=Date.now();
   shelf.push({i:oi, react:o.react, t:spawnT, rare});
@@ -2442,7 +2629,7 @@ function scheduleObjects(){
   setTimeout(()=>{
     if(!busy && !sitting && !modal.classList.contains("open")) spawnObject();
     scheduleObjects();
-  }, rand(150,420)*1000);
+  }, rand(kidMode?50:150, kidMode?140:420)*1000);   /* visitors come round far more often for little jord */
 }
 scheduleObjects();
 setTimeout(spawnObject, 25000);
@@ -2462,20 +2649,56 @@ setInterval(()=>{ if(Math.random()<.3) shootStar(); }, 200*1000);
 
 /* ── rare content-heart: when the vibe's kept high and Jord's just being,
    a little heart occasionally drifts up off the top of it ── */
-function floatHeart(){
+function floatHeart(color, pop){
   if(reduceMotion || busy || sitting) return;
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
-  g.setAttribute("transform",`translate(${rand(120,160).toFixed(0)},${rand(96,116).toFixed(0)})`);
+  const spread = pop ? 46 : 20;
+  g.setAttribute("transform",`translate(${rand(140-spread,140+spread).toFixed(0)},${rand(92,120).toFixed(0)})`);
   const inner = document.createElementNS("http://www.w3.org/2000/svg","g");
-  inner.setAttribute("class","heart-rise");
-  inner.innerHTML = `<path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" stroke="var(--bloom)" stroke-width="1.4" fill="none"/>`;
+  /* .heart-pop is the quicker, bigger-travel version used for bursts;
+     .heart-rise is the original solitary drift */
+  inner.setAttribute("class", pop ? "heart-pop" : "heart-rise");
+  if(pop) inner.style.animationDelay = (Math.random()*0.5).toFixed(2)+"s";
+  inner.innerHTML = `<path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" stroke="${color||"var(--bloom)"}" stroke-width="1.4" fill="none"/>`;
   g.appendChild(inner);
   meteorLayer.appendChild(g);
-  setTimeout(()=>g.remove(), 3600);
+  setTimeout(()=>g.remove(), pop ? 3600 : 3600);
+}
+/* little jord's hearts come in handfuls, in several colours */
+const HEART_HUES = ["var(--bloom)","var(--sun)","var(--leaf)","var(--water)","#c58fd6","#e2748a"];
+function heartBurst(n){
+  if(reduceMotion || busy || sitting) return;
+  const many = n || 4;
+  for(let i=0;i<many;i++) setTimeout(()=>floatHeart(pick(HEART_HUES), true), i*140);
+}
+/* ── the rainbow (little jord only) ──
+   arcs the whole sky behind him, holds a while, fades out. One at a time. */
+const RAINBOW_COLS = ["#e26d5c","#e59f45","#e0cb57","#7bbf7a","#6fa8c0","#7b8fd0","#b48ad6"];
+function rainbow(){
+  if(reduceMotion || sitting) return;
+  const layer = $("rainbow");
+  if(!layer || layer.childNodes.length) return;
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("class","rainbow-arc");
+  g.innerHTML = RAINBOW_COLS.map((c,i)=>{
+    const r = 128 - i*3.6;
+    return `<path d="M ${(140-r).toFixed(1)} 154 A ${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${(140+r).toFixed(1)} 154" `
+         + `stroke="${c}" stroke-width="3.6" fill="none" opacity=".5"/>`;
+  }).join("");
+  layer.appendChild(g);
+  setTimeout(()=>g.remove(), 15400);
 }
 setInterval(()=>{
-  if(tierOf(calm)>=3 && !busy && !sitting && !modal.classList.contains("open") && Math.random()<.22) floatHeart();
-}, 45*1000);
+  if(busy || sitting || modal.classList.contains("open")) return;
+  if(kidMode){
+    /* hearts are the everyday weather here, not a rare event */
+    if(Math.random()<.4) heartBurst(2+Math.floor(Math.random()*3));
+    if(Math.random()<.08) rainbow();
+    return;
+  }
+  /* grown-up Jord: unchanged rate — the old 22%-per-45s, rolled more often */
+  if(tierOf(calm)>=3 && Math.random()<.1) floatHeart();
+}, 20*1000);
 
 /* ── rare UFO visitor ── */
 const ALIEN_LINES = [
@@ -2595,12 +2818,13 @@ function render(){
   applyWeather();
   if(t!==currentTier){
     currentTier=t;
-    jordis.textContent = (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[t]);
+    jordis.textContent = kidMode ? pick(KID_IS) : (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[t]);
   }
   lastEl.textContent = "last check-in: " + (lastCheck ? new Date(lastCheck).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "—");
 }
 setInterval(()=>{
-  if(!busy && !sitting) jordis.textContent = (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[tierOf(calm)]);
+  if(!busy && !sitting) jordis.textContent = kidMode ? pick(KID_IS)
+    : (isNight() && Math.random()<.5) ? pick(NIGHT_IS) : pick(JORD_IS[tierOf(calm)]);
 }, 7*60*1000);
 
 setInterval(()=>{ calm=clamp(calm-1,5,100); store.set("calm",calm); if(!busy && !sitting) render(); }, 4*60*1000);
@@ -2668,11 +2892,12 @@ function reward(points, line){
   calm=clamp(calm+points,5,100);
   lastCheck=Date.now();
   store.set("calm",calm); store.set("lastCheck",lastCheck);
-  setEyes("sparkle"); setMouth("grin");
+  setEyes(kp("sparkle","heart")); setMouth("grin");
   armAnim("both","yay");
   say(line);
   render();
   spawnFlora();
+  if(kidMode){ heartBurst(4); if(Math.random()<.35) rainbow(); }
   setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2400);
 }
 
@@ -2708,9 +2933,10 @@ function endSit(early){
   orbbody.classList.remove("breathing");
   logMission("sit");
   if(early){
-    reward(6, "Even a little stillness counts. Thank you for some of your nothing.");
+    reward(6, kp("Even a little stillness counts. Thank you for some of your nothing.",
+                 "even a little bit of still counts. thank you for sitting with me."));
   } else {
-    reward(14, pick(SIT_THANKS));
+    reward(14, pick(kp(SIT_THANKS, KID_PRAISE)));
   }
   /* …and then, back to being a bit of a goof */
   setTimeout(()=>{
@@ -2920,6 +3146,10 @@ function leadInSVG(prev, prevX, prevY, first, box){
     ay=by=clamp(prevY, box.y0, box.y1);
     ax=box.x0; bx=box.x0+34;
   }
+  /* cap the length: a long gap would otherwise draw a dotted line clean across
+     the whole chart, which reads as a measured trend rather than a lead-in */
+  const len=Math.hypot(bx-ax, by-ay), MAXLEN=110;
+  if(len>MAXLEN){ const k=MAXLEN/len; ax=bx+(ax-bx)*k; ay=by+(ay-by)*k; }
   const tx=clamp(ax+3, box.x0, box.x1-52);
   const ty=clamp(ay-4, box.y0+6, box.y1);
   return `<path d="M ${ax.toFixed(1)} ${ay.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)}" ${dash}/>`
@@ -3112,8 +3342,9 @@ exClose.addEventListener("click", closeModal);
 
 $("b-breathe").addEventListener("click", ()=>{
   openModal();
-  exPhase.textContent="box breathing";
-  exBody.textContent="Four sides. Four seconds each. Four rounds.\nJORD breathes with you.";
+  exPhase.textContent=kp("box breathing","breathing together");
+  exBody.textContent=kp("Four sides. Four seconds each. Four rounds.\nJORD breathes with you.",
+                        "four seconds in, four to hold, four out, four to wait.\nfour times round. I'll do it with you.");
   exCount.textContent="";
   exNext.textContent="Begin"; exNext.style.display="";
   exNext.onclick=()=>{
@@ -3137,10 +3368,10 @@ $("b-breathe").addEventListener("click", ()=>{
           if(p>=phases.length){ p=0; round++; }
           if(round>=4){
             exPhase.textContent="complete"; exCount.textContent="◡";
-            exBody.textContent="Sixty-four seconds well spent.";
+            exBody.textContent=kp("Sixty-four seconds well spent.","you did the whole thing. every single side.");
             orbbody.style.transition=""; orbbody.style.transform="";
             exNext.style.display=""; exNext.textContent="Done";
-            exNext.onclick=()=>{ closeModal(); logMission("breathe"); reward(14, pick(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."])); };
+            exNext.onclick=()=>{ closeModal(); logMission("breathe"); reward(14, pick(kp(["Airflow nominal. Carry on, softly.","Breath logged. You're 12% more sky now.","Well breathed. JORD sprouted something for you."], KID_PRAISE))); };
             return;
           }
           step();
@@ -3154,15 +3385,16 @@ $("b-breathe").addEventListener("click", ()=>{
 $("b-ground").addEventListener("click", ()=>{
   openModal();
   let i=0;
+  const STEPS = kp(GROUND_STEPS, KID_GROUND_STEPS);
   function show(){
-    exPhase.textContent=GROUND_STEPS[i][0];
-    exBody.textContent=GROUND_STEPS[i][1];
+    exPhase.textContent=STEPS[i][0];
+    exBody.textContent=STEPS[i][1];
     exCount.textContent="";
-    exNext.textContent = i<GROUND_STEPS.length-1 ? "Next" : "Done";
+    exNext.textContent = i<STEPS.length-1 ? "Next" : "Done";
     exNext.style.display="";
     exNext.onclick=()=>{
       i++;
-      if(i>=GROUND_STEPS.length){ closeModal(); logMission("ground"); reward(14, pick(["Grounded. Coordinates confirmed.","All senses reporting in. Welcome back.","Contact with reality: re-established."])); }
+      if(i>=STEPS.length){ closeModal(); logMission("ground"); reward(14, pick(kp(["Grounded. Coordinates confirmed.","All senses reporting in. Welcome back.","Contact with reality: re-established."], KID_PRAISE))); }
       else show();
     };
   }
@@ -3171,23 +3403,24 @@ $("b-ground").addEventListener("click", ()=>{
 
 $("b-accept").addEventListener("click", ()=>{
   openModal();
-  exPhase.textContent="radical acceptance";
-  exBody.textContent=pick(ACCEPT_LINES);
+  exPhase.textContent=kp("radical acceptance","it's okay");
+  exBody.textContent=pick(kp(ACCEPT_LINES, KID_ACCEPT));
   exCount.textContent="";
-  exNext.textContent="Accepted"; exNext.style.display="";
-  exNext.onclick=()=>{ closeModal(); logMission("accept"); reward(10, pick(["Accepted as-is. No revisions required.","Reality signed off. You too.","Noted, filed, released."])); };
+  exNext.textContent=kp("Accepted","Okay"); exNext.style.display="";
+  exNext.onclick=()=>{ closeModal(); logMission("accept"); reward(10, pick(kp(["Accepted as-is. No revisions required.","Reality signed off. You too.","Noted, filed, released."], KID_PRAISE))); };
 });
 $("b-enjoy").addEventListener("click", ()=>{
   openModal();
-  exPhase.textContent="tiny mission";
-  exBody.textContent=pick(ENJOY_LINES);
+  exPhase.textContent=kp("tiny mission","a tiny mission");
+  exBody.textContent=pick(kp(ENJOY_LINES, KID_ENJOY));
   exCount.textContent="";
-  exNext.textContent="Mission complete"; exNext.style.display="";
-  exNext.onclick=()=>{ closeModal(); logMission("enjoy"); reward(10, pick(["Joy sample collected. Excellent field work.","Delight confirmed at source.","JORD approves of your life choices."])); };
+  exNext.textContent=kp("Mission complete","Did it!"); exNext.style.display="";
+  exNext.onclick=()=>{ closeModal(); logMission("enjoy"); reward(10, pick(kp(["Joy sample collected. Excellent field work.","Delight confirmed at source.","JORD approves of your life choices."], KID_PRAISE))); };
 });
 
 /* ── reminders ── */
 function fireReminder(){
+  if(kidMode) return;   /* nobody nags a child to check in */
   const line=pick(LINES);
   if(!sitting){ say(line,15000); showToast(line); }
   if("Notification" in window && Notification.permission==="granted" && document.hidden){
@@ -3234,7 +3467,75 @@ nightSel.addEventListener("change", ()=>{
      : nightModeOverride==="off" ? "Daylight, always. Bright and steady it is."
      : "Night mode back on auto — I'll dim with the evening.");
 });
-$("b-settings").addEventListener("click", ()=>settings.classList.add("open"));
+/* ── the settings gear ──
+   a plain tap normally; in little-jord mode it wants a deliberate press-and-hold
+   (900ms), so a small person poking every button in the header doesn't end up
+   in here and flip the mode off by accident. */
+(function(){
+  const btn=$("b-settings");
+  let holdT=null, held=false;
+  function openSettings(){ settings.classList.add("open"); }
+  btn.addEventListener("pointerdown", ()=>{
+    if(!kidMode) return;
+    held=false;
+    holdT=setTimeout(()=>{ held=true; openSettings(); }, 900);
+  });
+  ["pointerup","pointerleave","pointercancel"].forEach(ev=>
+    btn.addEventListener(ev, ()=>{ clearTimeout(holdT); holdT=null; }));
+  btn.addEventListener("click", ()=>{
+    if(!kidMode){ openSettings(); return; }
+    if(held){ held=false; return; }            /* the hold already opened it */
+    /* a plain tap in kid mode: say so, don't just do nothing */
+    say("that one's for grown-ups. hold it down a moment if you mean it.", 7000);
+  });
+})();
+/* ── little jord: the switch, and the wish ──
+   the wish is the whole of little jord's "input": one intention for the day,
+   kept against the same 5am day boundary as the garden, and worth a flower.
+   Nothing about it is scored, averaged or charted. */
+function applyKidMode(){
+  document.body.classList.toggle("kid", kidMode);
+  const t=$("kidtoggle"); if(t) t.checked=kidMode;
+  showWish();
+}
+function showWish(){
+  const el=$("wish-text"); if(!el) return;
+  const saved=store.get("kidWish", null);
+  el.textContent = (saved && saved.w && saved.d===gardenDayKey(new Date()))
+    ? saved.w : "tap the button and I'll find you one.";
+}
+$("b-wish").addEventListener("click", ()=>{
+  const saved=store.get("kidWish", null);
+  const fresh=KID_WISHES.filter(w=>!saved || w!==saved.w);   /* never the same one twice running */
+  const w=pick(fresh.length ? fresh : KID_WISHES);
+  store.set("kidWish", {d:gardenDayKey(new Date()), w});
+  $("wish-text").textContent=w;
+  plantGarden("wish");
+  if(!busy && !sitting){
+    setEyes("heart"); setMouth("grin");
+    armAnim("both","yay");
+    heartBurst(5); rainbow();
+    say(pick(KID_WISH_SAYS), 15000);
+    setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 3200);
+  }
+});
+$("kidtoggle").addEventListener("change", ()=>{
+  kidMode=$("kidtoggle").checked;
+  store.set("kidMode", kidMode);
+  applyKidMode();
+  settings.classList.remove("open");
+  jordis.textContent = kidMode ? pick(KID_IS) : pick(JORD_IS[tierOf(calm)]);
+  if(kidMode){
+    setEyes("heart"); setMouth("grin"); armAnim("both","yay");
+    heartBurst(7); rainbow();
+    say("hello, little one. I'm very glad you came to see me.", 15000);
+  } else {
+    say("back to the usual me. the little one's welcome any time.", 10000);
+    applyMood();
+  }
+});
+applyKidMode();
+
 $("settings-close").addEventListener("click", ()=>settings.classList.remove("open"));
 settings.addEventListener("click", (e)=>{ if(e.target===settings) settings.classList.remove("open"); });
 
@@ -3625,7 +3926,7 @@ function startGardenVisitors(){
   const layer=$("gd-visitors"); if(layer) layer.innerHTML="";  /* fresh each open */
   if(reduceMotion) return;
   /* a chance of one arriving shortly after the panel opens */
-  if(Math.random()<.38){
+  if(Math.random() < (kidMode ? .85 : .38)){
     setTimeout(()=>{ if(gardenPanel.classList.contains("open")) spawnGardenVisitor(); }, 1200+Math.random()*2600);
   }
   /* then, while it stays open, an occasional drop-in — self-terminating: the
@@ -4247,14 +4548,17 @@ $("orbwrap").addEventListener("click", ()=>{
     setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2400);
     return;
   }
-  setEyes("sparkle"); setMouth("grin");
+  setEyes(kp("sparkle","heart")); setMouth("grin");
+  /* little jord loves being patted, visibly and every time */
+  if(kidMode){ heartBurst(3); if(Math.random()<.12) rainbow(); }
   const r=Math.random();
-  if(pats===10) think("ten pats. I am thriving.", 12000);
-  else if(pats===50) think("fifty pats. we should get matching flowers.", 12000);
-  else if(pats===100) think("one hundred pats. I have peaked. no— wait. pat 101 says otherwise.", 14000);
-  else if(r<.18) spawnObject();
-  else if(r<.3) turnAround();
-  else think(pick(THOUGHTS), 12000);
+  if(pats===10) think(kp("ten pats. I am thriving.","ten pats! I'm having a wonderful time."), 12000);
+  else if(pats===50) think(kp("fifty pats. we should get matching flowers.","fifty pats. we should get matching flowers."), 12000);
+  else if(pats===100) think(kp("one hundred pats. I have peaked. no— wait. pat 101 says otherwise.",
+                              "one hundred pats! that's more than I can count on my hands. I have two."), 14000);
+  else if(r < (kidMode?.3:.18)) spawnObject();
+  else if(r < (kidMode?.42:.3)) turnAround();
+  else think(pick(kp(THOUGHTS, KID_THOUGHTS)), 12000);
   armAnim("both","flail");
   if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
   setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1600);
