@@ -2877,12 +2877,63 @@ function avgOverlay(points){
   return `<path d="${averagePath(points)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" opacity=".5"/>`;
 }
 
+/* ── the dotted "coming from" vector ──
+   the newest entry falling BEFORE a chart's window can't be plotted (it's
+   off-scale, past the left edge), so a quiet stretch used to render as an
+   empty box with no sense of what came before it. All three charts now draw
+   the *direction* toward that last known reading — dotted, half-lit, clipped
+   at the plot edge — plus a small "when · what" note. Never the point itself:
+   it isn't in this window, it's just where the line is arriving from. */
+function prevBefore(cutoff){
+  let best=null;
+  for(const e of vibes){ if(e.t<cutoff && (!best || e.t>best.t)) best=e; }
+  return best;
+}
+function agoText(ms){
+  const m=Math.round(ms/60000);
+  if(m<60) return m<=1 ? "a minute ago" : m+" min ago";
+  const h=Math.round(m/60);
+  if(h<24) return h===1 ? "an hour ago" : h+"h ago";
+  const d=Math.round(h/24);
+  return d===1 ? "yesterday" : d+" days ago";
+}
+/* walk from (fx,fy) toward (px,py), stopping where it leaves the plot box */
+function clipToBox(fx,fy,px,py,box){
+  const dx=px-fx, dy=py-fy;
+  if(!dx && !dy) return null;
+  let t=1;
+  if(dx<0) t=Math.min(t,(box.x0-fx)/dx); else if(dx>0) t=Math.min(t,(box.x1-fx)/dx);
+  if(dy<0) t=Math.min(t,(box.y0-fy)/dy); else if(dy>0) t=Math.min(t,(box.y1-fy)/dy);
+  t=clamp(t,0,1);
+  return {x:fx+dx*t, y:fy+dy*t};
+}
+function leadInSVG(prev, prevX, prevY, first, box){
+  const dash=`stroke="var(--leaf)" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round" opacity=".5" fill="none"`;
+  let ax,ay,bx,by;
+  if(first){
+    const end=clipToBox(first.x, first.y, prevX, prevY, box);
+    if(!end) return "";
+    ax=end.x; ay=end.y; bx=first.x; by=first.y;
+  } else {
+    /* nothing at all in this window — hold the last known level as a short
+       stub off the left edge, so the box still says "you were here" */
+    ay=by=clamp(prevY, box.y0, box.y1);
+    ax=box.x0; bx=box.x0+34;
+  }
+  const tx=clamp(ax+3, box.x0, box.x1-52);
+  const ty=clamp(ay-4, box.y0+6, box.y1);
+  return `<path d="M ${ax.toFixed(1)} ${ay.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)}" ${dash}/>`
+       + `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" font-size="6.5" fill="var(--dim)" `
+       + `font-family="inherit" opacity=".9">${agoText(Date.now()-prev.t)} · ${Math.round(prev.v)}</text>`;
+}
+
 function chartLastHour(){
   const now=Date.now(), cutoff=now-3600000;
   const recent=vibes.filter(e=>e.t>=cutoff).sort((a,b)=>a.t-b.t);
   const pts=recent.map(e=>({m:(now-e.t)/60000, v:e.v}));   /* m = minutes ago, 0..60 */
   const recentMissions=missions.filter(m=>m.t>=cutoff);
-  if(!pts.length && !(showMissions && recentMissions.length)) return `<div style="font-size:12px;color:var(--dim)">nothing in the last hour. the slider awaits.</div>`;
+  const prev=prevBefore(cutoff);
+  if(!pts.length && !(showMissions && recentMissions.length) && !prev) return `<div style="font-size:12px;color:var(--dim)">nothing in the last hour. the slider awaits.</div>`;
   const X=m=>20+((60-m)/60)*280, Y=v=>8+(100-v)*0.7;   /* 60min-ago at left, now at right */
   let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
   svg+=midBand(Y,20,300);
@@ -2892,6 +2943,7 @@ function chartLastHour(){
     svg+=`<line x1="${X(m)}" y1="76" x2="${X(m)}" y2="80" stroke="var(--faint)"/>`;
   });
   const sp=pts.map(p=>({x:X(p.m), y:Y(p.v)}));
+  if(prev) svg+=leadInSVG(prev, X((now-prev.t)/60000), Y(prev.v), sp[0]||null, {x0:20,y0:8,x1:300,y1:78});
   if(pts.length>1){
     svg+=`<polyline points="${sp.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
     if(showAverage && pts.length>2) svg+=avgOverlay(sp);
@@ -2916,7 +2968,8 @@ function chartLast24h(){
   const recent=vibes.filter(e=>e.t>=cutoff).sort((a,b)=>a.t-b.t);
   const pts=recent.map(e=>({h:(now-e.t)/3600000, v:e.v}));   /* h = hours ago, 0..24 */
   const recentMissions=missions.filter(m=>m.t>=cutoff);
-  if(!pts.length && !(showMissions && recentMissions.length)) return `<div style="font-size:12px;color:var(--dim)">nothing in the last 24 hours. the slider awaits.</div>`;
+  const prev=prevBefore(cutoff);
+  if(!pts.length && !(showMissions && recentMissions.length) && !prev) return `<div style="font-size:12px;color:var(--dim)">nothing in the last 24 hours. the slider awaits.</div>`;
   const X=h=>20+((24-h)/24)*280, Y=v=>8+(100-v)*0.7;   /* 24h-ago at left, now at right */
   let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
   svg+=midBand(Y,20,300);
@@ -2926,6 +2979,7 @@ function chartLast24h(){
     svg+=`<line x1="${X(h)}" y1="76" x2="${X(h)}" y2="80" stroke="var(--faint)"/>`;
   });
   const sp=pts.map(p=>({x:X(p.h), y:Y(p.v)}));
+  if(prev) svg+=leadInSVG(prev, X((now-prev.t)/3600000), Y(prev.v), sp[0]||null, {x0:20,y0:8,x1:300,y1:78});
   if(pts.length>1){
     svg+=`<polyline points="${sp.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
     if(showAverage && pts.length>2) svg+=avgOverlay(sp);
@@ -2950,13 +3004,20 @@ function chartHistory(){
     days.push({d, avg: es.length ? es.reduce((s,e)=>s+e.v,0)/es.length : null});
   }
   const hasMissionsInRange = showMissions && days.some(day=>missions.some(m=>dayKey(new Date(m.t))===dayKey(day.d)));
-  if(!days.some(x=>x.avg!==null) && !hasMissionsInRange) return `<div style="font-size:12px;color:var(--dim)">the record begins with your first log.</div>`;
+  /* window opens at midnight of the leftmost day; anything older is the lead-in */
+  const wStart=new Date(days[0].d); wStart.setHours(0,0,0,0);
+  const prev=prevBefore(wStart.getTime());
+  if(!days.some(x=>x.avg!==null) && !hasMissionsInRange && !prev) return `<div style="font-size:12px;color:var(--dim)">the record begins with your first log.</div>`;
   const X=i=>24+(i/13)*272, Y=v=>8+(100-v)*0.7;
   let svg=`<svg viewBox="0 0 320 104" xmlns="http://www.w3.org/2000/svg">`;
   svg+=midBand(Y,20,300);
   svg+=`<line x1="20" y1="78" x2="300" y2="78" stroke="var(--faint)"/>`;
   [25,50,75].forEach(v=>{ svg+=`<line x1="20" y1="${Y(v)}" x2="300" y2="${Y(v)}" stroke="var(--ghost)" stroke-width="1"/>`; });
   const present = days.map((x,i)=>({...x,i})).filter(x=>x.avg!==null);
+  if(prev){
+    const first = present.length ? {x:X(present[0].i), y:Y(present[0].avg)} : null;
+    svg+=leadInSVG(prev, X((prev.t-wStart.getTime())/86400000), Y(prev.v), first, {x0:20,y0:8,x1:300,y1:78});
+  }
   if(present.length>1){
     svg+=`<polyline points="${present.map(p=>X(p.i)+","+Y(p.avg)).join(" ")}" fill="none" stroke="var(--leaf)" stroke-width="1.8"/>`;
     if(showAverage && present.length>2) svg+=avgOverlay(present.map(p=>({x:X(p.i), y:Y(p.avg)})));
