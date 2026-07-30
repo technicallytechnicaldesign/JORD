@@ -479,6 +479,26 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **Her own print sheet** (rev Y) — `#tr-kidpage`, built by `populateKidPage()`
+  on the same `populateKeepsake()` chain as the others. In kid mode the print
+  becomes **two sheets, not four**: her page, then the garden. The print media
+  query drops `#tr-keepsake`, `#tr-wave` and `#tr-data` under `body.kid`,
+  because all three carry numbers (a sweet stat, the week's wave, the charts).
+  Her sheet has: a big heart-eyed Jord with pink cheeks and both arms out, the
+  wish she's carrying today, a row of the blooms *she* planted (`garden` filtered
+  on `kid`), a row of her own drops that came to visit (`shelf` filtered through
+  `OBJECTS[i].kid`), one warm line from `KID_PAGE_LINES`, and the footer
+  "made together · nothing here was counted". **No count, no average, no orbit
+  day, no chart** — a test strips the markup and fails if any digit other than
+  the date survives, and another fails on stat vocabulary (average / logged /
+  entries / streak / score).
+  - She needs her own way to reach it: the ▤ trends button lives inside the
+    vibe row, which kid mode hides, so `#b-kidprint` ("♥ a picture of today")
+    sits under the wish button and runs the same populate-then-print.
+  - `02_WORK/dom-test/preview.js` renders the sheet from sample data into a
+    standalone HTML file — the only way to actually *look* at a print sheet in
+    this environment, since there's no print preview and the browser pane can't
+    screenshot.
 - **The tickle really is 5% now** (rev X) — rev V set the tickle branch to 5%
   but he still wobbled and giggled on nearly every poke, because the bounce had
   three *other* sources. All three fixed:
