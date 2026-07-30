@@ -542,6 +542,10 @@
   body.kid .actions button{min-height:66px;font-size:9.5px;padding:10px 3px;border-radius:15px}
   body.kid .actions button .icon{font-size:23px}
   body.kid .icon-btn{width:40px;height:40px;font-size:17px;border-radius:12px}
+  /* the gear needs a press-and-hold in kid mode: stop the OS from hijacking a
+     long press (selection, callout, context menu) and show that it's working */
+  body.kid #b-settings{touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #b-settings.holding{transform:scale(.9);box-shadow:0 0 0 3px color-mix(in srgb, var(--bloom) 45%, transparent)}
   body.kid button{border-radius:14px}
   .wish{
     display:none;background:var(--panel);border:1.5px solid var(--ink);border-radius:15px;
@@ -1282,7 +1286,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev U</span>
+    <span class="rev">rev V</span>
   </footer>
 </div>
 
@@ -3981,21 +3985,34 @@ nightSel.addEventListener("change", ()=>{
    (900ms), so a small person poking every button in the header doesn't end up
    in here and flip the mode off by accident. */
 (function(){
-  const btn=$("b-settings");
-  let holdT=null, held=false;
-  function openSettings(){ settings.classList.add("open"); }
+  const btn=$("b-settings"), HOLD_MS=650;
+  let holdT=null, held=false, downAt=0;
+  function openSettings(){ settings.classList.add("open"); btn.classList.remove("holding"); }
   btn.addEventListener("pointerdown", ()=>{
     if(!kidMode) return;
-    held=false;
-    holdT=setTimeout(()=>{ held=true; openSettings(); }, 900);
+    held=false; downAt=Date.now();
+    btn.classList.add("holding");            /* so the hold is visibly doing something */
+    clearTimeout(holdT);
+    holdT=setTimeout(()=>{ held=true; openSettings(); }, HOLD_MS);
   });
-  ["pointerup","pointerleave","pointercancel"].forEach(ev=>
-    btn.addEventListener(ev, ()=>{ clearTimeout(holdT); holdT=null; }));
+  btn.addEventListener("pointerup", ()=>{
+    clearTimeout(holdT); holdT=null;
+    btn.classList.remove("holding");
+    /* belt and braces: a press that lasted long enough still counts even if
+       its timer never got to fire */
+    if(kidMode && !held && downAt && Date.now()-downAt>=HOLD_MS){ held=true; openSettings(); }
+  });
+  /* deliberately NOT cancelling on pointercancel/pointerleave. On a phone a
+     long press routinely raises one of those — text selection, the context
+     menu, the browser guessing at a scroll — and cancelling on them left the
+     grown-up with a dead settings button. Letting the timer run through a
+     cancel is the lesser evil on a page that barely scrolls. */
+  btn.addEventListener("contextmenu", e=>{ if(kidMode) e.preventDefault(); });
   btn.addEventListener("click", ()=>{
     if(!kidMode){ openSettings(); return; }
     if(held){ held=false; return; }            /* the hold already opened it */
     /* a plain tap in kid mode: say so, don't just do nothing */
-    say("that one's for grown-ups. hold it down a moment if you mean it.", 7000);
+    say("that one's for grown-ups. press and hold it a moment.", 7000);
   });
 })();
 /* ── little jord: the switch, and the wish ──
@@ -5196,15 +5213,16 @@ $("orbwrap").addEventListener("click", ()=>{
   if(kidMode){
     if(Math.random()<.1) rainbow();
     const roll=Math.random();
-    if(roll<.24){
-      /* the tickle */
+    if(roll<.05){
+      /* the tickle — deliberately rare (5%). At a quarter of all pokes it
+         swamped everything else and stopped being funny. */
       kidBounce();
       think(pick(TICKLE_LINES), 9000);
       armAnim(pick(["l","r","both"]),"flail");
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1800);
       return;
     }
-    if(roll<.42){
+    if(roll<.25){
       /* the heart spray */
       heartBurst(5);
       kidBounce();
@@ -5212,7 +5230,7 @@ $("orbwrap").addEventListener("click", ()=>{
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2000);
       return;
     }
-    if(roll<.56){
+    if(roll<.45){
       /* heart-shaped blush: quieter than the rest, and he goes shy about it */
       blushHearts();
       setEyes("uwu"); setMouth("smile");
@@ -5220,7 +5238,7 @@ $("orbwrap").addEventListener("click", ()=>{
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 3200);
       return;
     }
-    if(roll<.7){
+    if(roll<.6){
       /* he turns around and shows you a face — the old emote, kept */
       turnAround();
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2200);
