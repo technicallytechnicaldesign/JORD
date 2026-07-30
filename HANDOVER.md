@@ -479,6 +479,27 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **The gear's press-and-hold was dead on a phone** (rev V) — reported as "the
+  menu button doesn't work anymore", and it was a real bug, not a
+  misunderstanding of the guard. The original implementation cancelled the hold
+  timer on `pointercancel` and `pointerleave`, and on a touchscreen a long press
+  raises one of those routinely (text selection, the callout menu, the browser
+  guessing at a scroll). So: a tap was refused by design, and a hold was
+  cancelled by the OS — the grown-up had no way in at all. Now the hold is
+  cancelled **only** by a genuine early `pointerup`; a `pointercancel` lets the
+  timer run through and open Settings, which is the lesser evil on a page that
+  barely scrolls. Also: 900ms → 650ms, `contextmenu` suppressed in kid mode,
+  `touch-action:manipulation` + `user-select:none` + `-webkit-touch-callout:none`
+  on the button so the OS stops competing for the gesture, a `.holding` class so
+  the press visibly does something, and a `pointerup` fallback that opens
+  Settings if the press lasted long enough but the timer never fired. Three
+  assertions cover it, including the interrupted-hold case.
+  **If a press-and-hold ever looks broken again, check what's cancelling it
+  before touching the timing.**
+- **The tickle went to 5%** (rev V) — at 24% of pokes it swamped the other
+  reactions and stopped being funny. The roll is now 5% tickle, 20% heart spray,
+  20% heart blush, 15% turn-around, 40% falling through to the shared
+  repertoire.
 - **Varied home reactions + the magic sit's big surprises** (rev U):
   - **Poking him at home** is no longer always the tickle. One giggle every
     time got repetitive fast, so the kid branch of the `#orbwrap` handler is now
