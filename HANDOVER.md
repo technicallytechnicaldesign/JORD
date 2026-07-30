@@ -479,6 +479,22 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **The tickle really is 5% now** (rev X) — rev V set the tickle branch to 5%
+  but he still wobbled and giggled on nearly every poke, because the bounce had
+  three *other* sources. All three fixed:
+  1. **The rapid-poke giggle fit** (5 pokes inside 3s) fired constantly, because
+     a child pokes fast — that threshold was written for an adult idly patting.
+     In kid mode it now rolls its own 5% and otherwise falls through to the
+     ordinary spread. Grown-up Jord's dizzy spell is untouched.
+  2. The **heart spray** branch (20%) called `kidBounce()` as well as spraying.
+  3. The **fall-through** poke called `kidBounce()` for kid mode instead of the
+     gentle `.wiggling` both modes used to share.
+  `kidBounce()` is now reached only by the 5% tickle and by poking him during
+  the Giggle exercise, where it's the whole point. **Lesson: when a rate looks
+  wrong, count every call site before adjusting the number** — the branch
+  weight was right, the problem was three other callers.
+  A test counts bounces per landed poke and fails if it exceeds a quarter, so
+  this can't quietly drift back.
 - **A pink T-rex and a rabbit** (rev W) — both are drops *and* big surprises,
   which is now the intended shape for anything new: draw it once as a `*_ART`
   const, list it in `OBJECTS` with `kid:true`, and register it in
