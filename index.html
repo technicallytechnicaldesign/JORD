@@ -1291,7 +1291,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev W</span>
+    <span class="rev">rev X</span>
   </footer>
 </div>
 
@@ -5225,21 +5225,29 @@ $("orbwrap").addEventListener("click", ()=>{
   if(patTimes.length>=5){
     patTimes=[];
     if(kidMode){
-      /* a proper giggle fit rather than the grown-up dizzy spell */
-      setEyes("chaos"); setMouth("grin");
+      /* A child pokes him fast and often, so this branch was firing constantly
+         and made the giggle feel like his only reaction. It's now the same 5%
+         as the tickle — the rest of the time a burst of quick pokes just gets
+         the ordinary spread of reactions below. */
+      if(Math.random()<.05){
+        setEyes("chaos"); setMouth("grin");
+        armAnim("both","flail");
+        think(pick(["hahaha! okay! okay! I'm all wobbly!","eeee! too many tickles! wonderful! too many!","hee hee hee — I can't, I can't, hee —"]), 11000);
+        heartBurst(6);
+        kidBounce();
+        setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2600);
+        return;
+      }
+      /* fall through to the ordinary roll */
+    } else {
+      /* grown-up Jord's dizzy spell, unchanged */
+      setEyes("chaos"); setMouth("wavy");
       armAnim("both","flail");
-      think(pick(["hahaha! okay! okay! I'm all wobbly!","eeee! too many tickles! wonderful! too many!","hee hee hee — I can't, I can't, hee —"]), 11000);
-      heartBurst(6);
-      kidBounce();
-      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2600);
+      think("whoa. okay. the world is a carousel and I love it.", 11000);
+      if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2400);
       return;
     }
-    setEyes("chaos"); setMouth("wavy");
-    armAnim("both","flail");
-    think("whoa. okay. the world is a carousel and I love it.", 11000);
-    if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
-    setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2400);
-    return;
   }
   setEyes(kp("sparkle","heart")); setMouth("grin");
   /* ── little jord's reactions to a poke ──
@@ -5261,9 +5269,9 @@ $("orbwrap").addEventListener("click", ()=>{
       return;
     }
     if(roll<.25){
-      /* the heart spray */
+      /* the heart spray — hearts, but no wobble: the bounce belongs to the
+         tickle alone, or it stops reading as a tickle at all */
       heartBurst(5);
-      kidBounce();
       think(pick(["oh! that got the hearts out.","careful, I'm leaking hearts.","there they go. that happens.","whoops. hearts everywhere."]), 8000);
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2000);
       return;
@@ -5293,9 +5301,10 @@ $("orbwrap").addEventListener("click", ()=>{
   else if(r < (kidMode?.42:.3)) turnAround();
   else think(pick(kp(THOUGHTS, KID_THOUGHTS)), 12000);
   armAnim("both","flail");
-  /* one or the other on #orbbody, never both: hers is the looser bounce */
-  if(kidMode) kidBounce();
-  else if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+  /* the ordinary poke gets the gentle wiggle in BOTH modes. The loose
+     kid-bounce is reserved for the 5% tickle and the giggle exercise — used
+     here it made every single poke read as a giggle. */
+  if(!reduceMotion){ orbbody.classList.remove("wiggling","kid-bounce"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
   setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1600);
 });
 
