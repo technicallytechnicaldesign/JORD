@@ -555,6 +555,7 @@
              display:flex;align-items:center;justify-content:center}
   #b-wish{min-height:54px;font-size:11px;color:var(--bloom);letter-spacing:.08em}
   #b-wish:hover{box-shadow:3px 3px 0 var(--bloom)}
+  #b-kidprint{min-height:44px;font-size:9.5px;color:var(--dim);letter-spacing:.08em;box-shadow:none}
 
   /* ── little jord's chrome is pink wherever grown-up Jord's is green ──
      the leaf green is the app's whole accent language (hovers, focus rings,
@@ -962,6 +963,32 @@
            position:absolute;left:0;right:0;top:46%;transform:translateY(-50%)}
   .gp-foot{font-size:9px;letter-spacing:.12em;color:var(--dim);text-align:center;margin-top:14px;text-transform:uppercase}
 
+  /* ── little jord's own sheet ──
+     Her print is not the grown-up one with softer words: it's a different page
+     with no numbers on it at all. No stats, no averages, no charts, no counts.
+     A big heart-eyed Jord, the wish she's carrying, the flowers she grew and
+     the things that came to see her. In kid mode this REPLACES the keepsake,
+     the wave and the data sheet; the garden page still follows it. ── */
+  #tr-kidpage{display:none}
+  .jp-head{font-size:16px;letter-spacing:.14em;text-align:center;font-weight:600}
+  .jp-sub{font-size:11px;letter-spacing:.08em;color:var(--dim);text-align:center;margin-top:5px}
+  .jp-art{display:block;margin:26px auto 8px;width:240px;height:auto}
+  .jp-wish{font-size:15px;line-height:1.55;text-align:center;max-width:360px;
+           margin:16px auto 0;color:var(--ink)}
+  .jp-wish-label{font-size:8.5px;letter-spacing:.18em;color:var(--bloom);
+                 text-transform:uppercase;text-align:center;margin-top:20px}
+  .jp-strip{margin-top:20px;text-align:center}
+  .jp-strip-head{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+  .jp-row{display:flex;justify-content:center;align-items:flex-end;gap:4px;flex-wrap:wrap;
+          max-width:360px;margin:6px auto 0;padding-bottom:2px}
+  .jp-row svg{width:30px;height:34px;display:block;overflow:visible}
+  .jp-row.jp-things svg{width:30px;height:30px}
+  .jp-none{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:3px}
+  .jp-line{font-size:12.5px;font-style:italic;text-align:center;max-width:340px;
+           margin:22px auto 0;line-height:1.6}
+  .jp-foot{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:center;
+           margin-top:20px;text-transform:uppercase}
+
   @media print{
     /* body is display:flex;justify-content:center on screen (to center .unit) --
        that flex context was never reset for print, and flex items shrink-wrap
@@ -984,6 +1011,11 @@
     /* each new sheet starts fresh: page 2 = the data, page 3 = the garden */
     #tr-data{display:block !important;break-before:page;break-inside:avoid;padding:24px 10px 10px}
     #tr-gardenpage{display:block !important;break-before:page;break-inside:avoid;padding:24px 10px 10px}
+
+    /* little jord prints her own two sheets instead: the joy page, then the
+       garden. Everything with a number on it is dropped. */
+    body.kid #tr-keepsake,body.kid #tr-wave,body.kid #tr-data{display:none !important}
+    body.kid #tr-kidpage{display:block !important;break-inside:avoid;padding:30px 16px 16px}
   }
 </style>
 </head>
@@ -1287,11 +1319,14 @@
     <span class="label">today's little wish</span>
     <div id="wish-text">tap the button and I'll find you one.</div>
     <button id="b-wish">✿&nbsp; a wish, please</button>
+    <!-- her only way to print: the trends panel (and its print button) is
+         hidden along with the whole vibe row in kid mode -->
+    <button id="b-kidprint" class="small">♥&nbsp; a picture of today</button>
   </section>
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev X</span>
+    <span class="rev">rev Y</span>
   </footer>
 </div>
 
@@ -1358,6 +1393,7 @@
     <div id="tr-keepsake"></div>
     <div id="tr-wave"></div>
     <div id="tr-data"></div>
+    <div id="tr-kidpage"></div>
     <div id="tr-gardenpage"></div>
     <div class="tr-head screen-only">
       <h2>JORD · VIBE TELEMETRY</h2>
@@ -4100,6 +4136,11 @@ $("b-wish").addEventListener("click", ()=>{
     setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 3200);
   }
 });
+$("b-kidprint").addEventListener("click", ()=>{
+  populateKeepsake();          /* chains through to populateKidPage() */
+  say(pick(["let's make a picture of today.","one picture of us, coming up.","I'll draw it. hold on."]), 9000);
+  setTimeout(()=>window.print(), 400);
+});
 $("kidtoggle").addEventListener("change", ()=>{
   kidMode=$("kidtoggle").checked;
   store.set("kidMode", kidMode);
@@ -5149,6 +5190,73 @@ function populateDataPage(){
    meadow, plus a small handful of static visitors dropped in among the blooms.
    Nothing animates — this is paper. Empty garden still gets a couple of
    creatures for a bit of company, under a light in-voice line. ── */
+/* ── little jord's sheet ──
+   Deliberately has no numbers on it anywhere: no counts, no averages, no
+   charts, not even an orbit day. A big heart-eyed Jord, the wish she's
+   carrying today, what she grew, what came to see her, and one warm line.
+   Built on every populateKeepsake() chain like the other sheets, but only
+   printed when body.kid is on (see the print media query). */
+const KID_PAGE_LINES = [
+  "we had a good day, you and me.",
+  "this is what today looked like from in here.",
+  "I kept all of it. every bit.",
+  "you were here, and that was the best part.",
+  "look what we did, just by turning up.",
+  "a whole day. and you were lovely in it."
+];
+function populateKidPage(){
+  const el=$("tr-kidpage"); if(!el) return;
+  const today=new Date();
+  const heart=(x,y,s)=>`<g transform="translate(${x},${y}) scale(${s})"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" `
+    + `stroke="var(--bloom)" stroke-width="1.6" fill="var(--bloom)" fill-opacity=".3"/></g>`;
+  /* heart eyes, a proper grin, pink cheeks, and both arms out */
+  const art = `<svg class="jp-art" viewBox="0 0 150 116" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">`
+    + `<circle cx="75" cy="54" r="36" stroke="var(--ink)" stroke-width="2"/>`
+    + `<ellipse cx="52" cy="66" rx="7.5" ry="5" fill="var(--bloom)" fill-opacity=".45" stroke="none" transform="rotate(16 52 66)"/>`
+    + `<ellipse cx="98" cy="66" rx="7.5" ry="5" fill="var(--bloom)" fill-opacity=".45" stroke="none" transform="rotate(-16 98 66)"/>`
+    + heart(62,40,0.62) + heart(88,40,0.62)
+    + `<path d="M 63 66 q 12 12 24 0" stroke="var(--ink)" stroke-width="2.2"/>`
+    /* arms, attached at the lower sides, same hand-drawn hash fingers as the
+       keepsake portrait */
+    + `<path d="M 42 76 q -13 7 -17 17" stroke="var(--ink)" stroke-width="2"/>`
+    + `<path d="M 25 93 l -4 3 M 25 93 l -1 5 M 25 93 l 3 4" stroke="var(--ink)" stroke-width="1.6"/>`
+    + `<path d="M 108 76 q 13 7 17 17" stroke="var(--ink)" stroke-width="2"/>`
+    + `<path d="M 125 93 l 4 3 M 125 93 l 1 5 M 125 93 l -3 4" stroke="var(--ink)" stroke-width="1.6"/>`
+    + `</svg>`;
+  /* the wish she's carrying today */
+  const saved=store.get("kidWish", null);
+  const wish=(saved && saved.w && saved.d===gardenDayKey(new Date()))
+    ? saved.w
+    : "today we just are, and that is plenty.";
+  /* what she grew: her blooms only, drawn exactly as they are in the garden */
+  const hers=garden.filter(g=>g.kid).slice(-10);
+  const grew = hers.length
+    ? `<div class="jp-row">${hers.map((g,idx)=>{
+        const seed=(g.t||0)+idx+1;
+        const rot=((gseed(seed*2.3+5)-0.5)*20).toFixed(1);
+        const art2=g.golden ? KID_GOLDEN_FLOWER : KID_FLORA[g.i%KID_FLORA.length];
+        return `<svg viewBox="-14 -26 28 34" style="transform:rotate(${rot}deg)" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">${art2}</svg>`;
+      }).join("")}</div>`
+    : `<div class="jp-none">nothing planted yet today. there's still time.</div>`;
+  /* what came to see her: her own drops, one of each kind */
+  const seen=new Map();
+  shelf.forEach(s=>{ const o=OBJECTS[s.i]; if(o && o.kid && !seen.has(s.i)) seen.set(s.i, o); });
+  const visitors=[...seen.values()].slice(0,8);
+  const came = visitors.length
+    ? `<div class="jp-row jp-things">${visitors.map(o=>
+        `<svg viewBox="-20 -30 44 44" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">${o.svg}</svg>`).join("")}</div>`
+    : `<div class="jp-none">no visitors yet. they come when they come.</div>`;
+  el.innerHTML =
+      `<div class="jp-head">JORD &amp; YOU</div>`
+    + `<div class="jp-sub">${today.toLocaleDateString([], {weekday:"long", day:"numeric", month:"long"})}</div>`
+    + art
+    + `<div class="jp-wish-label">today's little wish</div>`
+    + `<div class="jp-wish">${wish}</div>`
+    + `<div class="jp-strip"><div class="jp-strip-head">what we grew</div>${grew}</div>`
+    + `<div class="jp-strip"><div class="jp-strip-head">who came to see you</div>${came}</div>`
+    + `<div class="jp-line">&ldquo;${pick(KID_PAGE_LINES)}&rdquo;</div>`
+    + `<div class="jp-foot">made together · nothing here was counted</div>`;
+}
 function populateGardenPage(){
   /* fixed, deterministic visitor placements so a reprint looks identical */
   const visitors = [
@@ -5188,6 +5296,7 @@ function populateGardenPage(){
     field = `<div class="gp-field"><div class="gp-none">no blooms yet today — the soil's just resting. someone still stopped by.</div>${visHtml}</div>`;
   }
   const n=garden.length;
+  populateKidPage();
   $("tr-gardenpage").innerHTML =
       `<div class="gp-head">JORD · the garden, right now</div>`
     + `<div class="gp-sub">${n?`every bloom you grew today · ${n} bloom${n===1?"":"s"}`:"a quiet day in the meadow"} · plus a few visitors who wandered in</div>`
