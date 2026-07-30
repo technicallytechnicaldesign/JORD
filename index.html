@@ -377,7 +377,7 @@
     .gv,.gv-flap,.gv-swing,
     .heart-pop,.rainbow-arc,.big-heart,.kid-star,.gd-kid-tw,.gv-tw,.kid-bounce,
     .gv-rock .rock-body,.gv-rock .rock-body.rock-hop,
-    .fw,.dino-in,.dino-out,.dino-bob,
+    .fw,.dino-in,.dino-out,.dino-bob,.bunny-in,.bunny-hop,
     .skyfly,.skyfly .gv-flap,.skybird-flap{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
@@ -652,6 +652,11 @@
   @keyframes dinoOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(150px);opacity:0}}
   @keyframes dinoBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(1.5deg)}}
   .dino-in{animation:dinoIn 5.5s cubic-bezier(.25,.6,.35,1) forwards}
+  /* the rabbit arrives from the other side, and hops the whole way */
+  @keyframes bunnyIn{0%{transform:translateX(110px);opacity:0}12%{opacity:1}100%{transform:translateX(0);opacity:1}}
+  @keyframes bunnyHop{0%,100%{transform:translateY(0)}28%{transform:translateY(-10px)}52%{transform:translateY(0)}}
+  .bunny-in{animation:bunnyIn 5s cubic-bezier(.3,.6,.4,1) forwards}
+  .bunny-hop{transform-box:fill-box;transform-origin:center bottom;animation:bunnyHop .78s ease-in-out infinite}
   .dino-out{animation:dinoOut 3.4s ease-in forwards}
   .dino-bob{transform-box:fill-box;transform-origin:center bottom;animation:dinoBob 2.6s ease-in-out infinite}
   /* everything turns pink. Slowly, so it reads as the world changing its mind. */
@@ -1286,7 +1291,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev V</span>
+    <span class="rev">rev W</span>
   </footer>
 </div>
 
@@ -2282,6 +2287,11 @@ const KID_GROUND_STEPS = [
    bigger) as one of the magic sit's surprises */
 const DINO_ART = `<g stroke="var(--leaf)" stroke-width="1.7"><path d="M -13 0 q 3 -3 6 -3.5 q -1 -7 5 -9 q 6 -2 9 3 q 4 1 4 4.5 q 0 3.5 -4.5 4 q -1.5 1 -4.5 1 h -9 Z"/><path d="M -7 -3.5 l -2.5 -4 M -3.5 -6 l -1.5 -4.5 M 0.5 -8.5 l 0 -4.5"/><path d="M -13 0 q -4 -1.5 -6.5 -4.5" stroke-width="1.5"/><path d="M -4 0 v 3.5 M 3 0 v 3.5" stroke-width="1.5"/><circle cx="6.5" cy="-7.5" r="1" fill="var(--ink)" stroke="none"/></g>`;
 
+/* the pink T-rex and the rabbit, same deal: one drawing each, used both as one
+   of her drops and (much bigger) as one of the magic sit's surprises */
+const TREX_ART = `<g stroke="var(--bloom)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="0" cy="-9" rx="9.5" ry="6.5" fill="var(--bloom)" fill-opacity=".22"/><path d="M -9 -9 q -8 1 -15 6"/><path d="M 6 -12 q 4 -5 9 -4 q 5 1 5 5 q 0 4 -5 4.5 q -5 .5 -9 -2" fill="var(--bloom)" fill-opacity=".22"/><path d="M 11 -7.5 h 8" stroke-width="1.3"/><circle cx="15.5" cy="-11.5" r="1.1" fill="var(--ink)" stroke="none"/><path d="M 7 -10 l 4 1.5" stroke-width="1.4"/><path d="M -3 -3.5 v 3.5 h 4 M 4 -3.5 v 3.5 h 4"/><path d="M -6 -14 l 2 -3 M -1 -15 l 2 -3 M 4 -14.5 l 2 -3" stroke-width="1.3"/></g>`;
+const RABBIT_ART = `<g stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="0" cy="-6" rx="7" ry="6" fill="var(--bloom)" fill-opacity=".18"/><circle cx="6.5" cy="-13" r="4.6" fill="var(--bloom)" fill-opacity=".18"/><path d="M 4.6 -16.8 q -1.4 -8 1.6 -9 q 3 1 2 8"/><path d="M 8.6 -16.8 q 1 -8 4 -8 q 2 2 -1 8"/><circle cx="8.6" cy="-13.4" r=".9" fill="var(--ink)" stroke="none"/><path d="M 10.6 -11.4 q 1.6 .7 2.6 0" stroke-width="1.2"/><circle cx="-7" cy="-3.6" r="2.6"/><path d="M -4.5 0 h 6 M 2.5 0 h 5" stroke-width="1.4"/></g>`;
+
 const OBJECTS = [
   {react:"oh hey! I've been looking for that.",
    svg:`<g stroke="var(--sun)" stroke-width="2"><path d="M 0 0 h 22 M 4 0 L 11 -20 L 18 0"/><path d="M 6.5 -7 h 9" stroke="var(--ink)"/></g>`},
@@ -2364,10 +2374,12 @@ const OBJECTS = [
    svg:`<g stroke="var(--bloom)" stroke-width="1.8" fill="var(--bloom)" fill-opacity=".28"><path d="M 0 -6 c -5 -6.5 -13.5 -1.5 -11 5 c 1.4 5 7.4 9 11 11.5 c 3.6 -2.5 9.6 -6.5 11 -11.5 c 2.5 -6.5 -6 -11.5 -11 -5 Z"/></g>`},
   {kid:true, react:"a sparkle got loose. they do that.",
    svg:`<g stroke="var(--sun)" stroke-width="1.6" fill="var(--sun)" fill-opacity=".3"><path d="M 0 -24 L 3 -14 L 13 -11 L 3 -8 L 0 2 L -3 -8 L -13 -11 L -3 -14 Z"/><path d="M 12 -20 v -4 M 10 -22 h 4 M -11 -1 v -3.4 M -12.7 -2.7 h 3.4" stroke-width="1.2" fill="none"/></g>`},
-  {kid:true, react:"a dinosaur. a small one. we're keeping it.", svg:DINO_ART}
+  {kid:true, react:"a dinosaur. a small one. we're keeping it.", svg:DINO_ART},
+  {kid:true, react:"a pink one! I didn't know they came in pink.", svg:TREX_ART},
+  {kid:true, react:"a rabbit. she's not staying. she says hello though.", svg:RABBIT_ART}
 ];
 /* how many trailing entries of OBJECTS belong to little jord */
-const KID_OBJECT_COUNT = 3;
+const KID_OBJECT_COUNT = 5;
 const OBJ_ADULT_COUNT = OBJECTS.length - KID_OBJECT_COUNT;
 
 const MINI_SAYS = ["✨","!","hm.","oh.",":)","~","hehe","oop","aha","hi.","♪","o_o"];
@@ -3030,13 +3042,30 @@ function starDust(n){
    wait and you get more, touch and you're back to the quiet). Only ever in kid
    mode, only ever while sitting; `magicActive` is what the tap handler checks
    to decide between dismissing a surprise and ending the sit. */
-const MAGIC_KINDS = ["fireworks","dino","pinkout","heartfall"];
+const MAGIC_KINDS = ["fireworks","dino","pinkout","heartfall","trex","rabbit"];
 const MAGIC_WORDS = {
   fireworks:["oh! look up.","that's for you, that one.","ooooh."],
   dino:["…we have a visitor.","don't move. he's shy.","hello, enormous friend."],
   pinkout:["oh my. everything's gone pink.","the whole world just did that. for you.","pink. all of it. no idea why."],
-  heartfall:["it's raining the good kind.","hearts. everywhere. this happens sometimes.","catch one if you like."]
+  heartfall:["it's raining the good kind.","hearts. everywhere. this happens sometimes.","catch one if you like."],
+  trex:["a PINK one. an enormous pink one.","don't worry. she's friendly. mostly friendly.","she came a very long way to say hello."],
+  rabbit:["a rabbit! quick, be still.","she'll stay if we're quiet.","hello, small hopping friend."]
 };
+/* creature surprises share one builder: the difference is the drawing, how big
+   it stands, and whether it bobs or hops */
+const MAGIC_CREATURES = {
+  dino:  {art:()=>DINO_ART,   scale:2.9, at:"translate(88,251)",  move:"dino-bob",  in:"dino-in"},
+  trex:  {art:()=>TREX_ART,   scale:3.2, at:"translate(96,250)",  move:"dino-bob",  in:"dino-in"},
+  /* she comes in from the other side, hopping the whole way */
+  rabbit:{art:()=>RABBIT_ART, scale:2.6, at:"translate(198,250)", move:"bunny-hop", in:"bunny-in"}
+};
+/* surprises come out of a shuffled bag rather than a fresh roll each time, so
+   you never get the same one twice running */
+let magicBag = [];
+function nextMagicKind(){
+  if(!magicBag.length) magicBag = [...MAGIC_KINDS].sort(()=>Math.random()-.5);
+  return magicBag.pop();
+}
 const MAGIC_GONE = [
   "there it goes. it'll come back if we wait.",
   "gone. they're shy like that.",
@@ -3063,23 +3092,27 @@ function fireworkBurst(cx,cy,color){
   meteorLayer.appendChild(g);
   setTimeout(()=>g.remove(), 2200);
 }
+function magicCreature(kind){
+  /* the position lives on the OUTER group as an attribute and the walk-in
+     animation on an inner one: a CSS transform would otherwise replace the
+     transform attribute outright and drop the creature at the origin */
+  const c=MAGIC_CREATURES[kind];
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("id","magiccreature");
+  g.setAttribute("transform", c.at);
+  g.innerHTML=`<g class="${c.in}"><g class="${c.move}"><g transform="scale(${c.scale})">${c.art()}</g></g></g>`;
+  meteorLayer.appendChild(g);
+}
 function magicSurprise(){
   if(!sitting || !kidMode || magicActive) return;
-  let kind=pick(MAGIC_KINDS);
+  let kind=nextMagicKind();
   if(reduceMotion && kind!=="pinkout") kind="pinkout";   /* the one that isn't motion */
   magicActive=kind;
   if(kind==="fireworks"){
     const cols=["#e26d5c","#e59f45","#e3cf5a","#7bbf7a","#6fa8c0","#b48ad6","var(--bloom)"];
     for(let i=0;i<9;i++) setTimeout(()=>{ if(magicActive==="fireworks") fireworkBurst(rand(40,240), rand(10,105), pick(cols)); }, i*rand(700,1300));
-  } else if(kind==="dino"){
-    /* the position lives on the OUTER group as an attribute and the walk-in
-       animation on an inner one: a CSS transform would otherwise replace the
-       transform attribute outright and drop him at the origin */
-    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-    g.setAttribute("id","magicdino");
-    g.setAttribute("transform","translate(88,251)");
-    g.innerHTML=`<g class="dino-in"><g class="dino-bob"><g transform="scale(2.9)">${DINO_ART}</g></g></g>`;
-    meteorLayer.appendChild(g);
+  } else if(MAGIC_CREATURES[kind]){
+    magicCreature(kind);
   } else if(kind==="pinkout"){
     document.body.classList.add("pinkout");
   } else {
@@ -3087,18 +3120,23 @@ function magicSurprise(){
   }
   if(Math.random()<.8) setTimeout(()=>{ if(magicActive===kind) say(pick(MAGIC_WORDS[kind]), 9000); }, 1400);
   /* it goes on its own if you leave it be */
-  magicEndTimer=setTimeout(()=>clearMagic(), kind==="dino" ? 20000 : 15000);
+  magicEndTimer=setTimeout(()=>clearMagic(), MAGIC_CREATURES[kind] ? 20000 : 15000);
 }
 function clearMagic(){
   clearTimeout(magicEndTimer); magicEndTimer=null;
   const was=magicActive;
   magicActive=null;
   document.body.classList.remove("pinkout");
-  const d=$("magicdino");
+  const d=$("magiccreature");
   if(d){
-    const walker=d.querySelector(".dino-in") || d.firstChild;
+    const walker=d.firstChild;
     if(reduceMotion || !walker){ d.remove(); }
-    else { walker.classList.remove("dino-in"); walker.classList.add("dino-out"); setTimeout(()=>d.remove(), 3600); }
+    else {
+      /* drop whichever entrance it came in on before sending it off */
+      walker.classList.remove("dino-in","bunny-in");
+      walker.classList.add("dino-out");
+      setTimeout(()=>d.remove(), 3600);
+    }
   }
   return was;
 }
