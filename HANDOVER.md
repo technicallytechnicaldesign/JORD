@@ -479,6 +479,39 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **Varied home reactions + the magic sit's big surprises** (rev U):
+  - **Poking him at home** is no longer always the tickle. One giggle every
+    time got repetitive fast, so the kid branch of the `#orbwrap` handler is now
+    a weighted roll: 24% tickle, 18% heart spray (`heartBurst(5)` + a line),
+    14% heart blush, 14% turn-around, and the remaining 30% falls through to
+    the shared grown-up repertoire (a drop, a turn, an ordinary thought). The
+    unconditional per-pat `heartBurst` is gone — that was what made the spray
+    feel constant. Milestone pats and the five-fast-pats giggle fit still take
+    precedence. `blushHearts()` drives a new `#blushhearts` SVG group (two
+    hearts at the cheek positions, sibling of `#orbblush`, self-fading) —
+    needed because the ordinary blush is driven by the vibe slider, which
+    doesn't exist in her mode.
+  - **The magic sit now has big surprises.** Every 16s of sitting, a 65% roll
+    fires one of `MAGIC_KINDS`: **fireworks** (nine bursts of radiating
+    coloured spokes over ~10s), **the dinosaur** (`DINO_ART` at scale 2.9,
+    ambling in from the left and bobbing), **pinkout** (`body.pinkout` swaps
+    the whole palette to pink, with light and dark sets and a 1.8s transition
+    on the SVG's stroke/fill so the world changes its mind slowly), and
+    **heartfall**. Each clears itself after 15-20s.
+  - **Touching sends a surprise away and leaves you sitting.** That's the
+    mechanic: wait and another comes, touch and you're back to the quiet.
+    `magicActive` is checked in the `#orbwrap` handler *before* the existing
+    tap-to-end-sit path, and a stage-level listener catches taps that land
+    beside him. A tap with nothing showing still ends the sit, unchanged.
+  - **Two SVG gotchas worth keeping**: a CSS `transform` on an SVG element
+    *replaces* its `transform` attribute outright, so the dinosaur's position
+    lives on an outer `<g>` attribute and the walk-in animation on an inner one
+    (get this wrong and he lands at the origin). And `DINO_ART` is now a shared
+    const used by both her dinosaur drop and this surprise.
+  - Covered by a second test file, `magic-sit.test.js` — it pins `Math.random`
+    to force a chosen surprise and waits out the real 16s interval. All three
+    kinds run green, including the "touch dismisses but keeps you sitting"
+    behaviour.
 - **Pink accents throughout her mode** (rev T) — the leaf green is the app's
   entire accent language, so kid mode now overrides every interactive use of it
   with bloom pink: button and icon-button hovers, all focus rings (buttons,

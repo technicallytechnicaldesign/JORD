@@ -377,6 +377,7 @@
     .gv,.gv-flap,.gv-swing,
     .heart-pop,.rainbow-arc,.big-heart,.kid-star,.gd-kid-tw,.gv-tw,.kid-bounce,
     .gv-rock .rock-body,.gv-rock .rock-body.rock-hop,
+    .fw,.dino-in,.dino-out,.dino-bob,
     .skyfly,.skyfly .gv-flap,.skybird-flap{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
@@ -529,6 +530,7 @@
   #vibeslider.vibe-hot::-moz-range-track{background:var(--bloom)}
   #vibeslider.vibe-hot::-moz-range-thumb{border-color:var(--bloom)}
   #orbblush{transition:opacity .5s ease, fill .5s ease}
+  #blushhearts{transition:opacity .7s ease}
 
   /* ── little jord ──
      an opt-in kid mode. The whole self-report surface (slider, log, trends,
@@ -631,6 +633,34 @@
   .gv-sparkle svg{width:18px;height:auto}
   .gv-sparkle .gv-tw{transform-box:fill-box;transform-origin:center;animation:gvTwinkle 2.2s ease-in-out infinite}
   @keyframes gvTwinkle{0%,100%{transform:scale(.72);opacity:.55}50%{transform:scale(1.12);opacity:1}}
+
+  /* ── the magic sit's big surprises ──
+     they arrive on their own if you wait, and go the moment you touch the
+     screen. Everything here is kid-mode-only and only while sitting. */
+  @keyframes fwBurst{
+    0%{transform:scale(.08);opacity:0}
+    14%{opacity:1}
+    100%{transform:scale(1.6);opacity:0}
+  }
+  .fw{transform-box:fill-box;transform-origin:center;animation:fwBurst 1.7s cubic-bezier(.15,.75,.3,1) forwards}
+  /* the dinosaur ambles in from the left, then stands about bobbing */
+  @keyframes dinoIn{0%{transform:translateX(-90px);opacity:0}12%{opacity:1}100%{transform:translateX(0);opacity:1}}
+  @keyframes dinoOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(150px);opacity:0}}
+  @keyframes dinoBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(1.5deg)}}
+  .dino-in{animation:dinoIn 5.5s cubic-bezier(.25,.6,.35,1) forwards}
+  .dino-out{animation:dinoOut 3.4s ease-in forwards}
+  .dino-bob{transform-box:fill-box;transform-origin:center bottom;animation:dinoBob 2.6s ease-in-out infinite}
+  /* everything turns pink. Slowly, so it reads as the world changing its mind. */
+  body.kid.pinkout{
+    --paper:#ffeef4;--panel:#fff7fa;--ink:#7c4a5d;--dim:#c093a6;--faint:#f4d3e0;
+    --ghost:#fbe8f0;--leaf:#d98cad;--water:#e5a4c2;--sun:#e6ab97;--bloom:#d0708f;
+  }
+  html.dark body.kid.pinkout{
+    --paper:#2b1a22;--panel:#35212b;--ink:#f6dbe5;--dim:#c396a8;--faint:#4b2f3c;
+    --ghost:#3a2530;--leaf:#e39cbb;--water:#e9b0cb;--sun:#efbfa8;--bloom:#f3a9c6;
+  }
+  body,body.kid .stage,body.kid .unit{transition:background-color 1.8s ease, color 1.8s ease}
+  body.kid #jord *{transition:stroke 1.8s ease, fill 1.8s ease}
 
   /* a small burst of hearts, for the moments that deserve several */
   @keyframes heartPop{
@@ -1086,6 +1116,12 @@
             <ellipse cx="100" cy="165" rx="13" ry="8.5" transform="rotate(18 100 165)"/>
             <ellipse cx="180" cy="165" rx="13" ry="8.5" transform="rotate(-18 180 165)"/>
           </g>
+          <!-- little jord only: the cheeks go heart-shaped when he's especially
+               pleased with you. Sits on top of the ordinary blush, same spots. -->
+          <g id="blushhearts" fill="var(--bloom)" opacity="0" stroke="none" pointer-events="none">
+            <g transform="translate(100,157) rotate(14) scale(.8)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g>
+            <g transform="translate(180,157) rotate(-14) scale(.8)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z"/></g>
+          </g>
 
           <g id="backface" stroke="var(--faint)" stroke-width="1.5">
             <path d="M 100 140 q 20 -12 44 -4"/>
@@ -1246,7 +1282,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev T</span>
+    <span class="rev">rev U</span>
   </footer>
 </div>
 
@@ -2238,6 +2274,10 @@ const KID_GROUND_STEPS = [
   ["0 · HERE","there you are.\nright here, right now, all in one piece."]
 ];
 
+/* the dinosaur, drawn once and used twice: as one of her drops, and (much
+   bigger) as one of the magic sit's surprises */
+const DINO_ART = `<g stroke="var(--leaf)" stroke-width="1.7"><path d="M -13 0 q 3 -3 6 -3.5 q -1 -7 5 -9 q 6 -2 9 3 q 4 1 4 4.5 q 0 3.5 -4.5 4 q -1.5 1 -4.5 1 h -9 Z"/><path d="M -7 -3.5 l -2.5 -4 M -3.5 -6 l -1.5 -4.5 M 0.5 -8.5 l 0 -4.5"/><path d="M -13 0 q -4 -1.5 -6.5 -4.5" stroke-width="1.5"/><path d="M -4 0 v 3.5 M 3 0 v 3.5" stroke-width="1.5"/><circle cx="6.5" cy="-7.5" r="1" fill="var(--ink)" stroke="none"/></g>`;
+
 const OBJECTS = [
   {react:"oh hey! I've been looking for that.",
    svg:`<g stroke="var(--sun)" stroke-width="2"><path d="M 0 0 h 22 M 4 0 L 11 -20 L 18 0"/><path d="M 6.5 -7 h 9" stroke="var(--ink)"/></g>`},
@@ -2320,8 +2360,7 @@ const OBJECTS = [
    svg:`<g stroke="var(--bloom)" stroke-width="1.8" fill="var(--bloom)" fill-opacity=".28"><path d="M 0 -6 c -5 -6.5 -13.5 -1.5 -11 5 c 1.4 5 7.4 9 11 11.5 c 3.6 -2.5 9.6 -6.5 11 -11.5 c 2.5 -6.5 -6 -11.5 -11 -5 Z"/></g>`},
   {kid:true, react:"a sparkle got loose. they do that.",
    svg:`<g stroke="var(--sun)" stroke-width="1.6" fill="var(--sun)" fill-opacity=".3"><path d="M 0 -24 L 3 -14 L 13 -11 L 3 -8 L 0 2 L -3 -8 L -13 -11 L -3 -14 Z"/><path d="M 12 -20 v -4 M 10 -22 h 4 M -11 -1 v -3.4 M -12.7 -2.7 h 3.4" stroke-width="1.2" fill="none"/></g>`},
-  {kid:true, react:"a dinosaur. a small one. we're keeping it.",
-   svg:`<g stroke="var(--leaf)" stroke-width="1.7"><path d="M -13 0 q 3 -3 6 -3.5 q -1 -7 5 -9 q 6 -2 9 3 q 4 1 4 4.5 q 0 3.5 -4.5 4 q -1.5 1 -4.5 1 h -9 Z"/><path d="M -7 -3.5 l -2.5 -4 M -3.5 -6 l -1.5 -4.5 M 0.5 -8.5 l 0 -4.5"/><path d="M -13 0 q -4 -1.5 -6.5 -4.5" stroke-width="1.5"/><path d="M -4 0 v 3.5 M 3 0 v 3.5" stroke-width="1.5"/><circle cx="6.5" cy="-7.5" r="1" fill="var(--ink)" stroke="none"/></g>`}
+  {kid:true, react:"a dinosaur. a small one. we're keeping it.", svg:DINO_ART}
 ];
 /* how many trailing entries of OBJECTS belong to little jord */
 const KID_OBJECT_COUNT = 3;
@@ -2925,6 +2964,16 @@ function heartBurst(n, force){
 /* ── the rainbow (little jord only) ──
    arcs the whole sky behind him, holds a while, fades out. One at a time. */
 const RAINBOW_COLS = ["#e26d5c","#e59f45","#e0cb57","#7bbf7a","#6fa8c0","#7b8fd0","#b48ad6"];
+/* heart-shaped cheeks, for a few seconds. Sits on top of the ordinary blush
+   (which the vibe slider drives, and which never fires in kid mode since the
+   slider isn't there), and fades itself back out. */
+let blushTimer=null;
+function blushHearts(ms){
+  const el=$("blushhearts"); if(!el) return;
+  el.setAttribute("opacity","0.9");
+  clearTimeout(blushTimer);
+  blushTimer=setTimeout(()=>el.setAttribute("opacity","0"), ms || 5200);
+}
 /* the tickle bounce. Same layer and same one-shot discipline as .wiggling, and
    never both at once — the class is cleared on a timer rather than
    animationend, since the arms' own animations bubble up through #orbbody. */
@@ -2969,6 +3018,85 @@ function starDust(n){
       setTimeout(()=>g.remove(), 8200);
     }, i*rand(500,1400));
   }
+}
+/* ── the magic sit's big surprises ──────────────────────────────────────────
+   If you sit still and wait, something large happens: fireworks, a dinosaur
+   wanders in, or the whole world goes pink. Each one leaves on its own after a
+   while, and touching the screen sends it away immediately (that's the game —
+   wait and you get more, touch and you're back to the quiet). Only ever in kid
+   mode, only ever while sitting; `magicActive` is what the tap handler checks
+   to decide between dismissing a surprise and ending the sit. */
+const MAGIC_KINDS = ["fireworks","dino","pinkout","heartfall"];
+const MAGIC_WORDS = {
+  fireworks:["oh! look up.","that's for you, that one.","ooooh."],
+  dino:["…we have a visitor.","don't move. he's shy.","hello, enormous friend."],
+  pinkout:["oh my. everything's gone pink.","the whole world just did that. for you.","pink. all of it. no idea why."],
+  heartfall:["it's raining the good kind.","hearts. everywhere. this happens sometimes.","catch one if you like."]
+};
+const MAGIC_GONE = [
+  "there it goes. it'll come back if we wait.",
+  "gone. they're shy like that.",
+  "away it went. shall we wait for another?",
+  "poof. one more will come, if we're patient."
+];
+let magicActive=null, magicTimer=null, magicEndTimer=null;
+function fireworkBurst(cx,cy,color){
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("transform",`translate(${cx.toFixed(0)},${cy.toFixed(0)})`);
+  const inner=document.createElementNS("http://www.w3.org/2000/svg","g");
+  inner.setAttribute("class","fw");
+  let spokes="";
+  const n=12, r=rand(16,26);
+  for(let i=0;i<n;i++){
+    const a=(i/n)*Math.PI*2, r0=r*0.35;
+    spokes += `<path d="M ${(Math.cos(a)*r0).toFixed(1)} ${(Math.sin(a)*r0).toFixed(1)} `
+            + `L ${(Math.cos(a)*r).toFixed(1)} ${(Math.sin(a)*r).toFixed(1)}" `
+            + `stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`;
+    spokes += `<circle cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r).toFixed(1)}" r="1.6" fill="${color}" stroke="none"/>`;
+  }
+  inner.innerHTML=spokes;
+  g.appendChild(inner);
+  meteorLayer.appendChild(g);
+  setTimeout(()=>g.remove(), 2200);
+}
+function magicSurprise(){
+  if(!sitting || !kidMode || magicActive) return;
+  let kind=pick(MAGIC_KINDS);
+  if(reduceMotion && kind!=="pinkout") kind="pinkout";   /* the one that isn't motion */
+  magicActive=kind;
+  if(kind==="fireworks"){
+    const cols=["#e26d5c","#e59f45","#e3cf5a","#7bbf7a","#6fa8c0","#b48ad6","var(--bloom)"];
+    for(let i=0;i<9;i++) setTimeout(()=>{ if(magicActive==="fireworks") fireworkBurst(rand(40,240), rand(10,105), pick(cols)); }, i*rand(700,1300));
+  } else if(kind==="dino"){
+    /* the position lives on the OUTER group as an attribute and the walk-in
+       animation on an inner one: a CSS transform would otherwise replace the
+       transform attribute outright and drop him at the origin */
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("id","magicdino");
+    g.setAttribute("transform","translate(88,251)");
+    g.innerHTML=`<g class="dino-in"><g class="dino-bob"><g transform="scale(2.9)">${DINO_ART}</g></g></g>`;
+    meteorLayer.appendChild(g);
+  } else if(kind==="pinkout"){
+    document.body.classList.add("pinkout");
+  } else {
+    for(let i=0;i<22;i++) setTimeout(()=>{ if(magicActive==="heartfall") floatHeart(pick(HEART_HUES), true, true); }, i*rand(300,700));
+  }
+  if(Math.random()<.8) setTimeout(()=>{ if(magicActive===kind) say(pick(MAGIC_WORDS[kind]), 9000); }, 1400);
+  /* it goes on its own if you leave it be */
+  magicEndTimer=setTimeout(()=>clearMagic(), kind==="dino" ? 20000 : 15000);
+}
+function clearMagic(){
+  clearTimeout(magicEndTimer); magicEndTimer=null;
+  const was=magicActive;
+  magicActive=null;
+  document.body.classList.remove("pinkout");
+  const d=$("magicdino");
+  if(d){
+    const walker=d.querySelector(".dino-in") || d.firstChild;
+    if(reduceMotion || !walker){ d.remove(); }
+    else { walker.classList.remove("dino-in"); walker.classList.add("dino-out"); setTimeout(()=>d.remove(), 3600); }
+  }
+  return was;
 }
 function rainbow(force){
   if(reduceMotion || (sitting && !force)) return;
@@ -3215,6 +3343,11 @@ function startSit(){
     rainbow(true);
     starDust(3);
     sitStarTimer=setInterval(()=>{ if(sitting) starDust(1+Math.floor(Math.random()*2)); }, 19000);
+    /* and every so often, something big — but only if you've left it alone */
+    magicTimer=setInterval(()=>{
+      if(!sitting){ clearInterval(magicTimer); magicTimer=null; return; }
+      if(!magicActive && Math.random()<.65) magicSurprise();
+    }, 16000);
   }
   const linesUsed = [...kp(SIT_LINES, KID_SIT_LINES)].sort(()=>Math.random()-.5).slice(0,5);
   let li=0;
@@ -3232,6 +3365,8 @@ function endSit(early){
   if(!sitting) return;
   sitting=false;
   clearInterval(sitTick); clearInterval(sitLineTimer); clearInterval(sitStarTimer);
+  clearInterval(magicTimer); magicTimer=null;
+  clearMagic();
   sitTick=sitLineTimer=sitStarTimer=null;
   document.body.classList.remove("sitting");
   orbbody.classList.remove("breathing");
@@ -5009,7 +5144,13 @@ populateKeepsake();   /* so even a raw Ctrl+P prints a warm sheet, not a blank o
 /* tap JORD: pats, dizzy, delight */
 $("orbwrap").addEventListener("click", ()=>{
   if(holdSuppress){ holdSuppress=false; return; }   /* a completed long-press must not also pat */
-  if(sitting){ endSit(true); return; }
+  if(sitting){
+    /* mid-surprise, a touch sends it away and leaves you sitting — that's the
+       whole game: wait and another comes, touch and you're back to the quiet.
+       A touch with nothing happening still ends the sit, as it always did. */
+    if(magicActive){ clearMagic(); say(pick(MAGIC_GONE), 8000); return; }
+    endSit(true); return;
+  }
   /* mid-giggle, poking him is the entire point — heart eyes, a proper wobble,
      hearts everywhere, and he loses it a bit more each time */
   if(giggling){
@@ -5046,17 +5187,46 @@ $("orbwrap").addEventListener("click", ()=>{
     return;
   }
   setEyes(kp("sparkle","heart")); setMouth("grin");
-  /* in little-jord mode a poke is a tickle: he giggles, bounces, sheds hearts */
+  /* ── little jord's reactions to a poke ──
+     one giggle every single time got repetitive fast. The tickle is now one
+     option among several, sitting alongside the grown-up repertoire (turning
+     around, finding something, saying something) plus two of her own: the
+     heart spray and heart-shaped blush. Milestones and the rapid-pat giggle
+     fit above still take precedence. */
   if(kidMode){
-    heartBurst(3);
-    kidBounce();
-    if(Math.random()<.12) rainbow();
-    if(Math.random()<.55){
+    if(Math.random()<.1) rainbow();
+    const roll=Math.random();
+    if(roll<.24){
+      /* the tickle */
+      kidBounce();
       think(pick(TICKLE_LINES), 9000);
       armAnim(pick(["l","r","both"]),"flail");
       setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1800);
       return;
     }
+    if(roll<.42){
+      /* the heart spray */
+      heartBurst(5);
+      kidBounce();
+      think(pick(["oh! that got the hearts out.","careful, I'm leaking hearts.","there they go. that happens.","whoops. hearts everywhere."]), 8000);
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2000);
+      return;
+    }
+    if(roll<.56){
+      /* heart-shaped blush: quieter than the rest, and he goes shy about it */
+      blushHearts();
+      setEyes("uwu"); setMouth("smile");
+      think(pick(["oh. hello. I've gone a bit pink.","don't look at me. I'm being fond.","you did that. the pink, I mean.","I'm fine. my face is just like this now."]), 9000);
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 3200);
+      return;
+    }
+    if(roll<.7){
+      /* he turns around and shows you a face — the old emote, kept */
+      turnAround();
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 2200);
+      return;
+    }
+    /* everything else falls through to the shared repertoire below */
   }
   const r=Math.random();
   if(pats===10) think(kp("ten pats. I am thriving.","ten pats! I'm having a wonderful time."), 12000);
@@ -5067,9 +5237,18 @@ $("orbwrap").addEventListener("click", ()=>{
   else if(r < (kidMode?.42:.3)) turnAround();
   else think(pick(kp(THOUGHTS, KID_THOUGHTS)), 12000);
   armAnim("both","flail");
-  /* kid mode already bounced him above; never stack the two on #orbbody */
-  if(!reduceMotion && !kidMode){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
+  /* one or the other on #orbbody, never both: hers is the looser bounce */
+  if(kidMode) kidBounce();
+  else if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
   setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 1600);
+});
+
+/* a touch anywhere on the stage sends a surprise away, not just a touch on
+   Jord himself. #orbwrap's own handler runs first and clears it, so by the time
+   the click bubbles here there's nothing left to do — this only catches the
+   taps that land beside him. */
+stageEl.addEventListener("click", ()=>{
+  if(sitting && magicActive){ clearMagic(); say(pick(MAGIC_GONE), 8000); }
 });
 
 /* footer easter egg: a few quick taps on the orbit-day counter and Jord
