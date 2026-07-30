@@ -479,6 +479,23 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **A pink T-rex and a rabbit** (rev W) — both are drops *and* big surprises,
+  which is now the intended shape for anything new: draw it once as a `*_ART`
+  const, list it in `OBJECTS` with `kid:true`, and register it in
+  `MAGIC_CREATURES`.
+  - `TREX_ART` (stroked in `--bloom`, so she is genuinely pink) and
+    `RABBIT_ART` sit beside `DINO_ART`. As drops they're appended to the tail
+    of `OBJECTS` and **`KID_OBJECT_COUNT` went 3 → 5** — the two must always
+    move together, and a test now asserts they match.
+  - `MAGIC_CREATURES` replaces the hard-coded dino branch: `{art, scale, at,
+    move, in}` per creature, built by one `magicCreature()`. The rabbit gets
+    `bunny-in` (arrives from the right) and `bunny-hop` instead of the dino's
+    walk and bob. The old `#magicdino` id is now `#magiccreature`.
+  - **Surprises come from a shuffled bag** (`nextMagicKind()`), not a fresh
+    roll, so you never get the same one twice running. Worth knowing when
+    testing: pinning `Math.random` no longer selects the kind, and the pinned
+    value must be **below 0.65** or the "does one fire this tick" roll never
+    passes at all.
 - **The gear's press-and-hold was dead on a phone** (rev V) — reported as "the
   menu button doesn't work anymore", and it was a real bug, not a
   misunderstanding of the guard. The original implementation cancelled the hold
