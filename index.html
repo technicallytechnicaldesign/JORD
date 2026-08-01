@@ -846,8 +846,14 @@
   @keyframes gdSway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(2.1deg)}}
   @keyframes gdPop{0%{transform:scale(1)}35%{transform:scale(1.2)}70%{transform:scale(.95)}100%{transform:scale(1)}}
   .gd-sway.pop{animation:gdPop .5s ease}
+  /* word bubbles live in their own unclipped layer (#gd-words) and are placed
+     in pixels by gardenWord(), which measures them and keeps them inside the
+     field — hence no centring transform here. They used to be children of the
+     layer they belonged to, and #gd-visitors clips its overflow, so anything
+     poked near an edge got its bubble sliced off. */
+  #gd-words{position:absolute;inset:0;pointer-events:none;z-index:1000}
   .gd-word{
-    position:absolute;transform:translate(-50%,calc(-100% - 6px));
+    position:absolute;
     background:var(--paper);
     background:color-mix(in srgb, var(--paper) 82%, transparent);
     -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
@@ -1326,7 +1332,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">rev Y</span>
+    <span class="rev">rev Z</span>
   </footer>
 </div>
 
@@ -1474,6 +1480,8 @@
     <div id="gd-stage">
       <div id="gd-field"></div>
       <div id="gd-visitors" aria-hidden="true"></div>
+      <!-- bubbles go here, outside the clipped visitor layer -->
+      <div id="gd-words" aria-hidden="true"></div>
     </div>
     <div class="tr-btns">
       <button id="gd-close" class="small primary" style="flex:1">Back to Jord</button>
@@ -4456,7 +4464,9 @@ function renderGarden(){
   field.innerHTML = garden.map((g,idx)=>{
     const seed=(g.t||0)+idx+1;
     const rx=(6+gseed(seed*0.9)*86).toFixed(1);        /* 6%..92% across */
-    const ry=(8+gseed(seed*1.7+11)*80).toFixed(1);     /* 8%..88% down */
+    /* the floor used to be 8%, which put a bloom's artwork (drawn upward from
+       its anchor) over the panel header — a flower sliced by the title line */
+    const ry=(15+gseed(seed*1.7+11)*74).toFixed(1);    /* 15%..89% down */
     const rot=((gseed(seed*2.3+5)-0.5)*32).toFixed(1); /* ±16deg lean */
     const scale=(0.72+gseed(seed*3.1+7)*0.72).toFixed(2);
     const hue=objHue(seed);
@@ -4478,6 +4488,32 @@ function renderGarden(){
       + `</svg></div></div>`;
   }).join("");
 }
+/* ── one place that says a word in the garden ──
+   Anchored to whatever was poked (a bloom, a creature), placed in pixels rather
+   than percentages, and kept fully inside the field: measured after insertion,
+   clamped on both axes, and flipped to sit BELOW the anchor when there isn't
+   room above it. Lives in #gd-words, which doesn't clip — bubbles used to be
+   children of #gd-visitors, whose overflow:hidden sliced the bubble off
+   anything poked near an edge. */
+function gardenWord(text, anchor){
+  const layer=$("gd-words");
+  if(!layer || !anchor) return;
+  layer.querySelectorAll(".gd-word").forEach(w=>w.remove());
+  const w=document.createElement("div");
+  w.className="gd-word";
+  w.textContent=text;
+  layer.appendChild(w);                       /* insert first so it can be measured */
+  const lr=layer.getBoundingClientRect(), ar=anchor.getBoundingClientRect();
+  const ax=ar.left+ar.width/2-lr.left, ay=ar.top-lr.top;
+  const bw=w.offsetWidth, bh=w.offsetHeight, M=6, GAP=8;
+  const maxL=Math.max(M, lr.width-bw-M), maxT=Math.max(M, lr.height-bh-M);
+  let top=ay-bh-GAP;
+  if(top<M) top=ay+ar.height+GAP;             /* no room above: go below instead */
+  w.style.left=clamp(ax-bw/2, M, maxL).toFixed(0)+"px";
+  w.style.top =clamp(top,     M, maxT).toFixed(0)+"px";
+  requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add("show")));
+  setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2400);
+}
 $("gd-field").addEventListener("click", (e)=>{
   const fl=e.target.closest(".gd-flower"); if(!fl) return;
   const sway=fl.querySelector(".gd-sway");
@@ -4485,17 +4521,9 @@ $("gd-field").addEventListener("click", (e)=>{
     sway.classList.remove("pop"); void sway.getBoundingClientRect(); sway.classList.add("pop");
     sway.addEventListener("animationend", ()=>sway.classList.remove("pop"), {once:true});
   }
+  /* a bloom of hers gets one of her lines, whichever mode you're looking in */
   if(Math.random()<.5){
-    const field=$("gd-field");
-    field.querySelectorAll(".gd-word").forEach(w=>w.remove());
-    const w=document.createElement("div");
-    /* a bloom of hers gets one of her lines, whichever mode you're looking in */
-    w.className="gd-word";
-    w.textContent = pick(fl.classList.contains("gd-kid") ? KID_GARDEN_LINES : kp(GARDEN_LINES, KID_GARDEN_LINES));
-    w.style.left=fl.style.left; w.style.top=fl.style.top;
-    field.appendChild(w);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add("show")));
-    setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2400);
+    gardenWord(pick(fl.classList.contains("gd-kid") ? KID_GARDEN_LINES : kp(GARDEN_LINES, KID_GARDEN_LINES)), fl);
   }
 });
 /* ── garden visitors ──────────────────────────────────────────────────────
@@ -4595,11 +4623,8 @@ function spawnGardenVisitor(kind){
 }
 function gvPoke(e){
   e.stopPropagation();
-  const el=e.currentTarget, layer=$("gd-visitors");
-  if(!layer) return;
-  layer.querySelectorAll(".gv-word").forEach(w=>w.remove());
-  const w=document.createElement("div");
-  w.className="gd-word gv-word";
+  const el=e.currentTarget;
+  let line;
   if(el.dataset.kind==="rock"){
     /* poke the rock and he hops, sometimes goes heart-eyed about it, and says
        one of the few things a rock can say */
@@ -4614,20 +4639,16 @@ function gvPoke(e){
       hearts.style.display=""; pupils.style.display="none";
       setTimeout(()=>{ hearts.style.display="none"; pupils.style.display=""; }, 4500);
     }
-    w.textContent = Math.random()<.55 ? pick(KID_ROCK_SOUNDS) : pick(KID_ROCK_LINES);
+    line = Math.random()<.55 ? pick(KID_ROCK_SOUNDS) : pick(KID_ROCK_LINES);
   } else {
-    w.textContent = pick(kp(VISITOR_LINES, KID_VISITOR_LINES));
+    line = pick(kp(VISITOR_LINES, KID_VISITOR_LINES));
   }
-  const lr=layer.getBoundingClientRect(), er=el.getBoundingClientRect();
-  w.style.left=(((er.left+er.width/2)-lr.left)/lr.width*100)+"%";
-  w.style.top=Math.max(6,((er.top-lr.top)/lr.height*100))+"%";
-  layer.appendChild(w);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add("show")));
-  setTimeout(()=>{ w.classList.remove("show"); setTimeout(()=>w.remove(),450); }, 2200);
+  gardenWord(line, el);
 }
 function startGardenVisitors(){
   if(gdVisitorTimer){ clearInterval(gdVisitorTimer); gdVisitorTimer=null; }
   const layer=$("gd-visitors"); if(layer) layer.innerHTML="";  /* fresh each open */
+  const words=$("gd-words"); if(words) words.innerHTML="";     /* and no stale bubble */
   if(reduceMotion) return;
   /* a chance of one arriving shortly after the panel opens */
   if(Math.random() < (kidMode ? .85 : .38)){

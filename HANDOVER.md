@@ -479,6 +479,29 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **Garden bubbles stopped being clipped** (rev Z) — reported from real use: poke
+  a creature near an edge and its speech bubble was sliced off. Cause: bubbles
+  were appended to the layer their subject lived in, and `#gd-visitors` carries
+  `overflow:hidden` (rightly — it stops creatures spilling out of the meadow),
+  so anything anchored near a boundary lost its bubble. Compounded by the
+  placement being percentage-based with a `translate(-50%,-100%)`, which had no
+  idea how wide the bubble actually was.
+  - Both call sites (a poked bloom, a poked creature) now go through one
+    **`gardenWord(text, anchor)`**. It renders into a new unclipped
+    **`#gd-words`** layer, measures the bubble after insertion, clamps it on
+    both axes to sit fully inside the field, and **flips it below the anchor**
+    when there isn't room above. The `.gd-word` centring transform is gone,
+    since placement is now in measured pixels.
+  - `startGardenVisitors()` clears `#gd-words` on open alongside `#gd-visitors`,
+    so a stale bubble can't survive a close/reopen.
+  - Covered by `02_WORK/dom-test/garden-bubbles.test.js`, which stubs the
+    layout and drives an anchor into all four edges and both top corners.
+    Note it drives the **flower** path deliberately: `#gd-field`'s listener is
+    delegated so an injected node works, whereas the visitor path binds its
+    handler per element at spawn time and a synthetic node never gets one.
+  - Same round: the garden's bloom `ry` floor went 8% → 15%. A bloom's artwork
+    is drawn *upward* from its anchor, so at 8% the top flower was sliced by the
+    panel header.
 - **Her own print sheet** (rev Y) — `#tr-kidpage`, built by `populateKidPage()`
   on the same `populateKeepsake()` chain as the others. In kid mode the print
   becomes **two sheets, not four**: her page, then the garden. The print media
