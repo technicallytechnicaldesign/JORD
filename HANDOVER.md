@@ -1,34 +1,46 @@
 # JORD — Handover Doc
 
+## Version A.1 — where this stands
+
+JORD is **v A.1**, as of 2026-08-01.
+
+The single-letter revs (G → Z) were the prototype era. The letter ran out at Z
+at a genuinely good stopping point: two modes shipped and in daily use by two
+people, the documentation caught up with the code, and a real test harness in
+place. So the scheme rolled over rather than continuing into AA. **A.1 is the
+first version of JORD as a thing that exists, rather than JORD as an
+experiment.**
+
+### The scheme, from here
+
+- **A.1 → A.2 → A.3 …** — one bump per shipped round of work, the same cadence
+  the letters had. Bump the footer's `<span class="rev">v A.n</span>` **once per
+  round**, not once per commit. A single small copy or number tweak doesn't
+  need one; a real feature or a multi-part round does.
+- **B.1** — reserved for a change to *what JORD is*: another mode alongside
+  Jord and Little Jord, a rewrite, or a change to the shape of stored data that
+  an existing install would notice. Don't spend it on a big feature — features
+  are minors. This has to survive someone's phone having a garden in it.
+- The letters stay as history in the changelog below. **v A.1 follows rev Z.**
+- Anything that reads the version out of the file should take the whole span
+  contents (`v A.1`), not assume a single trailing letter — the Little Jord doc
+  generator does exactly this.
+
 ## Next session — nothing queued
 
-At **rev P**. Nothing is queued for next time. Open threads if a future
-session wants them, none urgent:
+Nothing is queued. Open threads, none urgent:
 
-- **Rolling charts (rev P) are logic-verified via seeded data, not visually**
-  — the "Today" chart is now `chartLast24h()`, a genuine rolling 24h window
-  (same "now pinned at the right edge" shape as `chartLastHour()`), not the
-  old calendar-day one. Confirmed with a seeded-data test that a point 23h
-  old shows and one 25h old doesn't, but nobody's looked at the actual chart
-  rendering.
-- **Nothing PDF-related is print-verified** — no browser/print access in this
-  env. Page 1 was deliberately loosened this round (rev O: portrait 150→220px,
-  margins opened up throughout, no longer fighting for a strict one-sheet
-  fit) — it will very likely push the wave coda onto its own page now, which
-  is the intended trade-off, not a bug to fix. Worth an actual
-  **Trends → Save as PDF** at some point to confirm it reads well, and
-  whether the arms/held-item art (rev N) looks right.
-- **Garden reset modes (rev O) are logic-verified, not visually verified** —
-  the "Garden resets" Settings option (5am/weekly/at 50 flowers) and the
-  200-flower cap were tested via headless DOM simulation (count-mode hitting
-  50 and resetting, weekly mode not wiping on first switch, the cap actually
-  capping at 200) — all pass — but nobody's looked at the Settings row itself
-  in a real browser.
-- **None of rev M is ear-verified** (no audio out in this env) — the chime
-  types' character/tuning, the percussion dynamics range, and the swell's
-  depth/period feel are all reasoned from the Web Audio graph, not heard.
+- **The soundscape has still never been heard by anyone building it** — four
+  generative layers (drone, plucks, percussion, chimes) plus the swell macro,
+  all reasoned from the Web Audio graph, no audio out in any session that wrote
+  them. Character, tuning and mix balance want a real listen.
+- **The grown-up print path isn't paper-verified.** Little Jord's two sheets
+  have now been printed for real and sit comfortably one page each; the
+  three-sheet adult path (keepsake + wave, data, garden) never has been.
+- **More of her drops and creatures** whenever the mood takes — the pattern is
+  settled and written up under "Adding to it" in `04_DOCS/little-jord.html`.
 - The **standalone soundscape module** (`SOUNDSCAPE_MODULE_PLAN.md`) is still
-  planning-only through rev M — extraction remains un-started and deliberately so.
+  planning-only, and deliberately so.
 
 ---
 
@@ -1000,13 +1012,15 @@ For anything beyond a small tweak, the effective loop has been:
      `OBJECTS[].react`/`VIBE_NOTES`/`SHELF_MEMORY`/`WAITING` for tone.
    - Single self-contained file, no new dependencies, no build step.
    - Never leave a broken/non-parsing script committed.
-   - **Bump the footer's `<span class="rev">rev X</span>` (search for it) to
-     the next letter whenever a round ships a substantial change** — the
-     user asked for this as a standing convention (currently at `rev F`).
-     Use judgment on "substantial" — a single small copy/number tweak
-     doesn't need it, a real feature or a multi-part round does. Don't bump
-     it more than once per round even if the round has several commits.
-     (Now at **rev N**.)
+   - **Bump the footer's `<span class="rev">v A.n</span>` (search for it) by one
+     minor whenever a round ships a substantial change** — a standing
+     convention the user asked for. Use judgment on "substantial": a single
+     small copy/number tweak doesn't need it, a real feature or a multi-part
+     round does. Never more than once per round, however many commits it takes.
+     The full scheme (and when a major is warranted) is at the top of this file
+     under **Version A.1**. Bumping the version means updating it in the
+     workspace too — `showcase.json`'s Revision metric, `04_DOCS/showcase.html`,
+     and `04_DOCS/at-a-glance.html`'s ledger all state it.
    - End with a clear summary: what shipped, commit hashes, anything skipped
      and why.
 4. **When the agent finishes, verify locally before reporting to the user:**
