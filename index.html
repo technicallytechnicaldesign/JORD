@@ -378,6 +378,7 @@
     .heart-pop,.rainbow-arc,.big-heart,.kid-star,.gd-kid-tw,.gv-tw,.kid-bounce,
     .gv-rock .rock-body,.gv-rock .rock-body.rock-hop,
     .fw,.dino-in,.dino-out,.dino-bob,.bunny-in,.bunny-hop,
+    .giant-heart,.gv-bunny .gv-hop,
     .skyfly,.skyfly .gv-flap,.skybird-flap{animation:none}
     /* nap state still happens (eyes close, zzz, wake-on-touch) — only its droop
        motion is stripped, so he just settles into the sag instantly */
@@ -598,6 +599,17 @@
     100%{opacity:0;transform:translateY(-224px) scale(1.55)}
   }
   .big-heart{animation:bigHeart 6.8s cubic-bezier(.3,.55,.45,1) forwards}
+  /* press LOVE over and over and the hearts occasionally get out of hand: one
+     ENORMOUS one that fills the whole sky, or the whole rainbow at once. */
+  @keyframes giantHeart{
+    0%{opacity:0;transform:translateY(20px) scale(.06)}
+    12%{opacity:.55}
+    38%{opacity:.9;transform:translateY(-8px) scale(1.12)}
+    50%{transform:translateY(-4px) scale(.98)}
+    62%{transform:translateY(-10px) scale(1.04)}
+    100%{opacity:0;transform:translateY(-30px) scale(1.25)}
+  }
+  .giant-heart{animation:giantHeart 7.4s cubic-bezier(.25,.6,.4,1) forwards}
   /* one of hers on the keepsake shelf: a soft pink backing, in either mode —
      it's about whose keepsake it is, not which mode is switched on */
   .sh-kid-item{background:color-mix(in srgb, var(--bloom) 15%, var(--panel));border-color:var(--bloom)}
@@ -634,6 +646,11 @@
     80%{transform:translateY(-1.5px) rotate(-2deg)}
   }
   .gv-rock .rock-body.rock-hop{animation:rockHop .85s cubic-bezier(.3,1.3,.5,1)}
+  /* the rabbit comes to the garden too. She crosses the meadow the way she
+     crosses the sky in the magic sit: hopping the entire way, never walking. */
+  .gv-bunny svg{width:34px;height:auto}
+  .gv-bunny .gv-hop{transform-box:fill-box;transform-origin:center bottom;animation:gvBunnyHop .72s ease-in-out infinite}
+  @keyframes gvBunnyHop{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-9px) rotate(-4deg)}60%{transform:translateY(0) rotate(2deg)}}
   .gv-heart svg{width:17px;height:auto}
   .gv-sparkle svg{width:18px;height:auto}
   .gv-sparkle .gv-tw{transform-box:fill-box;transform-origin:center;animation:gvTwinkle 2.2s ease-in-out infinite}
@@ -1332,7 +1349,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">v A.1</span>
+    <span class="rev">v A.2</span>
   </footer>
 </div>
 
@@ -2245,14 +2262,73 @@ const KID_BREATH_OUT = [
   "out… like blowing out every candle at once",
   "out… let it go all the way to the end"
 ];
-/* the giggle: a small silly routine, done slowly, ending in a laugh */
+/* the giggle: a small silly routine, done slowly, ending in a laugh.
+   Six themes, always in this order, but each one is a little tree: a fresh
+   option is drawn per theme every time you press the button, so the routine
+   is never quite the one you did yesterday. Each option is its own
+   [label, instruction] pair, since a wiggle of the nose isn't a wiggle of
+   the toes and deserves to be called what it is. */
 const GIGGLE_STEPS = [
-  ["wiggle","wiggle all ten fingers.\nas fast as they'll go."],
-  ["stretch","reach up as tall as you can.\nnow wobble a bit."],
-  ["face","pull your silliest face.\nI'll pull mine too."],
-  ["noise","say BLEUGH.\nout loud. I'll wait."],
-  ["shake","shake it all out.\nlike a dog after a puddle."],
-  ["the hard bit","now try not to laugh.\ngood luck. I'm terrible at this."]
+  [ /* wiggle: one small body part, at speed */
+    ["wiggle","wiggle all ten fingers.\nas fast as they'll go."],
+    ["wiggle","wiggle your toes.\nyes, inside the socks. I'll know."],
+    ["wiggle","wiggle your nose.\nlike a rabbit deciding something."],
+    ["wiggle","wiggle your shoulders.\nup, down, up, down."],
+    ["wiggle","wiggle your eyebrows.\nboth. then just one, if you can."],
+    ["wiggle","wiggle your bottom.\nI'm not going to explain why."],
+    ["wobble","wobble your knees.\nlike jelly on a bus."],
+    ["wiggle","wiggle your ears.\nnobody can. try anyway."]
+  ],
+  [ /* stretch: make a shape, hold it a second */
+    ["stretch","reach up as tall as you can.\nnow wobble a bit."],
+    ["stretch","reach as low to the ground as you can.\nsay hello to the floor."],
+    ["stretch","stretch out as wide as you go.\nbe the biggest star in the room."],
+    ["squeeze","wrap your arms around you\nand squeeze as tight as you can."],
+    ["stretch","stretch one arm way over there.\nnow the other one. now both."],
+    ["curl","curl up as small as a pea.\nthen POP open again."],
+    ["stretch","stand on your tiptoes.\nreach for something far too high."],
+    ["twist","twist round to look behind you.\nboth ways. slowly."]
+  ],
+  [ /* face: pull one */
+    ["face","pull your silliest face.\nI'll pull mine too."],
+    ["face","puff your cheeks out like a fish.\nhold it. hold it."],
+    ["face","stick your tongue out\nand try to touch your nose."],
+    ["face","make your most surprised face.\nlike a cake just walked in."],
+    ["face","scrunch your whole face up small.\nthen let it all go."],
+    ["face","do a very serious face.\nthe seriousest. no laughing."],
+    ["face","blow your biggest raspberry.\npppbbbbbtthhh."],
+    ["face","wink one eye. then the other.\nboth at once doesn't count."]
+  ],
+  [ /* noise: say the thing out loud */
+    ["noise","say BLEUGH.\nout loud. I'll wait."],
+    ["noise","say SCREEEE.\nlike a very small bird."],
+    ["noise","say SCROBOBOBOBOBO.\nall of it. no skipping bits."],
+    ["noise","say WOMP.\njust once. very seriously."],
+    ["noise","say BLOOP BLOOP BLOOP.\nlike bubbles."],
+    ["noise","say HRRRMMMM.\nlike a fridge thinking."],
+    ["noise","say YIP! YIP! YIP!\nthree times, quite fast."],
+    ["noise","say SHOOOOOOO.\nuntil the air runs out."],
+    ["noise","do your best owl.\nyou know the one."],
+    ["noise","moo. but quietly.\nit's a shy cow."]
+  ],
+  [ /* shake: get it all out */
+    ["shake","shake it all out.\nlike a dog after a puddle."],
+    ["shake","shake your hands like they're wet.\nflap flap flap."],
+    ["shake","stamp your feet ten times.\ncount them out loud."],
+    ["shake","jump up and down five times.\nland like a feather."],
+    ["shake","spin round once.\nonly once. we're not silly."],
+    ["shake","march on the spot.\nknees up. very important knees."],
+    ["shake","shake your head like a wet dog.\ngently though."],
+    ["shake","flap your arms like enormous wings.\nslow ones."]
+  ],
+  [ /* the hard bit: the one nobody wins */
+    ["the hard bit","now try not to laugh.\ngood luck. I'm terrible at this."],
+    ["the hard bit","keep a straight face for five seconds.\nI'll count. one... two..."],
+    ["the hard bit","don't smile.\nwhatever you do, don't smile."],
+    ["the hard bit","stay completely still.\nlike a statue of yourself."],
+    ["the hard bit","look me right in the eyes\nand don't giggle. go on."],
+    ["the hard bit","hold your breath and be serious.\nI'm going to pull a face now."]
+  ]
 ];
 const GIGGLE_LINES = [
   "I couldn't keep it in either.",
@@ -2260,7 +2336,12 @@ const GIGGLE_LINES = [
   "that face. that FACE.",
   "I laughed first. I always laugh first.",
   "well, that's the day improved.",
-  "we're both very bad at not laughing."
+  "we're both very bad at not laughing.",
+  "I made a noise. I don't know what it was.",
+  "my whole round body is wobbling. worth it.",
+  "you did the noise. you actually did the noise.",
+  "right. that's my silliness used up. for today.",
+  "snrk. sorry. snrk."
 ];
 const TICKLE_LINES = [
   "hehehe. that tickles.",
@@ -2299,6 +2380,19 @@ const KID_VISITOR_LINES = [
   "no idea what it's up to. seems happy though.",
   "that one hums. listen.",
   "it's got somewhere to be. eventually."
+];
+/* the rabbit, when she turns up in the meadow rather than the sky */
+const KID_BUNNY_LINES = [
+  "the rabbit came back!",
+  "she remembered the way. clever rabbit.",
+  "hello again, small hopping friend.",
+  "she's checking the flowers. she does that.",
+  "stay very still. she likes still people.",
+  "she came to see you. I asked and she said yes.",
+  "hop. hop. hop. that's her whole plan.",
+  "she's not staying long. she never does.",
+  "I think she lives here now. don't tell her.",
+  "one rabbit, in our garden, on purpose."
 ];
 const KID_ROCK_LINES = [
   "that's a rock. it lives here now.",
@@ -2997,12 +3091,13 @@ setInterval(()=>{ if(Math.random()<.3) shootStar(); }, 200*1000);
 
 /* ── rare content-heart: when the vibe's kept high and Jord's just being,
    a little heart occasionally drifts up off the top of it ── */
-function floatHeart(color, pop, force){
+function floatHeart(color, pop, force, spreadPx){
   /* `force` lets a deliberate moment (an exercise finishing, the giggle fit)
-     spawn hearts while a mode has `busy` set — the ambient path never does */
+     spawn hearts while a mode has `busy` set — the ambient path never does.
+     `spreadPx` widens the horizontal scatter for the big rainbow moments. */
   if(reduceMotion || (!force && (busy || sitting))) return;
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
-  const spread = pop ? 46 : 20;
+  const spread = spreadPx || (pop ? 46 : 20);
   g.setAttribute("transform",`translate(${rand(140-spread,140+spread).toFixed(0)},${rand(92,120).toFixed(0)})`);
   const inner = document.createElementNS("http://www.w3.org/2000/svg","g");
   /* .heart-pop is the quicker, bigger-travel version used for bursts;
@@ -3059,6 +3154,45 @@ function bigHeart(){
   /* must outlast the 6.8s .big-heart animation, or it vanishes mid-drift */
   setTimeout(()=>g.remove(), 7200);
 }
+/* ── the LOVE overflow ──
+   press LOVE again and again and the hearts sometimes lose their composure:
+   either one ENORMOUS heart that fills the sky, or the whole rainbow of them
+   at once. Same shape, same colours as everything else here, just far too much
+   of it, which is the joke. */
+function giantHeart(){
+  if(reduceMotion) return;
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("transform","translate(140,150)");
+  const inner=document.createElementNS("http://www.w3.org/2000/svg","g");
+  inner.setAttribute("class","giant-heart");
+  inner.innerHTML=`<g transform="translate(0,-62) scale(6.2)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" `
+    + `stroke="var(--bloom)" stroke-width=".9" fill="var(--bloom)" fill-opacity=".38"/></g>`;
+  g.appendChild(inner);
+  meteorLayer.appendChild(g);
+  /* must outlast the 7.4s .giant-heart animation */
+  setTimeout(()=>g.remove(), 7800);
+}
+/* one heart per rainbow colour, in order, spread right across him */
+function rainbowHearts(){
+  if(reduceMotion) return;
+  RAINBOW_COLS.forEach((col,i)=>{
+    setTimeout(()=>{
+      floatHeart(col, true, true, 96);
+      floatHeart(col, true, true, 62);
+    }, i*170);
+  });
+}
+/* how many times LOVE has been pressed in the last few seconds. Kept as a
+   list of stamps rather than a counter so it forgets on its own. */
+let loveTaps=[];
+const LOVE_RUSH_LINES = [
+  "WHOA. that was a lot of love at once.",
+  "you pressed it so many times it got BIG.",
+  "look what you did! look at it!",
+  "I couldn't hold them all in. sorry. not sorry.",
+  "that's every colour I've got.",
+  "too much love. best problem."
+];
 /* stars for the magic sit: they drift in the sky above him, slowly, one at a
    time. Deliberately unhurried — this is the quiet part of the app. */
 function starDust(n){
@@ -3953,12 +4087,14 @@ $("b-giggle").addEventListener("click", ()=>{
      handler, which checks this flag before the usual `busy` bail-out */
   giggling=true;
   let i=0;
+  /* one option drawn from each theme's branch, fresh for this run */
+  const STEPS=GIGGLE_STEPS.map(branch=>pick(branch));
   const FACES=[["chaos","wavy"],["wide","o"],["uwu","grin"],["squint","wavy"],["chaos","grin"],["happy","grin"]];
   function show(){
-    exPhase.textContent=GIGGLE_STEPS[i][0];
-    exBody.textContent=GIGGLE_STEPS[i][1];
+    exPhase.textContent=STEPS[i][0];
+    exBody.textContent=STEPS[i][1];
     exCount.textContent="";
-    exNext.textContent = i<GIGGLE_STEPS.length-1 ? "done!" : "I laughed";
+    exNext.textContent = i<STEPS.length-1 ? "done!" : "I laughed";
     exNext.style.display="";
     /* Jord does each one along with you */
     const f=FACES[i%FACES.length];
@@ -3967,7 +4103,7 @@ $("b-giggle").addEventListener("click", ()=>{
     if(!reduceMotion){ orbbody.classList.remove("wiggling"); void orbbody.getBoundingClientRect(); orbbody.classList.add("wiggling"); }
     exNext.onclick=()=>{
       i++;
-      if(i>=GIGGLE_STEPS.length){
+      if(i>=STEPS.length){
         closeModal(); logMission("giggle");
         /* the giggle fit: he wobbles, hearts everywhere, and he says so */
         setEyes("chaos"); setMouth("grin");
@@ -3994,7 +4130,28 @@ $("b-enjoy").addEventListener("click", ()=>{
      out of the middle of him, one line, one flower. That's the whole thing. */
   if(kidMode){
     if(busy || sitting) return;
-    setEyes("heart"); setMouth("smile");
+    /* how fast is she hammering it? Only presses in the last 5 seconds count,
+       so a slow, deliberate love is always just the one ordinary big heart. */
+    const now=Date.now();
+    loveTaps=loveTaps.filter(t=>now-t<5000);
+    loveTaps.push(now);
+    /* from the third quick press on, a growing chance it overflows */
+    const rush = loveTaps.length>=3 && Math.random() < Math.min(.8, .3+.2*(loveTaps.length-3));
+    setEyes("heart"); setMouth(rush?"grin":"smile");
+    if(rush){
+      loveTaps=[];   /* one overflow per run, then she has to build it up again */
+      const giant = Math.random()<.5;
+      if(giant){ giantHeart(); blushHearts(6000); }
+      else { rainbowHearts(); rainbow(true); }
+      logMission("enjoy");
+      calm=clamp(calm+8,5,100); lastCheck=Date.now();
+      store.set("calm",calm); store.set("lastCheck",lastCheck);
+      render();
+      setTimeout(()=>say(pick(LOVE_RUSH_LINES), 14000), 1200);
+      setTimeout(()=>heartBurst(giant?5:4, true), 4200);
+      setTimeout(()=>{ if(!busy && !sitting) applyMood(); }, 9000);
+      return;
+    }
     bigHeart();
     logMission("enjoy");
     calm=clamp(calm+8,5,100); lastCheck=Date.now();
@@ -4537,7 +4694,7 @@ let gdVisitorTimer=null;
 const GV_KINDS=["fly","fly","fly","bug","spider"];
 /* little jord's meadow keeps sillier company: a bee, a snail in no hurry, a
    pet rock that simply sits, and the odd heart or sparkle drifting through */
-const GV_KIDS=["fly","fly","bee","bee","bug","snail","rock","heart","heart","sparkle","spider"];
+const GV_KIDS=["fly","fly","bee","bee","bug","snail","rock","heart","heart","sparkle","spider","bunny","bunny"];
 function spawnGardenVisitor(kind){
   if(reduceMotion) return;
   const layer=$("gd-visitors");
@@ -4549,8 +4706,9 @@ function spawnGardenVisitor(kind){
   el.dataset.kind=kind;
   el.setAttribute("aria-hidden","true");
   const hue=objHue(Math.floor(Math.random()*9999));
-  /* hearts and sparkles keep their own colour; everyone else gets tinted */
-  if(hue && kind!=="heart" && kind!=="sparkle") el.style.filter=`hue-rotate(${hue}deg)`;
+  /* hearts, sparkles and the rabbit keep their own colour (she's the same
+     rabbit as the one in the sky, and should stay recognisably her) */
+  if(hue && kind!=="heart" && kind!=="sparkle" && kind!=="bunny") el.style.filter=`hue-rotate(${hue}deg)`;
   let dur;
   if(kind==="rock"){
     /* he does not travel. he has never travelled. */
@@ -4574,6 +4732,19 @@ function spawnGardenVisitor(kind){
     el.style.setProperty("--dy",(-H*(0.35+Math.random()*0.3)).toFixed(0)+"px");
     el.style.setProperty("--wob","9px");
     dur=13+Math.random()*7;
+    el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
+  } else if(kind==="bunny"){
+    /* she crosses the meadow along the ground, hopping the whole way, and
+       faces whichever direction she's going */
+    const dir=Math.random()<.5?1:-1;
+    el.innerHTML=`<svg viewBox="-16 -28 32 31" fill="none" xmlns="http://www.w3.org/2000/svg">`
+      + `<g class="gv-hop"><g transform="scale(${dir},1)">${RABBIT_ART}</g></g></svg>`;
+    el.style.left=(dir>0 ? 4+Math.random()*14 : 80-Math.random()*14)+"%";
+    el.style.top=(70+Math.random()*14)+"%";
+    el.style.setProperty("--dx",(dir*W*(0.45+Math.random()*0.3)).toFixed(0)+"px");
+    el.style.setProperty("--dy","0px");
+    el.style.setProperty("--wob","0px");
+    dur=12+Math.random()*7;
     el.style.animation=`gvFlit ${dur}s linear forwards, gvFade ${dur}s ease forwards`;
   } else if(kind==="snail"){
     /* a ladybug's path, at a snail's pace and a fraction of the distance */
@@ -4640,6 +4811,15 @@ function gvPoke(e){
       setTimeout(()=>{ hearts.style.display="none"; pupils.style.display=""; }, 4500);
     }
     line = Math.random()<.55 ? pick(KID_ROCK_SOUNDS) : pick(KID_ROCK_LINES);
+  } else if(el.dataset.kind==="bunny"){
+    /* poke the rabbit and she puts in a quick flurry of hops, then settles
+       back to her ordinary pace */
+    const hop=el.querySelector(".gv-hop");
+    if(hop && !reduceMotion){
+      hop.style.animationDuration=".34s";
+      setTimeout(()=>{ hop.style.animationDuration=""; }, 1800);
+    }
+    line = pick(KID_BUNNY_LINES);
   } else {
     line = pick(kp(VISITOR_LINES, KID_VISITOR_LINES));
   }
