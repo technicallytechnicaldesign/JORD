@@ -1,8 +1,8 @@
 # JORD — Handover Doc
 
-## Version A.1 — where this stands
+## Version A.2 — where this stands
 
-JORD is **v A.1**, as of 2026-08-01.
+JORD is **v A.2**, as of 2026-08-14 (A.1 was 2026-08-01).
 
 The single-letter revs (G → Z) were the prototype era. The letter ran out at Z
 at a genuinely good stopping point: two modes shipped and in daily use by two
@@ -491,6 +491,44 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **More hearts, rabbits and variety** (v A.2): three asks straight from the
+  kiddo, all little-jord-only.
+  - **The rabbit visits the garden too.** She was only ever a drop and a magic-sit
+    surprise; now `"bunny"` is in `GV_KIDS` (weighted 2 of 13) and
+    `spawnGardenVisitor()` has a bunny branch: `RABBIT_ART` at 34px inside a
+    `viewBox="-16 -28 32 31"`, travelling the ground line (top 70–84%) on the
+    usual `gvFlit` path with `--wob:0`, since the vertical comes from
+    `.gv-bunny .gv-hop`'s own `gvBunnyHop` loop instead. She's mirrored with
+    `scale(dir,1)` so she faces where she's going, and she's excluded from the
+    per-instance `hue-rotate` (like hearts and sparkles) so she stays the same
+    rabbit you meet in the sky. Poking her speeds the hop to .34s for 1.8s and
+    gives a `KID_BUNNY_LINES` line.
+  - **The giggle is a variety tree.** `GIGGLE_STEPS` went from six fixed steps to
+    six *branches* (wiggle / stretch / face / noise / shake / the hard bit)
+    holding 48 `[label, instruction]` options between them, and the runner draws
+    one per branch at open time (`GIGGLE_STEPS.map(branch=>pick(branch))`). The
+    themes and their order never change, so the routine still feels like the
+    same routine; the specifics never repeat. Labels travel with their option
+    (a knee wobble is called "wobble", not "wiggle"), so the phase line stays
+    honest. `GIGGLE_LINES` gained five endings.
+  - **LOVE, pressed too fast, overflows.** `loveTaps` keeps the press stamps of
+    the last 5 seconds (a list, so it forgets on its own; a slow, deliberate
+    love is always just the one ordinary big heart). From the third quick press
+    the chance of an overflow is `min(.8, .3+.2*(n-3))`, and an overflow is a
+    coin flip between **`giantHeart()`** (the same heart path at `scale(6.2)`,
+    116×95 user units against a 280-wide viewBox, on a 7.4s wobbling
+    `giantHeart` animation, plus heart cheeks) and **`rainbowHearts()`** (two
+    hearts per `RAINBOW_COLS` entry, staggered 170ms, spread 96/62px, with a
+    real rainbow arc behind them). Either way she gets a `LOVE_RUSH_LINES` line
+    and the taps reset, so she has to build it up again.
+  - `floatHeart()` gained an optional fourth `spreadPx` argument, the only
+    change to existing behaviour in this round, and it defaults to what it did
+    before.
+  - Harness at **70 assertions**, all passing (plus 15 magic-sit and 9 garden-
+    bubble). Verified live in the browser pane: 3 giggle runs drew 3 different
+    routines, rabbits spawned naturally in the meadow at 34×33px un-clipped and
+    hopping, the giant heart fired on presses 4 and 8 of a fast run, and a
+    MutationObserver caught all seven rainbow colours arriving as hearts.
 - **Garden bubbles stopped being clipped** (rev Z) — reported from real use: poke
   a creature near an edge and its speech bubble was sliced off. Cause: bubbles
   were appended to the layer their subject lived in, and `#gd-visitors` carries
