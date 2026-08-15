@@ -1,8 +1,8 @@
 # JORD — Handover Doc
 
-## Version A.2 — where this stands
+## Version A.3, where this stands
 
-JORD is **v A.2**, as of 2026-08-14 (A.1 was 2026-08-01).
+JORD is **v A.3**, as of 2026-08-15 (A.2 was 2026-08-14, A.1 2026-08-01).
 
 The single-letter revs (G → Z) were the prototype era. The letter ran out at Z
 at a genuinely good stopping point: two modes shipped and in daily use by two
@@ -491,6 +491,35 @@ calm, funny, slightly weird presence rather than a clinical wellness app.
     `.rock-pupils`/`.rock-hearts` eyes, a slow `rockIdle` shuffle every ~6s and
     a `rockHop` when poked. `gvPoke()` gives him `KID_ROCK_SOUNDS`
     (*thud*, *shwwp*, *doonk*) 55% of the time and heart eyes for 4.5s at 45%.
+- **Tuning A.2 against a real child** (v A.3), all three reported from actual
+  use the day after A.2 shipped, and all three were real:
+  - **"The hearts are all pink."** They weren't, in code: `heartBurst()` has
+    drawn from `HEART_HUES` since rev Q. Two things made that a lie on a phone.
+    A heart was a bare 1.4px outline with `fill="none"`, at which size a hue
+    barely registers, and half of `HEART_HUES` was theme tokens
+    (`var(--leaf)`, `var(--water)`) which the magic sit's **pinkout literally
+    turns pink**, collapsing the palette exactly when the most hearts were on
+    screen. Hearts now carry a `fill-opacity:.3` fill in their own colour, the
+    palette is 9 literal colours that no theme can override, and a
+    colour-less `floatHeart()` in her mode picks its own hue instead of
+    defaulting to bloom. Grown-up Jord's rare drifting heart is still pink.
+  - **"The giant heart doesn't work."** It did (it fired on presses 4 and 8 of
+    a scripted run), but the odds were built for a scripted run, not a child:
+    a 5-second window starting at the third press with a 30% roll, and the
+    pauses to watch each heart were spending the window. The window is 8s now,
+    the second quick press can already overflow, and **the fourth always
+    does**, so determined smashing is guaranteed a payoff. The coin flip also
+    leans 62/38 to the giant, since that's the one she's after.
+  - **"We waited and waited and no rabbit."** She was one weighted entry among
+    thirteen, so the meadow kept offering a snail instead. She now has her own
+    timer, independent of the general visitor roll: one rabbit 2.5–7s after the
+    garden opens, then another every 26–42s for as long as it stays open, with
+    a one-at-a-time guard so a slow hop can't be lapped (an ordinary roll that
+    lands on her while she's mid-hop becomes a butterfly). Her weight in
+    `GV_KIDS` went 2/13 to 4/15 on top of that.
+  - Harness at **73 assertions**. Verified live: a rabbit arrived 9.5s after the
+    garden opened, four presses forced an overflow every time across six runs
+    (three giants, three rainbows), and a heart came out `#c58fd6` with a fill.
 - **More hearts, rabbits and variety** (v A.2): three asks straight from the
   kiddo, all little-jord-only.
   - **The rabbit visits the garden too.** She was only ever a drop and a magic-sit
