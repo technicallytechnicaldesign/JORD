@@ -240,6 +240,12 @@
   #arm-l.flail{animation:flailL 1.4s ease-in-out 2}
   #arm-r.yay{animation:yayR 2.2s ease-in-out}
   #arm-l.yay{animation:yayL 2.2s ease-in-out}
+  /* the hug beat: arms close in around the LOVE-overflow giant heart, hold for
+     ~1s (18%-65% of 2.1s ≈ 1.0s), then return to rest. JOR-0068 */
+  @keyframes hugR{0%,100%{transform:translate(214.8px,172px) rotate(0)}18%,65%{transform:translate(214.8px,172px) rotate(-68deg)}}
+  @keyframes hugL{0%,100%{transform:translate(65.2px,172px) rotate(0)}18%,65%{transform:translate(65.2px,172px) rotate(68deg)}}
+  #arm-r.hug{animation:hugR 2.1s ease-in-out}
+  #arm-l.hug{animation:hugL 2.1s ease-in-out}
 
   #faceflip{transform-origin:140px 150px;transition:transform .38s ease-in}
   #faceflip.away{transform:scaleX(.04)}
@@ -365,7 +371,7 @@
   @media (prefers-reduced-motion:reduce){
     .bob,#surface,.rippling,.fluttering,.twinkling,.wiggling,
     .obj-floaty,.obj-shimmer,.obj-boing,.obj-rare-glow,.obj-sparkle,
-    #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,
+    #arm-l.wave,#arm-r.wave,#arm-l.flail,#arm-r.flail,#arm-l.yay,#arm-r.yay,#arm-l.hug,#arm-r.hug,
     #orbbody.breathing,.shooting,
     .cloud1,.cloud2,.cloud3,#orbbody.orb-shaky,#orbbody.orb-shaky-hard,#orbbody.orb-still,
     .stage.warm,.stage.warm #orbbody,.ufo-fly,.ufo-beam,.heart-rise,
@@ -609,7 +615,11 @@
     62%{transform:translateY(-10px) scale(1.04)}
     100%{opacity:0;transform:translateY(-30px) scale(1.25)}
   }
-  .giant-heart{animation:giantHeart 7.4s cubic-bezier(.25,.6,.4,1) forwards}
+  /* cycles the whole rainbow over the heart's life instead of sitting on one
+     fixed var(--bloom) hue — same hue-rotate(filter) idiom the file already
+     uses per-instance elsewhere (see objHue), just animated over time. JOR-0067 */
+  @keyframes giantHeartHue{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+  .giant-heart{animation:giantHeart 7.4s cubic-bezier(.25,.6,.4,1) forwards, giantHeartHue 7.4s linear forwards}
   /* one of hers on the keepsake shelf: a soft pink backing, in either mode —
      it's about whose keepsake it is, not which mode is switched on */
   .sh-kid-item{background:color-mix(in srgb, var(--bloom) 15%, var(--panel));border-color:var(--bloom)}
@@ -1279,6 +1289,9 @@
           </g>
           </g>
         </g>
+        <!-- effects that must render in front of Jord (not behind, like #meteor) —
+             currently only the LOVE-overflow giant heart uses this. JOR-0067 -->
+        <g id="frontfx"></g>
         </g>
         </g>
 
@@ -2421,6 +2434,165 @@ const KID_GROUND_STEPS = [
   ["0 · HERE","there you are.\nright here, right now, all in one piece."]
 ];
 
+/* ══════════════════════════════════════════════════════════════════════
+   HOLIDAY OVERLAY — Legoland + waterpark trip.
+   Self-expiring: blends extra LEGO/waterpark/holiday lines into the pools
+   above only while today falls in the window below, using each visitor's
+   own device clock. No cleanup needed after the trip — this whole block
+   can also just be deleted any time, nothing outside it depends on it.
+   Kid pools get pushed with a big, dominant handful (she should hear it a
+   LOT); grown-up Jord gets a lighter, quieter seasoning of the same idea,
+   since pick() favours whichever pool is bigger. ── */
+const HOLIDAY_START = "2026-08-16", HOLIDAY_END = "2026-08-21";
+const HOLIDAY_MODE = (()=>{
+  const d=new Date(), pad=n=>String(n).padStart(2,"0");
+  const t=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return t>=HOLIDAY_START && t<=HOLIDAY_END;
+})();
+
+if (HOLIDAY_MODE) {
+  KID_THOUGHTS.push(
+    "big trip. big feelings. both of those are allowed to be true at once.",
+    "so many new things at once. that's allowed to feel like a lot.",
+    "I heard we're going somewhere with bricks stacked as tall as a house.",
+    "new places wobble a bit at first. then they don't.",
+    "I packed my favourite rock. he's very excited. he won't show it.",
+    "a whole world made of tiny bricks, built by somebody, one click at a time.",
+    "water everywhere, on purpose. that seems like a very good idea.",
+    "you don't have to love the big slide straight away. brave comes in sizes.",
+    "so many new faces and new sounds. one at a time is still enough.",
+    "somewhere out there, a thing you've never done before is waiting patiently.",
+    "you can be excited AND a bit much at the same time. I checked, it's fine.",
+    "I hear the bricks click together. very satisfying sound, I'm told.",
+    "holidays are just a lot of new, back to back. no wonder it's tiring.",
+    "you're allowed to sit this one out and watch for a bit first."
+  );
+  KID_NIGHT_THOUGHTS.push(
+    "big day. all done now. just the quiet left.",
+    "somewhere close by, a thousand tiny bricks are also having a rest.",
+    "the water's still tonight. it had a busy day too.",
+    "tomorrow's another new one. tonight isn't asking anything of you."
+  );
+  KID_WISHES.push(
+    "today I'll try one new thing, even a small one.",
+    "today I'll notice something built out of tiny bricks and wonder how long it took.",
+    "today I'll let myself be a bit overwhelmed, and that's okay.",
+    "today I'll splash someone I like.",
+    "today I'll find the best colour brick in the whole place.",
+    "today I'll ask before I jump in.",
+    "today I'll remember it's okay to say no to the big slide.",
+    "today I'll say wow at something, out loud.",
+    "today I'll hold someone's hand crossing somewhere busy.",
+    "today I'll notice when I'm having a good time and stay there a second longer."
+  );
+  KID_WISH_SAYS.push(
+    "that's a holiday-sized wish. I'll carry half of it in my pocket.",
+    "good one. I'll keep it safe between the bricks."
+  );
+  KID_PRAISE.push(
+    "you did the big slide. or you didn't, and that's brave too.",
+    "you tried something new today. that's the whole of it, right there.",
+    "look at you, out in the big wide new. doing brilliantly.",
+    "you found your feet in a very new place. well done, that.",
+    "you asked for a break when you needed one. very wise.",
+    "one more new thing, done. you're collecting them like bricks."
+  );
+  KID_ACCEPT.push(
+    "it's okay to feel a lot today. today was a lot.",
+    "new places can be too loud, too bright, too much, all at once. that's real, and it passes.",
+    "I don't have to love every new thing straight away. some take a minute.",
+    "being tired from having fun is still just being tired. that's allowed.",
+    "I can be excited and want to go home a bit early. both fit.",
+    "not every ride is for me today. that's not a small thing, that's just true."
+  );
+  KID_ENJOY.push(
+    "mission: spot something built entirely out of tiny bricks.",
+    "mission: find the biggest splash you can make. small people, big splashes.",
+    "mission: count how many different colours of brick you can see.",
+    "mission: find something at the waterpark that's brand new to you.",
+    "mission: say the wildest thing you saw today, out loud, to someone.",
+    "mission: find a queue and make it fun somehow. any way will do.",
+    "mission: high-five someone wearing the same excited face as you.",
+    "mission: find the tiniest brick person you can and give them a name.",
+    "mission: hold your breath and count how many bricks tall you are.",
+    "mission: find one thing today you'd want to build again from memory."
+  );
+  KID_BREATH_IN.push(
+    "in… like you're about to go down the big slide",
+    "in… the biggest gulp before a big jump in the pool",
+    "in… like snapping in the very last brick of something huge",
+    "in… like the whoosh before a waterslide drop",
+    "in… quietly, so the queue doesn't notice"
+  );
+  KID_BREATH_OUT.push(
+    "out… like a long slow slide into the water",
+    "out… like letting all the air out of a pool float",
+    "out… like watching the splash settle",
+    "out… slow, like bricks stacking one on top of the other",
+    "out… let it go all the way, like the last bit of a very big day"
+  );
+  KID_WAITING.push("splash.","packed.","brick by brick.","almost time.","still buzzing.","counting sleeps.");
+  KID_SIT_LINES.push(
+    "shh. even waterparks go quiet sometimes.",
+    "the whole day was loud. this bit doesn't have to be.",
+    "nothing to build, nothing to queue for. just us being still.",
+    "big days need a quiet minute somewhere in them. this is that minute.",
+    "even a whole world made of bricks needs a bit set aside to rest."
+  );
+  KID_LOVE_LINES.push(
+    "here. one for the holiday scrapbook of your heart.",
+    "a heart, brick by brick, all for you.",
+    "packed this specially. no case needed.",
+    "one heart, splash-proof, guaranteed."
+  );
+  KID_GROUND_STEPS.splice(0, KID_GROUND_STEPS.length,
+    ["5 · SEE","find five things you can see.\nbricks, water, anything new counts."],
+    ["4 · TOUCH","find four things you can feel.\nthe floor, your clothes, the air, even a brick."],
+    ["3 · HEAR","catch three sounds.\nsplashing counts. so does your own breathing."],
+    ["2 · SMELL","find two smells.\nchlorine counts. so does ice cream."],
+    ["1 · TASTE","one taste.\na chip, a sip, whatever's nearby."],
+    ["0 · HERE","there you are.\nright here, mid-holiday, all in one piece."]
+  );
+
+  /* grown-up Jord: same trip, quieter volume — a seasoning, not a takeover */
+  THOUGHTS.push(
+    "A whole city built from bricks smaller than my thumb. Ambitious. Respect.",
+    "Water everywhere, on purpose, for fun. Humanity's finest use of a Tuesday.",
+    "I heard someone say 'ouch, LEGO' with real feeling today. A rite of passage.",
+    "New places, new queues, new smells. Overstimulation is just the world showing off.",
+    "Every brick fits exactly one way. The rest of life should be so polite.",
+    "A holiday is just real life, but louder and in better shoes.",
+    "Splashing is just physics, dressed up as joy.",
+    "I contain multitudes. Today, several of them are slightly sunburnt."
+  );
+  NIGHT_THOUGHTS.push(
+    "Somewhere in the dark, a thousand tiny bricks are also resting, unsorted, until morning.",
+    "The pool's still now. It had a very big day too.",
+    "Whatever today asked of you, it's off the clock now."
+  );
+  ACCEPT_LINES.push(
+    "New places are a lot. Loud, bright, unfamiliar — all allowed to be true at once.",
+    "I don't have to enjoy every ride to have had a good day.",
+    "Being overwhelmed by something wonderful is still being overwhelmed. Both count.",
+    "The queue is long. I am also long-suffering. We're a match.",
+    "Holidays don't have to be relaxing to have been worth it.",
+    "I can love this trip and also need five quiet minutes away from it.",
+    "New experiences don't arrive pre-sorted into good and bad. Some just take processing time.",
+    "It's fine to sit this ride out. Watching counts as being here too."
+  );
+  ENJOY_LINES.push(
+    "Mission: spot something built entirely from tiny plastic bricks. Admire the commitment.",
+    "Mission: get splashed by someone you like. Full sensory telemetry, chlorinated edition.",
+    "Mission: strike up a conversation with your best queue-mate. Bonus points for slide talk.",
+    "Mission: try the ride, food, or thing you'd normally skip. Report back.",
+    "Mission: find five minutes of shade and just exist in it.",
+    "Mission: notice one new thing you didn't know you loved until today.",
+    "Mission: say 'wow' out loud at something. Genuinely. Let it be heard.",
+    "Mission: collect one good holiday photo you didn't plan for."
+  );
+}
+/* ══════════════════════════════════════════════════════════════════════ */
+
 /* the dinosaur, drawn once and used twice: as one of her drops, and (much
    bigger) as one of the magic sit's surprises */
 const DINO_ART = `<g stroke="var(--leaf)" stroke-width="1.7"><path d="M -13 0 q 3 -3 6 -3.5 q -1 -7 5 -9 q 6 -2 9 3 q 4 1 4 4.5 q 0 3.5 -4.5 4 q -1.5 1 -4.5 1 h -9 Z"/><path d="M -7 -3.5 l -2.5 -4 M -3.5 -6 l -1.5 -4.5 M 0.5 -8.5 l 0 -4.5"/><path d="M -13 0 q -4 -1.5 -6.5 -4.5" stroke-width="1.5"/><path d="M -4 0 v 3.5 M 3 0 v 3.5" stroke-width="1.5"/><circle cx="6.5" cy="-7.5" r="1" fill="var(--ink)" stroke="none"/></g>`;
@@ -2592,7 +2764,7 @@ const jordis=$("jordis"), toast=$("toast"),
       thought=$("thought"), orbbody=$("orbbody"), orbblush=$("orbblush"),
       faceflip=$("faceflip"), backface=$("backface"),
       armL=$("arm-l"), armR=$("arm-r"),
-      floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"),
+      floraLayer=$("flora"), objLayer=$("objects"), meteorLayer=$("meteor"), frontfxLayer=$("frontfx"),
       sittimer=$("sittimer"), orbwrap=$("orbwrap"), stageEl=$("stage"),
       vibeslider=$("vibeslider"), vibeword=$("vibeword"),
       trends=$("trends"), settings=$("settings"),
@@ -2649,7 +2821,7 @@ function armAnim(which, kind){
   if(reduceMotion) return;
   [["l",armL],["r",armR]].forEach(([k,el])=>{
     if(which!=="both" && which!==k) return;
-    el.classList.remove("wave","flail","yay");
+    el.classList.remove("wave","flail","yay","hug");
     void el.getBoundingClientRect();
     el.classList.add(kind);
     el.addEventListener("animationend", ()=>el.classList.remove(kind), {once:true});
@@ -3167,7 +3339,13 @@ function bigHeart(){
    press LOVE again and again and the hearts sometimes lose their composure:
    either one ENORMOUS heart that fills the sky, or the whole rainbow of them
    at once. Same shape, same colours as everything else here, just far too much
-   of it, which is the joke. */
+   of it, which is the joke.
+   Lives in #frontfx (not #meteor) so it renders in front of Jord — #meteor
+   stays reserved for effects that must sit behind him. JOR-0067. It also
+   cycles the whole rainbow over its 7.4s life via the file's existing
+   hue-rotate idiom (see objHue elsewhere), instead of sitting on one fixed
+   var(--bloom) hue, and gets a ~1s hug beat from Jord's arms partway through
+   its life via the shared armAnim() idiom. JOR-0068. */
 function giantHeart(){
   if(reduceMotion) return;
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
@@ -3177,7 +3355,12 @@ function giantHeart(){
   inner.innerHTML=`<g transform="translate(0,-62) scale(6.2)"><path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" `
     + `stroke="var(--bloom)" stroke-width=".9" fill="var(--bloom)" fill-opacity=".38"/></g>`;
   g.appendChild(inner);
-  meteorLayer.appendChild(g);
+  frontfxLayer.appendChild(g);
+  /* the hug: the heart grows in (peak 38%) and settles before Jord closes her
+     arms around it, so the hold sits over the settled heart and the arms open
+     right as it starts drifting up at 62% (4.59s). Same armAnim() class idiom
+     as wave/flail/yay. The 3.2s delay puts hug's 18-65% hold at 3.58-4.57s. */
+  setTimeout(()=>armAnim("both","hug"), 3200);
   /* must outlast the 7.4s .giant-heart animation */
   setTimeout(()=>g.remove(), 7800);
 }
