@@ -1349,7 +1349,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">v A.2</span>
+    <span class="rev">v A.3</span>
   </footer>
 </div>
 
@@ -3104,13 +3104,22 @@ function floatHeart(color, pop, force, spreadPx){
      .heart-rise is the original solitary drift */
   inner.setAttribute("class", pop ? "heart-pop" : "heart-rise");
   if(pop) inner.style.animationDelay = (Math.random()*0.5).toFixed(2)+"s";
-  inner.innerHTML = `<path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" stroke="${color||"var(--bloom)"}" stroke-width="1.4" fill="none"/>`;
+  /* in her mode a heart with no colour asked for picks its own, so the
+     everyday ones aren't all the same pink; grown-up Jord's rare drifting
+     heart stays bloom, as it always has been.
+     The soft fill matters as much as the hue: as a bare 1.4px outline the
+     colours were technically varied and practically invisible at this size. */
+  const col = color || (kidMode ? pick(HEART_HUES) : "var(--bloom)");
+  inner.innerHTML = `<path d="M 0 3 c -4 -5 -11 -1 -9 4 c 1 4 6 7 9 9 c 3 -2 8 -5 9 -9 c 2 -5 -5 -9 -9 -4 Z" stroke="${col}" stroke-width="1.4" fill="${col}" fill-opacity=".3"/>`;
   g.appendChild(inner);
   meteorLayer.appendChild(g);
   setTimeout(()=>g.remove(), pop ? 3600 : 3600);
 }
-/* little jord's hearts come in handfuls, in several colours */
-const HEART_HUES = ["var(--bloom)","var(--sun)","var(--leaf)","var(--water)","#c58fd6","#e2748a"];
+/* little jord's hearts come in handfuls, in several colours. Deliberately
+   literal colours rather than theme tokens: --leaf and --water are themselves
+   turned pink by the magic sit's pinkout, which quietly collapsed half this
+   list into the same colour exactly when the most hearts were on screen. */
+const HEART_HUES = ["#e2748a","#e59f45","#e0cb57","#7bbf7a","#5fb8bf","#6fa8c0","#8f7fd0","#c58fd6","#d0708f"];
 function heartBurst(n, force){
   if(reduceMotion || (!force && (busy || sitting))) return;
   const many = n || 4;
@@ -4130,17 +4139,24 @@ $("b-enjoy").addEventListener("click", ()=>{
      out of the middle of him, one line, one flower. That's the whole thing. */
   if(kidMode){
     if(busy || sitting) return;
-    /* how fast is she hammering it? Only presses in the last 5 seconds count,
-       so a slow, deliberate love is always just the one ordinary big heart. */
+    /* how fast is she hammering it? Only presses in the last 8 seconds count,
+       so a slow, deliberate love is always just the one ordinary big heart.
+       The window was 5s and it started at the third press with a 30% roll,
+       which in real use meant a child could smack the button hard and get
+       nothing: the pauses to watch each heart were spending the window.
+       Now the second quick press can already do it, and the fourth always
+       does, so a determined smashing is guaranteed to be rewarded. */
     const now=Date.now();
-    loveTaps=loveTaps.filter(t=>now-t<5000);
+    loveTaps=loveTaps.filter(t=>now-t<8000);
     loveTaps.push(now);
-    /* from the third quick press on, a growing chance it overflows */
-    const rush = loveTaps.length>=3 && Math.random() < Math.min(.8, .3+.2*(loveTaps.length-3));
+    const rush = loveTaps.length>=4 ||
+                 (loveTaps.length>=2 && Math.random() < Math.min(.85, .35+.25*(loveTaps.length-2)));
     setEyes("heart"); setMouth(rush?"grin":"smile");
     if(rush){
       loveTaps=[];   /* one overflow per run, then she has to build it up again */
-      const giant = Math.random()<.5;
+      /* the giant is the one she's after, so it wins the coin flip more often
+         than the rainbow does */
+      const giant = Math.random()<.62;
       if(giant){ giantHeart(); blushHearts(6000); }
       else { rainbowHearts(); rainbow(true); }
       logMission("enjoy");
@@ -4694,13 +4710,17 @@ let gdVisitorTimer=null;
 const GV_KINDS=["fly","fly","fly","bug","spider"];
 /* little jord's meadow keeps sillier company: a bee, a snail in no hurry, a
    pet rock that simply sits, and the odd heart or sparkle drifting through */
-const GV_KIDS=["fly","fly","bee","bee","bug","snail","rock","heart","heart","sparkle","spider","bunny","bunny"];
+const GV_KIDS=["fly","fly","bee","bee","bug","snail","rock","heart","heart","sparkle","spider","bunny","bunny","bunny","bunny"];
 function spawnGardenVisitor(kind){
   if(reduceMotion) return;
   const layer=$("gd-visitors");
   if(!layer || !gardenPanel.classList.contains("open")) return;
   const W=layer.clientWidth||300, H=layer.clientHeight||400;
+  const asked = !!kind;
   kind = kind || pick(kidMode ? GV_KIDS : GV_KINDS);
+  /* one rabbit at a time: an ordinary roll that lands on her while she's still
+     hopping across becomes a butterfly instead. A deliberate call still wins. */
+  if(!asked && kind==="bunny" && document.querySelector(".gv-bunny")) kind="fly";
   const el=document.createElement("div");
   el.className="gv gv-"+kind;
   el.dataset.kind=kind;
@@ -4825,11 +4845,30 @@ function gvPoke(e){
   }
   gardenWord(line, el);
 }
+/* ── the rabbit, on a promise rather than a dice roll ──
+   she was one weighted entry among many, which in real use meant waiting and
+   waiting and getting a snail. In her mode the rabbit now has her own timer,
+   independent of the general visitor roll: one shortly after the garden opens,
+   then another every half a minute or so for as long as it stays open. Never
+   two at once, so a slow hop across can't be lapped. */
+let gdBunnyTimer=null;
+function bunnyHere(){ return !!document.querySelector(".gv-bunny"); }
+function scheduleBunny(ms){
+  clearTimeout(gdBunnyTimer);
+  gdBunnyTimer=setTimeout(()=>{
+    if(!gardenPanel.classList.contains("open")){ gdBunnyTimer=null; return; }
+    if(!bunnyHere()) spawnGardenVisitor("bunny");
+    scheduleBunny(rand(26,42)*1000);
+  }, ms);
+}
 function startGardenVisitors(){
   if(gdVisitorTimer){ clearInterval(gdVisitorTimer); gdVisitorTimer=null; }
+  clearTimeout(gdBunnyTimer); gdBunnyTimer=null;
   const layer=$("gd-visitors"); if(layer) layer.innerHTML="";  /* fresh each open */
   const words=$("gd-words"); if(words) words.innerHTML="";     /* and no stale bubble */
   if(reduceMotion) return;
+  /* her rabbit doesn't wait to be rolled for */
+  if(kidMode) scheduleBunny(rand(2.5,7)*1000);
   /* a chance of one arriving shortly after the panel opens */
   if(Math.random() < (kidMode ? .85 : .38)){
     setTimeout(()=>{ if(gardenPanel.classList.contains("open")) spawnGardenVisitor(); }, 1200+Math.random()*2600);
