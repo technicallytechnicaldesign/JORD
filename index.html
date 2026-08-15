@@ -252,6 +252,14 @@
   #backface{opacity:0;transition:opacity .3s ease}
   #backface.show{opacity:1}
 
+  /* eye variants used to hard-cut via display:none (no transition possible on
+     display), so every blink and every expression change snapped instantly
+     between completely different pupil positions. Crossfading opacity instead
+     reads as a soft blink/glance rather than a jump-cut. #e-open stays the
+     one visible by default, matching the old display:none default on the rest. */
+  #face>[id^="e-"]{opacity:0;transition:opacity .14s ease-out}
+  #e-open{opacity:1}
+
   @keyframes slowbreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
   #orbbody.breathing{transform-origin:140px 150px;animation:slowbreathe 9s ease-in-out infinite}
 
@@ -698,6 +706,12 @@
   }
   body,body.kid .stage,body.kid .unit{transition:background-color 1.8s ease, color 1.8s ease}
   body.kid #jord *{transition:stroke 1.8s ease, fill 1.8s ease}
+  /* the eye crossfade (declared earlier as #face>[id^="e-"]) ties for
+     specificity with the rule just above and loses on source order in kid
+     mode, silently dropping back to an instant cut for exactly the mode she
+     uses by default. Restated here, after it, with the same transition list
+     plus opacity, so kid mode gets the smoothing too. */
+  body.kid #face>[id^="e-"]{transition:opacity .14s ease-out, stroke 1.8s ease, fill 1.8s ease}
 
   /* a small burst of hearts, for the moments that deserve several */
   @keyframes heartPop{
@@ -1216,65 +1230,65 @@
                 <circle cx="117" cy="145" r="3.2"/><circle cx="163" cy="145" r="3.2"/>
               </g>
             </g>
-            <g id="e-happy" stroke-width="2.5" style="display:none">
+            <g id="e-happy" stroke-width="2.5">
               <path d="M 109 146 Q 117 137 125 146"/><path d="M 155 146 Q 163 137 171 146"/>
             </g>
-            <g id="e-closed" stroke-width="2.5" style="display:none">
+            <g id="e-closed" stroke-width="2.5">
               <path d="M 109 144 Q 117 149 125 144"/><path d="M 155 144 Q 163 149 171 144"/>
             </g>
-            <g id="e-wide" stroke-width="2" style="display:none">
+            <g id="e-wide" stroke-width="2">
               <circle cx="117" cy="143" r="10.5"/><circle cx="163" cy="143" r="10.5"/>
               <g fill="var(--ink)" stroke="none"><circle cx="117" cy="144" r="2.4"/><circle cx="163" cy="144" r="2.4"/></g>
             </g>
-            <g id="e-squint" stroke-width="2.2" style="display:none">
+            <g id="e-squint" stroke-width="2.2">
               <path d="M 108 142 q 9 5 18 0 q -9 5 -18 0 Z"/><path d="M 154 142 q 9 5 18 0 q -9 5 -18 0 Z"/>
             </g>
-            <g id="e-side" stroke-width="2" style="display:none">
+            <g id="e-side" stroke-width="2">
               <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
               <g fill="var(--ink)" stroke="none"><circle cx="121.5" cy="145" r="3.2"/><circle cx="167.5" cy="145" r="3.2"/></g>
             </g>
-            <g id="e-sparkle" stroke-width="1.8" fill="var(--ink)" style="display:none">
+            <g id="e-sparkle" stroke-width="1.8" fill="var(--ink)">
               <path d="M 117 136 l 2.6 5.4 5.4 2.6 -5.4 2.6 -2.6 5.4 -2.6 -5.4 -5.4 -2.6 5.4 -2.6 Z"/>
               <path d="M 163 136 l 2.6 5.4 5.4 2.6 -5.4 2.6 -2.6 5.4 -2.6 -5.4 -5.4 -2.6 5.4 -2.6 Z"/>
             </g>
-            <g id="e-flat" stroke-width="2.2" style="display:none">
+            <g id="e-flat" stroke-width="2.2">
               <path d="M 109 140 h 16"/><path d="M 155 140 h 16"/>
               <g fill="var(--ink)" stroke="none"><circle cx="117" cy="146" r="3"/><circle cx="163" cy="146" r="3"/></g>
             </g>
-            <g id="e-chaos" stroke-width="2.2" style="display:none">
+            <g id="e-chaos" stroke-width="2.2">
               <path d="M 108 142 q 9 5 18 0 q -9 5 -18 0 Z"/>
               <circle cx="163" cy="143" r="10.5"/>
               <circle cx="163" cy="144" r="2.4" fill="var(--ink)" stroke="none"/>
             </g>
-            <g id="e-wink" stroke-width="2" style="display:none">
+            <g id="e-wink" stroke-width="2">
               <path d="M 109 144 Q 117 149 125 144"/>
               <circle cx="163" cy="144" r="8"/>
               <g fill="var(--ink)" stroke="none"><circle cx="163" cy="145" r="3.2"/></g>
             </g>
-            <g id="e-heart" stroke-width="1.6" fill="var(--ink)" style="display:none">
+            <g id="e-heart" stroke-width="1.6" fill="var(--ink)">
               <path d="M 117 140 c -3 -4 -9 -1 -8 4 c 1 4 5 6 8 8 c 3 -2 7 -4 8 -8 c 1 -5 -5 -8 -8 -4 Z"/>
               <path d="M 163 140 c -3 -4 -9 -1 -8 4 c 1 4 5 6 8 8 c 3 -2 7 -4 8 -8 c 1 -5 -5 -8 -8 -4 Z"/>
             </g>
-            <g id="e-lookleft" stroke-width="2" style="display:none">
+            <g id="e-lookleft" stroke-width="2">
               <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
               <g fill="var(--ink)" stroke="none"><circle cx="112" cy="145" r="3"/><circle cx="158" cy="145" r="3"/></g>
             </g>
-            <g id="e-lookright" stroke-width="2" style="display:none">
+            <g id="e-lookright" stroke-width="2">
               <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
               <g fill="var(--ink)" stroke="none"><circle cx="122" cy="145" r="3"/><circle cx="168" cy="145" r="3"/></g>
             </g>
-            <g id="e-lookup" stroke-width="2" style="display:none">
+            <g id="e-lookup" stroke-width="2">
               <circle cx="117" cy="144" r="8"/><circle cx="163" cy="144" r="8"/>
               <g fill="var(--ink)" stroke="none"><circle cx="117" cy="139.5" r="3"/><circle cx="163" cy="139.5" r="3"/></g>
             </g>
-            <g id="e-peer" stroke-width="2.2" style="display:none">
+            <g id="e-peer" stroke-width="2.2">
               <path d="M 108 141 Q 117 139 126 141"/>
               <path d="M 109 141 Q 117 146 125 141"/>
               <path d="M 154 140 Q 163 138 172 140"/>
               <path d="M 155 140 Q 163 146 171 140"/>
               <g fill="var(--ink)" stroke="none"><circle cx="119" cy="142" r="2.6"/><circle cx="165" cy="141" r="2.6"/></g>
             </g>
-            <g id="e-uwu" stroke-width="2.8" stroke-linecap="round" style="display:none">
+            <g id="e-uwu" stroke-width="2.8" stroke-linecap="round">
               <path d="M 107 147 Q 117 135 127 147"/><path d="M 153 147 Q 163 135 173 147"/>
             </g>
 
@@ -2813,7 +2827,8 @@ function moonPath(cx,cy,r,p){
   el.setAttribute("d", moonPath(40,47,11, moonPhaseFrac(new Date())));
 })();
 
-function setEyes(name){ EYES.forEach(e=>{ $("e-"+e).style.display = e===name ? "" : "none"; }); }
+let currentEyeName="open";   /* tracks the visible e-* group now that hiding is opacity, not display:none */
+function setEyes(name){ currentEyeName=name; EYES.forEach(e=>{ $("e-"+e).style.opacity = e===name ? "1" : "0"; }); }
 function setMouth(name){ MOUTHS.forEach(m=>{ $("m-"+m).style.display = m===name ? "" : "none"; }); }
 
 /* ── arms ── */
@@ -2905,9 +2920,9 @@ setInterval(applyMood, 7000 + Math.random()*6000);
 if(!reduceMotion){
   setInterval(()=>{
     if(busy || sitting || napping) return;
-    const openish = ["e-open","e-wide","e-side"].some(id=>$(id).style.display!=="none");
+    const openish = ["open","wide","side"].includes(currentEyeName);
     if(openish && Math.random()<.8){
-      const prev = EYES.find(e=>$("e-"+e).style.display!=="none");
+      const prev = currentEyeName;
       setEyes("closed");
       setTimeout(()=>{ if(!busy && !sitting) setEyes(prev); },150);
     }
@@ -4322,24 +4337,27 @@ $("b-enjoy").addEventListener("click", ()=>{
      out of the middle of him, one line, one flower. That's the whole thing. */
   if(kidMode){
     if(busy || sitting) return;
-    /* how fast is she hammering it? Only presses in the last 8 seconds count,
+    /* how fast is she hammering it? Only presses in the last 6 seconds count,
        so a slow, deliberate love is always just the one ordinary big heart.
-       The window was 5s and it started at the third press with a 30% roll,
-       which in real use meant a child could smack the button hard and get
-       nothing: the pauses to watch each heart were spending the window.
-       Now the second quick press can already do it, and the fourth always
-       does, so a determined smashing is guaranteed to be rewarded. */
+       2026-08-16: reported firing too often in real use. The 8s window let
+       ordinary unhurried repeat presses accumulate, the roll started as early
+       as the second press (35%), and the fourth was an automatic 100% — so a
+       few normal taps in a row was enough. Roll now starts at the third press
+       and climbs slower; a hard smash (5+ in the window) still guarantees it,
+       so determined smashing is still always rewarded, just no longer a
+       near-default outcome of ordinary play. */
     const now=Date.now();
-    loveTaps=loveTaps.filter(t=>now-t<8000);
+    loveTaps=loveTaps.filter(t=>now-t<6000);
     loveTaps.push(now);
-    const rush = loveTaps.length>=4 ||
-                 (loveTaps.length>=2 && Math.random() < Math.min(.85, .35+.25*(loveTaps.length-2)));
+    const rush = loveTaps.length>=5 ||
+                 (loveTaps.length>=3 && Math.random() < Math.min(.75, .2+.2*(loveTaps.length-3)));
     setEyes("heart"); setMouth(rush?"grin":"smile");
     if(rush){
       loveTaps=[];   /* one overflow per run, then she has to build it up again */
-      /* the giant is the one she's after, so it wins the coin flip more often
-         than the rainbow does */
-      const giant = Math.random()<.62;
+      /* used to lean 62/38 toward the giant; now that a rush itself fires
+         less often (see above), let the two surprises share the spotlight
+         evenly rather than compounding the giant's frequency twice over. */
+      const giant = Math.random()<.5;
       if(giant){ giantHeart(); blushHearts(6000); }
       else { rainbowHearts(); rainbow(true); }
       logMission("enjoy");
