@@ -1,8 +1,8 @@
 # JORD — Handover Doc
 
-## Version A.3, where this stands
+## Version A.4, where this stands
 
-JORD is **v A.3**, as of 2026-08-15 (A.2 was 2026-08-14, A.1 2026-08-01).
+JORD is **v A.4**, as of 2026-08-16 (A.3 was 2026-08-15, A.2 2026-08-14, A.1 2026-08-01).
 
 The single-letter revs (G → Z) were the prototype era. The letter ran out at Z
 at a genuinely good stopping point: two modes shipped and in daily use by two

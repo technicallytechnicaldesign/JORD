@@ -614,20 +614,36 @@
   }
   .big-heart{animation:bigHeart 6.8s cubic-bezier(.3,.55,.45,1) forwards}
   /* press LOVE over and over and the hearts occasionally get out of hand: one
-     ENORMOUS one that fills the whole sky, or the whole rainbow at once. */
+     ENORMOUS one that fills the whole sky, or the whole rainbow at once.
+     2026-08-16: it never actually got there — the old curve peaked around
+     scale(1.12), wobbled near scale(1), then faded at the very same instant
+     it made its one modest jump to scale(1.25), so it read as hanging in
+     place rather than growing into anything. Now it grows well past the
+     frame (scale ~4.4, actually filling — and overflowing — the screen,
+     via #jord.giant-open below), *holds* there for a clear beat, and only
+     fades once it's already huge, so growth and fade no longer coincide. */
   @keyframes giantHeart{
     0%{opacity:0;transform:translateY(20px) scale(.06)}
-    12%{opacity:.55}
-    38%{opacity:.9;transform:translateY(-8px) scale(1.12)}
-    50%{transform:translateY(-4px) scale(.98)}
-    62%{transform:translateY(-10px) scale(1.04)}
-    100%{opacity:0;transform:translateY(-30px) scale(1.25)}
+    10%{opacity:.85}
+    34%{opacity:1;transform:translateY(-14px) scale(4.4)}
+    40%{transform:translateY(-10px) scale(4.15)}
+    46%{transform:translateY(-14px) scale(4.35)}
+    80%{opacity:1;transform:translateY(-20px) scale(4.5)}
+    100%{opacity:0;transform:translateY(-30px) scale(4.7)}
   }
   /* cycles the whole rainbow over the heart's life instead of sitting on one
      fixed var(--bloom) hue — same hue-rotate(filter) idiom the file already
      uses per-instance elsewhere (see objHue), just animated over time. JOR-0067 */
   @keyframes giantHeartHue{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
-  .giant-heart{animation:giantHeart 7.4s cubic-bezier(.25,.6,.4,1) forwards, giantHeartHue 7.4s linear forwards}
+  .giant-heart{animation:giantHeart 8.5s cubic-bezier(.25,.6,.4,1) forwards, giantHeartHue 8.5s linear forwards}
+  /* #jord clips to its viewBox by default (the standard UA default for an
+     embedded, non-root svg) — every other effect is sized to stay inside it
+     on purpose, but the giant heart is now deliberately meant to burst past
+     the edges. Scoped to a class toggled only for the heart's lifetime
+     (giantHeart(), below) rather than lifted globally, so nothing else that
+     currently relies on the frame clipping it (e.g. bigHeart drifting off
+     the top) starts leaking past the card. */
+  #jord.giant-open{overflow:visible}
   /* one of hers on the keepsake shelf: a soft pink backing, in either mode —
      it's about whose keepsake it is, not which mode is switched on */
   .sh-kid-item{background:color-mix(in srgb, var(--bloom) 15%, var(--panel));border-color:var(--bloom)}
@@ -1376,7 +1392,7 @@
 
   <footer>
     <span id="orbitday">orbit day 1</span>
-    <span class="rev">v A.3</span>
+    <span class="rev">v A.4</span>
   </footer>
 </div>
 
@@ -3357,12 +3373,17 @@ function bigHeart(){
    of it, which is the joke.
    Lives in #frontfx (not #meteor) so it renders in front of Jord — #meteor
    stays reserved for effects that must sit behind him. JOR-0067. It also
-   cycles the whole rainbow over its 7.4s life via the file's existing
-   hue-rotate idiom (see objHue elsewhere), instead of sitting on one fixed
-   var(--bloom) hue, and gets a ~1s hug beat from Jord's arms partway through
-   its life via the shared armAnim() idiom. JOR-0068. */
+   cycles the whole rainbow over its life via the file's existing hue-rotate
+   idiom (see objHue elsewhere), instead of sitting on one fixed var(--bloom)
+   hue, and gets a ~1s hug beat from Jord's arms partway through its life via
+   the shared armAnim() idiom. JOR-0068.
+   2026-08-16: now actually grows to fill (and burst past) the frame before
+   fading — see the giantHeart keyframe's own comment — which means it needs
+   #jord's clip briefly lifted; see .giant-open on #jord below. */
 function giantHeart(){
   if(reduceMotion) return;
+  const jordSvg=$("jord");
+  jordSvg.classList.add("giant-open");
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
   g.setAttribute("transform","translate(140,150)");
   const inner=document.createElementNS("http://www.w3.org/2000/svg","g");
@@ -3371,13 +3392,14 @@ function giantHeart(){
     + `stroke="var(--bloom)" stroke-width=".9" fill="var(--bloom)" fill-opacity=".38"/></g>`;
   g.appendChild(inner);
   frontfxLayer.appendChild(g);
-  /* the hug: the heart grows in (peak 38%) and settles before Jord closes her
-     arms around it, so the hold sits over the settled heart and the arms open
-     right as it starts drifting up at 62% (4.59s). Same armAnim() class idiom
-     as wave/flail/yay. The 3.2s delay puts hug's 18-65% hold at 3.58-4.57s. */
-  setTimeout(()=>armAnim("both","hug"), 3200);
-  /* must outlast the 7.4s .giant-heart animation */
-  setTimeout(()=>g.remove(), 7800);
+  /* the hug: the heart grows in and holds (34-46% of the now-8.5s life) before
+     Jord closes her arms around it, so the hold sits over the held-huge heart
+     and the arms open again well before it starts fading at 80%. Same
+     armAnim() class idiom as wave/flail/yay. The 2.6s delay puts hug's
+     18-65% hold at 2.98-3.97s, inside that 34-46% (2.89-3.91s) window. */
+  setTimeout(()=>armAnim("both","hug"), 2600);
+  /* must outlast the 8.5s .giant-heart animation, then drop the clip lift */
+  setTimeout(()=>{ g.remove(); jordSvg.classList.remove("giant-open"); }, 8900);
 }
 /* one heart per rainbow colour, in order, spread right across him */
 function rainbowHearts(){
@@ -4337,20 +4359,21 @@ $("b-enjoy").addEventListener("click", ()=>{
      out of the middle of him, one line, one flower. That's the whole thing. */
   if(kidMode){
     if(busy || sitting) return;
-    /* how fast is she hammering it? Only presses in the last 6 seconds count,
+    /* how fast is she hammering it? Only presses in the last 8 seconds count,
        so a slow, deliberate love is always just the one ordinary big heart.
-       2026-08-16: reported firing too often in real use. The 8s window let
-       ordinary unhurried repeat presses accumulate, the roll started as early
-       as the second press (35%), and the fourth was an automatic 100% — so a
-       few normal taps in a row was enough. Roll now starts at the third press
-       and climbs slower; a hard smash (5+ in the window) still guarantees it,
-       so determined smashing is still always rewarded, just no longer a
-       near-default outcome of ordinary play. */
+       2026-08-16: first pass (roll from the 3rd press, guaranteed by the 5th)
+       still fired constantly — turns out she genuinely spams this button, so
+       "a few rapid taps" isn't a rare event for her, it's every visit. Roll
+       now doesn't start until the 10th press in the window, and even then
+       climbs slowly; a proper sustained mash (18+ in the window) still
+       guarantees it, so real spamming is still always rewarded eventually —
+       it just now takes an actual spam session, not three quick taps. First
+       pass at these exact numbers; retune again if real use says otherwise. */
     const now=Date.now();
-    loveTaps=loveTaps.filter(t=>now-t<6000);
+    loveTaps=loveTaps.filter(t=>now-t<8000);
     loveTaps.push(now);
-    const rush = loveTaps.length>=5 ||
-                 (loveTaps.length>=3 && Math.random() < Math.min(.75, .2+.2*(loveTaps.length-3)));
+    const rush = loveTaps.length>=18 ||
+                 (loveTaps.length>=10 && Math.random() < Math.min(.75, .15+.1*(loveTaps.length-10)));
     setEyes("heart"); setMouth(rush?"grin":"smile");
     if(rush){
       loveTaps=[];   /* one overflow per run, then she has to build it up again */
