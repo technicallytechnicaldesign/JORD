@@ -773,8 +773,15 @@
   }
   .settings-head .label{font-size:12px;letter-spacing:.2em}
 
+  /* anchored to the TOP of the viewport, not the bottom (JOR-0078): a fixed
+     toast is positioned against the viewport, not the page, so on any screen
+     short enough that the page doesn't fit unscrolled -- most phones, once
+     the reminder line runs long enough to wrap to 2-3 lines -- a bottom:24px
+     toast lands squarely on top of the check-in action buttons it's meant to
+     be nudging you toward. Sliding down from the top instead only ever
+     grazes the header's icon row, never the primary controls. */
   #toast{
-    position:fixed;left:50%;bottom:24px;transform:translate(-50%,150%);
+    position:fixed;left:50%;top:14px;transform:translate(-50%,-150%);
     max-width:min(400px,90vw);
     background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;
     padding:12px 16px;font-size:13px;
@@ -4053,7 +4060,11 @@ function chartLastHour(){
   const pts=recent.map(e=>({m:(now-e.t)/60000, v:e.v}));   /* m = minutes ago, 0..60 */
   const recentMissions=missions.filter(m=>m.t>=cutoff);
   const prev=prevBefore(cutoff);
-  if(!pts.length && !(showMissions && recentMissions.length) && !prev) return `<div style="font-size:12px;color:var(--dim)">nothing in the last hour. the slider awaits.</div>`;
+  /* JOR-0079: a single lone point draws no line (polyline needs >1), just one
+     floating dot -- not a graph, just noise wearing a graph's clothes. Fall
+     back to the plain-text state unless there's an actual trend (>1 point)
+     or something else worth a chart for (missions, a lead-in from before). */
+  if(pts.length<=1 && !(showMissions && recentMissions.length) && !prev) return `<div style="font-size:12px;color:var(--dim)">nothing in the last hour. the slider awaits.</div>`;
   const X=m=>20+((60-m)/60)*280, Y=v=>8+(100-v)*0.7;   /* 60min-ago at left, now at right */
   let svg=`<svg viewBox="0 0 320 96" xmlns="http://www.w3.org/2000/svg">`;
   svg+=midBand(Y,20,300);
@@ -5870,6 +5881,14 @@ $("orbwrap").addEventListener("click", ()=>{
   else if(pats===50) think(kp("fifty pats. we should get matching flowers.","fifty pats. we should get matching flowers."), 12000);
   else if(pats===100) think(kp("one hundred pats. I have peaked. no— wait. pat 101 says otherwise.",
                               "one hundred pats! that's more than I can count on my hands. I have two."), 14000);
+  /* JOR-0080: the one genuinely rude reaction he owns. 1% of grown-up pokes,
+     never reachable in kid mode (kidMode's own branches above all return
+     before this line, but the guard stays explicit rather than relying on
+     that), gone in under a second and walked back immediately. */
+  else if(!kidMode && Math.random()<.01){
+    setEyes("flat"); setMouth("flat");
+    think(pick(["🖕 — okay wait, no. pretend you didn't see that.","🖕 (I don't even have fingers. how did I— never mind.)"]), 8000);
+  }
   else if(r < (kidMode?.3:.18)) spawnObject();
   else if(r < (kidMode?.42:.3)) turnAround();
   else think(pick(kp(THOUGHTS, KID_THOUGHTS)), 12000);
