@@ -1,8 +1,20 @@
 # JORD — Handover Doc
 
-## Version A.4, where this stands
+## Version A.5, where this stands
 
-JORD is **v A.4**, as of 2026-08-16 (A.3 was 2026-08-15, A.2 2026-08-14, A.1 2026-08-01).
+JORD is **v A.5**, as of 2026-08-27 (A.4 was 2026-08-16, A.3 2026-08-15, A.2 2026-08-14, A.1 2026-08-01).
+
+**v A.5 (2026-08-27):** three small fixes/additions from the workspace TODO. The
+reminder toast was `position:fixed;bottom:24px` (on any screen short enough
+that the page doesn't fit unscrolled, most phones once the reminder line runs
+to 2-3 lines, it landed on top of the check-in action buttons it's meant to
+nudge you toward); anchored to the top instead (measured before/after at
+375×667: was overlapping `.actions`/`.vibes`, now overlaps neither).
+`chartLastHour()` drew a lone floating dot as if it were a chart when there was
+exactly one point in the window; falls back to the plain-text empty state now
+unless there's an actual trend, a mission, or a lead-in. And a new rare (1%),
+grown-up-only poke reaction, explicitly guarded on `!kidMode`, gone in under a
+second, walked back immediately. Commit `1119f4f`.
 
 The single-letter revs (G → Z) were the prototype era. The letter ran out at Z
 at a genuinely good stopping point: two modes shipped and in daily use by two
