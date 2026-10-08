@@ -111,23 +111,8 @@ mini-garden strip. Prior:
 below: cheek blush, fading vibe-word tint, a slimmer/more-blended thought bubble,
 a one-page infographic-style PDF with a spiky→smooth wave, header/viewBox layout
 changes, a new Garden page, and a service-worker caching fix. This doc exists so a
-fresh Claude Code session (after a context clear) can pick up exactly where things
+fresh session can pick up exactly where things
 left off without re-deriving everything.
-
-**Cloud routine confirmed unreliable a second time:** the one-time
-routine (thought bubble width, loading flourish,
-Jord bounce, moon phase/drift, water states) fired on schedule
-(`last_fired_at: 2026-07-09T23:00:16Z`, `ended_reason: run_once_fired`) but
-produced zero commits — same silent-failure shape as the first attempt noted
-below, now confirmed twice. `persist_session:false` on the trigger means there's
-no transcript to inspect after the fact either. **Do not rely on this path for
-unattended work again** — if the user wants something done at a specific future
-clock time with nobody present to babysit it, say so plainly and treat the local
-`Agent` path as the only trustworthy option, even though it can't itself wait for
-a clock time (it has to be kicked off when someone's around to start it). (The
-five items the failed routine was supposed to do — bubble width, loading
-flourish, bounce, moon phase/drift, water states — were all subsequently
-shipped anyway, via the local `Agent` path, across later rounds this same day.)
 
 ## What this is
 
@@ -1065,64 +1050,27 @@ Latest rounds (same day, later):
 Run `git log --oneline` for the exact commit-by-commit list — commit messages
 are descriptive and were kept small/independent deliberately.
 
-## The working pattern that's proven reliable
+## Working conventions
 
-For anything beyond a small tweak, the effective loop has been:
+For anything beyond a small tweak:
 
-1. **Ground yourself in the actual current code first** — grep/read the
-   relevant functions/CSS before writing a brief. This file has been rewritten
-   enough times that assumptions from memory are often stale.
-2. **Delegate to a background `Agent` call** (`subagent_type: general-purpose`,
-   `model: opus`) with a long, specific, code-grounded prompt: exact function
-   names, exact current behavior, exact task list, and explicit process
-   requirements (see below). Run it in the background — no need to block on it.
-3. **Process requirements to always include in the brief:**
-   - Standing permission to commit + push directly to `origin/main`, no PR, no
-     asking — already established, git identity already configured locally.
-   - Verify JS syntax after every edit to the big `<script>` block, before
-     every commit: extract `<script>([\s\S]*?)<\/script>` blocks via a small
-     node script, write each to a temp file (scratch dir, not the repo), run
-     `node --check` on it.
-   - **Work in small, independently-committable chunks and push after each
-     one** — this needed to be repeated explicitly more than once; left
-     unstated, agents tend to batch everything into one big commit at the end.
+1. **Read the current code first** — grep/read the relevant functions/CSS
+   before changing anything; this file goes stale fast.
+2. **Checks before every commit:**
+   - Verify JS syntax after editing the big `<script>` block: extract
+     `<script>([\s\S]*?)<\/script>` blocks to temp files (outside the repo)
+     and run `node --check` on each.
+   - Small, independently-committable chunks.
    - Respect `prefers-reduced-motion`, extend the existing CSS block.
-   - Match the existing deadpan-whimsical voice — skim `THOUGHTS`/`LINES`/
+   - Match the deadpan-whimsical voice — skim `THOUGHTS`/`LINES`/
      `OBJECTS[].react`/`VIBE_NOTES`/`SHELF_MEMORY`/`WAITING` for tone.
    - Single self-contained file, no new dependencies, no build step.
-   - Never leave a broken/non-parsing script committed.
-   - **Bump the footer's `<span class="rev">v A.n</span>` (search for it) by one
-     minor whenever a round ships a substantial change** — a standing
-     convention the user asked for. Use judgment on "substantial": a single
-     small copy/number tweak doesn't need it, a real feature or a multi-part
-     round does. Never more than once per round, however many commits it takes.
-     The full scheme (and when a major is warranted) is at the top of this file
-     under **Version A.1**. Bumping the version means updating it in the
-     workspace too — `showcase.json`'s Revision metric, `04_DOCS/showcase.html`,
-     and `04_DOCS/at-a-glance.html`'s ledger all state it.
-   - End with a clear summary: what shipped, commit hashes, anything skipped
-     and why.
-4. **When the agent finishes, verify locally before reporting to the user:**
-   `git pull`, re-run the `node --check` extraction/verification yourself,
-   `Grep` for the new identifiers to confirm they're actually wired (not just
-   present), open `index.html` in a browser for a look. Agents in this
-   environment have no browser access, so anything visual/audio is "reasoned,
-   not pixel-verified" on their end — say so plainly when reporting back, and
-   name the specific things worth the user's own eyes/ears.
-5. A cloud-scheduled routine (`RemoteTrigger`/`/schedule` skill) was tried once
-   for a one-time delayed run and silently produced nothing (fired, marked
-   complete, zero commits, no visible error via the API). The local background
-   `Agent` approach has been reliable every time it's been used instead — prefer
-   it unless there's a specific reason to need the cloud path again. It was
-   tried a second time on 2026-07-09 specifically because the user was going
-   to sleep and asked for work to happen at a specific future clock time
-   (something a local `Agent` call can't do — it runs to completion now, it
-   doesn't sleep-then-run). **Confirmed failed again** — it fired on schedule
-   but landed zero commits, with no session transcript retained to diagnose
-   why. Two-for-two failures now. Treat this path as effectively non-functional
-   for this project until something changes; the honest answer for "do X while
-   I'm asleep" is that it currently can't be done unattended — say so instead
-   of quietly re-trying the same mechanism.
+   - Never commit a broken/non-parsing script.
+   - **Bump the footer's `<span class="rev">v A.n</span>` by one minor per
+     substantial round** (not per commit). Full scheme at the top of this file
+     under **Version A.1**.
+3. Visual/audio changes are only verified in a real browser — say so when
+   something is reasoned rather than seen/heard.
 
 ## Known caveats
 
@@ -1138,9 +1086,6 @@ For anything beyond a small tweak, the effective loop has been:
   animation feel, audio character, print/PDF layout, and gesture timing is
   static/reasoned. Always flag this and suggest specific things for the user
   to actually try.
-- `.claude/settings.local.json` (gitignored) accumulates an approved-command
-  allowlist locally — this is separate from and unaffected by conversation
-  context clears.
 
 ## Backlog — discussed, deliberately not built yet
 
@@ -1161,11 +1106,7 @@ conversation:
 Everything else from that original brainstorm (keepsake shelf, ambient
 soundscape, whimsical PDF, long-press breathing) has since been built.
 
-## Permissions / continuity notes
+## Git identity
 
-- Standing permission to commit and push directly to `origin/main` in this
-  repo, without asking, is already established (confirmed explicitly by the
-  user) and also recorded in Claude's persistent memory (not just this repo).
-  This survives a context clear.
-- Local git identity in this repo: `technicallytechnicaldesign` /
-  `technicallytechnicaldesign@users.noreply.github.com`.
+`technicallytechnicaldesign` /
+`technicallytechnicaldesign@users.noreply.github.com`.
